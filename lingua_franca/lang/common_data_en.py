@@ -14,12 +14,14 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-from .parse_common import invert_dict
+from lingua_franca.lang.parse_common import Season, invert_dict
+from lingua_franca.location import Hemisphere
+from datetime import date, datetime
+from dateutil import tz
 
 _FUNCTION_NOT_IMPLEMENTED_WARNING = "The requested function is not implemented in English."
 
 _ARTICLES_EN = {'a', 'an', 'the'}
-
 
 _NUM_STRING_EN = {
     0: 'zero',
@@ -52,7 +54,6 @@ _NUM_STRING_EN = {
     90: 'ninety'
 }
 
-
 _FRACTION_STRING_EN = {
     2: 'half',
     3: 'third',
@@ -74,7 +75,6 @@ _FRACTION_STRING_EN = {
     19: 'nineteenth',
     20: 'twentyith'
 }
-
 
 _LONG_SCALE_EN = OrderedDict([
     (100, 'hundred'),
@@ -104,7 +104,6 @@ _LONG_SCALE_EN = OrderedDict([
     (1e336, "sesquinquagintillion"),
     (1e366, "unsexagintillion")
 ])
-
 
 _SHORT_SCALE_EN = OrderedDict([
     (100, 'hundred'),
@@ -180,7 +179,6 @@ _SHORT_SCALE_EN = OrderedDict([
     (1e3003, "millinillion")
 ])
 
-
 _ORDINAL_BASE_EN = {
     1: 'first',
     2: 'second',
@@ -213,7 +211,6 @@ _ORDINAL_BASE_EN = {
     1e3: "thousandth"
 }
 
-
 _SHORT_ORDINAL_EN = {
     1e6: "millionth",
     1e9: "billionth",
@@ -228,7 +225,6 @@ _SHORT_ORDINAL_EN = {
     # TODO > 1e-33
 }
 _SHORT_ORDINAL_EN.update(_ORDINAL_BASE_EN)
-
 
 _LONG_ORDINAL_EN = {
     1e6: "millionth",
@@ -295,3 +291,109 @@ _SPOKEN_EXTRA_NUM_EN = {
         }
 _STRING_SHORT_ORDINAL_EN = invert_dict(_SHORT_ORDINAL_EN)
 _STRING_LONG_ORDINAL_EN = invert_dict(_LONG_ORDINAL_EN)
+
+_WEEKDAY_EN = {
+    0: "monday",
+    1: "tuesday",
+    2: "wednesday",
+    3: "thursday",
+    4: "friday",
+    5: "saturday",
+    6: "sunday"
+}
+
+_MONTH_EN = {
+    1: "january",
+    2: "february",
+    3: "march",
+    4: "april",
+    5: "may",
+    6: "june",
+    7: "july",
+    8: "august",
+    9: "september",
+    10: "october",
+    11: "november",
+    12: "december"
+}
+
+_WEEKDAY_SHORT_EN = {
+    0: "mon",
+    1: "tue",
+    2: "wed",
+    3: "thu",
+    4: "fri",
+    5: "sat",
+    6: "sun"
+}
+
+_MONTH_SHORT_EN = {
+    1: "jan",
+    2: "feb",
+    3: "mar",
+    4: "apr",
+    5: "may",
+    6: "jun",
+    7: "jul",
+    8: "aug",
+    9: "sep",
+    10: "oct",
+    11: "nov",
+    12: "dec"
+}
+
+_HEMISPHERES_EN = {
+    Hemisphere.NORTH: ["north", "northern"],
+    Hemisphere.SOUTH: ["south", "southern"]
+}
+
+_SEASONS_EN = {
+    Season.SPRING: ["spring"],
+    Season.WINTER: ["winter"],
+    Season.SUMMER: ["summer"],
+    Season.FALL: ["fall", "autumn"]
+}
+
+_NAMED_ERAS_EN = {
+    # NOTE calendars have different year/month lengths and starting years,
+    # this is just a reference point in gregorian_date
+
+    "common era": date(day=1, month=1, year=1),
+    "after christ": date(day=1, month=1, year=1),
+    "christian era": date(day=1, month=1, year=1),
+    "calendar era": date(day=1, month=1, year=1),
+    "anno domini": date(day=1, month=1, year=1),
+    "unix time": datetime(day=1, month=1, year=1970, tzinfo=tz.tzutc()),
+    "lilian date": date(day=15, month=10, year=1582),
+    "rata die": date(day=1, month=1, year=1),
+    "armenian Calendar ": date(day=1, month=1, year=552),
+    "anno lucis": date(day=1, month=1, year=4001),
+    "National Thai Era": date(day=6, month=4, year=1941),
+    "Bahá'í calendar": date(day=21, month=3, year=1844),
+    "Yazdegerd era": date(day=16, month=6, year=632),
+    "French Republican era": date(day=22, month=9, year=1792),
+    "Positivist era": date(day=1, month=1, year=1789),
+    "Chinese Republican era": date(day=1, month=1, year=1912),
+    "Era Fascista": date(day=1, month=1, year=1922),
+    "After Dianetics": date(day=1, month=1, year=1950),
+    "Era vulgaris": date(day=20, month=3, year=1904),
+    "incarnation era": date(day=27, month=8, year=8)
+
+    # TODO how to support year > 9999
+    # TODO how to support BC?
+    # "Vikrama Samvat,": date(day=1, month=1, year=-57)
+    # "Seleucid era": date(day=1, month=1, year=-312)
+    # "Anno Graecorum": date(day=1, month=1, year=-312)
+    # "Spanish era": date(day=1, month=1, year=-38)
+    # "era of Caesar": date(day=1, month=1, year=-38)
+    # "discordian era: date(day=1, month=1, year=-1166)
+    # "Hindu Calendar ": date(day=23, month=1, year=-3102)
+    # "Mayan era": date(day=11, month=8, year=-3113)
+    # "anno mundi": date(day=1, month=1, year=-3761),
+    # "Julian era": date(day=24, month=11, year=-4714),
+    # "Assyrian calendar": date(day=1, month=1, year=-4750),
+    # "Byzantine Calendar ": date(day=1, month=1, year=-5509)
+    # "holocene era": date(day=1, month=1, year=-10000),
+    # "human era": date(day=1, month=1, year=-10000),
+
+}

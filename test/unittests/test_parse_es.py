@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datetime import datetime
+from datetime import datetime, time, date, timedelta
 import unittest
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.parse import (normalize, extract_numbers, extract_number,
                                  extract_datetime, yes_or_no)
 from lingua_franca.lang.parse_es import extract_datetime_es, is_fractional_es
-from lingua_franca.time import default_timezone
+from lingua_franca.time import default_timezone, now_local
 
 
 def setUpModule():
@@ -257,6 +257,21 @@ class TestYesNo(unittest.TestCase):
         test_utt("jajajaja", None)
         test_utt("por favor", True)
         test_utt("por favor no", False)
+
+
+class TestExtractDate(unittest.TestCase):
+    def test_fallback_parser(self):
+        now = now_local()
+        # parser not implemented, testing fallback to dateparser module
+
+        self.assertEqual(
+            extract_date("Martes 21 de Octubre de 2014", lang="es"),
+            date(day=21, month=10, year=2014))
+
+        # relative
+        self.assertEqual(
+            extract_date('Hace una semana', lang="es"),
+            now.date() - timedelta(weeks=1))
 
 
 if __name__ == "__main__":

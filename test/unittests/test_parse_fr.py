@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 import unittest
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, date, timedelta
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.internal import FunctionNotLocalizedError
@@ -24,6 +24,22 @@ from lingua_franca.parse import extract_datetime
 from lingua_franca.parse import extract_duration
 from lingua_franca.parse import extract_number
 from lingua_franca.parse import normalize
+from lingua_franca.parse import extract_date
+
+
+class TestExtractDate(unittest.TestCase):
+    def test_fallback_parser(self):
+        # parser not implemented, testing fallback to dateparser module
+        self.assertEqual(extract_date("Le 11 Décembre 2014 à 09:00",
+                                      lang="fr"),
+                         date(day=11, month=12, year=2014))
+
+        # test case missed by extract_datetime_fr
+        dt = datetime.now() - timedelta(hours=37)
+        dt = dt.replace(microsecond=0)
+        self.assertEqual(extract_datetime(
+            "apprendre à compter à 37 heures",
+            lang="fr-fr")[0].replace(microsecond=0), dt)
 
 
 def setUpModule():
@@ -321,8 +337,6 @@ class TestNormalize_fr(unittest.TestCase):
         self.assertEqual(extract_datetime("", lang="fr-fr"), None)
         self.assertEqual(extract_datetime("phrase inutile", lang="fr-fr"),
                          None)
-        self.assertEqual(extract_datetime(
-            "apprendre à compter à 37 heures", lang="fr-fr"), None)
 
     def test_extractdatetime_default_fr(self):
         default = time(9, 0, 0)

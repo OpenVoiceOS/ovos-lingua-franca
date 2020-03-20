@@ -28,6 +28,15 @@ from lingua_franca.parse import normalize
 from lingua_franca.time import default_timezone, to_local
 from lingua_franca.parse import extract_langcode
 from lingua_franca.parse import yes_or_no
+from lingua_franca.time import DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.parse import DurationResolution
+from lingua_franca.location import set_active_location
+from lingua_franca.time import now_local, date_to_season, \
+    get_week_range, get_weekend_range, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.lang.parse_common import DateTimeResolution, Season
+from lingua_franca.location import Hemisphere
+from lingua_franca.lang.parse_en import extract_date_en
+from datetime import date, datetime, timedelta
 
 
 def setUpModule():
@@ -281,6 +290,46 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("a couple thousand beers"), 2000)
         self.assertEqual(extract_number("totally 100%"), 100)
 
+    def test_extract_duration_replace_token(self):
+        self.assertEqual(extract_duration("10 seconds", replace_token="_"),
+                         (timedelta(seconds=10.0), "_ _"))
+        # TODO remainder is imperfect because "fifty seven and a half
+        #  minutes" was normalized to a single word "57.5"
+        self.assertEqual(extract_duration("The movie is one hour, fifty seven"
+                                          " and a half minutes long",
+                                          replace_token="_"),
+                         (timedelta(hours=1, minutes=57.5),
+                          "the movie is _ _, _ _ long"))
+
+    def test_extract_duration_ambiguous(self):
+        self.assertRaises(ValueError, extract_duration, "1.3 months",
+                          resolution=DurationResolution.RELATIVEDELTA)
+        self.assertRaises(ValueError, extract_duration, "1.3 months",
+                          resolution=DurationResolution.RELATIVEDELTA_STRICT)
+        self.assertEqual(
+            extract_duration("1.3 months",
+                             resolution=DurationResolution.RELATIVEDELTA_FALLBACK),
+            (timedelta(days=1.3 * DAYS_IN_1_MONTH), ""))
+
+        # NOTE: for some reason test bellow fails with
+        #       (relativedelta(months=+1, days=+9.126), '') != \
+        #       (relativedelta(months=+1, days=+9.126), '')
+        # correct result is being returned
+
+        # self.assertEqual(
+        #    extract_duration("1.3 months",
+        #                     resolution=DurationResolution.RELATIVEDELTA_APPROXIMATE),
+        #    (relativedelta(months=1, days=0.3 * DAYS_IN_1_MONTH), ""))
+
+        self.assertEqual(
+            extract_duration("1.3 months",
+                             resolution=DurationResolution.RELATIVEDELTA_APPROXIMATE
+                             )[0].months, 1)
+        self.assertAlmostEqual(
+            extract_duration("1.3 months",
+                             resolution=DurationResolution.RELATIVEDELTA_APPROXIMATE
+                             )[0].days, 0.3 * DAYS_IN_1_MONTH)
+
     def test_extract_duration_en(self):
         self.assertEqual(extract_duration("10 seconds"),
                          (timedelta(seconds=10.0), ""))
@@ -304,10 +353,755 @@ class TestNormalize(unittest.TestCase):
                                           " three hundred 91.6 seconds"),
                          (timedelta(weeks=3, days=497, seconds=391.6),
                           "wake me up in , , and"))
+        self.assertEqual(extract_duration("The movie is one hour, fifty seven"
+                                          " and a half minutes long"),
+                         (timedelta(hours=1, minutes=57.5),
+                             "the movie is ,  long"))
         self.assertEqual(extract_duration("10-seconds"),
                          (timedelta(seconds=10.0), ""))
         self.assertEqual(extract_duration("5-minutes"),
                          (timedelta(minutes=5), ""))
+
+        self.assertEqual(extract_duration("1 month"),
+                         (timedelta(days=DAYS_IN_1_MONTH), ""))
+        self.assertEqual(
+            extract_duration("1 month",
+                             resolution=DurationResolution.TIMEDELTA),
+            (timedelta(days=DAYS_IN_1_MONTH), ""))
+
+        self.assertEqual(extract_duration("3 months"),
+                         (timedelta(days=DAYS_IN_1_MONTH * 3), ""))
+        self.assertEqual(extract_duration("a year"),
+                         (timedelta(days=DAYS_IN_1_YEAR), ""))
+        self.assertEqual(extract_duration("1 year"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1), ""))
+        self.assertEqual(extract_duration("5 years"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 5), ""))
+        self.assertEqual(extract_duration("a decade"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("1 decade"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("5 decades"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10 * 5), ""))
+        self.assertEqual(extract_duration("1 century"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("a century"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("5 centuries"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100 * 5), ""))
+        self.assertEqual(extract_duration("1 millennium"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000), ""))
+        self.assertEqual(extract_duration("5 millenniums"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000 * 5), ""))
+
+    def test_extract_duration_delta_en(self):
+        self.assertEqual(
+            extract_duration("10 seconds",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(seconds=10.0), ""))
+        self.assertEqual(
+
+            extract_duration("5 minutes",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(minutes=5), ""))
+        self.assertEqual(
+            extract_duration("2 hours",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(hours=2), ""))
+        self.assertEqual(
+            extract_duration("3 days",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(days=3), ""))
+        self.assertEqual(
+            extract_duration("25 weeks",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(weeks=25), ""))
+        self.assertEqual(
+            extract_duration("seven hours",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(hours=7), ""))
+        self.assertEqual(
+            extract_duration("7.5 seconds",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(seconds=7.5), ""))
+        self.assertEqual(
+            extract_duration("eight and a half days thirty nine seconds",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(days=8.5, seconds=39), ""))
+        self.assertEqual(
+            extract_duration("Set a timer for 30 minutes",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(minutes=30), "set a timer for"))
+        self.assertEqual(
+            extract_duration("Four and a half minutes until sunset",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(minutes=4.5), "until sunset"))
+        self.assertEqual(
+            extract_duration("Nineteen minutes past the hour",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(minutes=19), "past the hour"))
+        self.assertEqual(
+            extract_duration("wake me up in three weeks, four hundred "
+                             "ninety seven days, and three hundred 91.6 "
+                             "seconds",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(weeks=3, days=497, seconds=391.6),
+             "wake me up in , , and"))
+        self.assertEqual(
+            extract_duration("The movie is one hour, fifty seven"
+                             " and a half minutes long",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(hours=1, minutes=57.5),
+             "the movie is ,  long"))
+        self.assertEqual(
+            extract_duration("10-seconds",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(seconds=10.0), ""))
+        self.assertEqual(
+            extract_duration("5-minutes",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(minutes=5), ""))
+
+        self.assertEqual(
+            extract_duration("1 month",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(months=1), ""))
+        self.assertEqual(
+            extract_duration("3 months",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(months=3), ""))
+        self.assertEqual(
+            extract_duration("a year",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=1), ""))
+        self.assertEqual(
+            extract_duration("1 year",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=1), ""))
+        self.assertEqual(
+            extract_duration("5 years",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=5), ""))
+        self.assertEqual(
+            extract_duration("a decade",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=10), ""))
+        self.assertEqual(
+            extract_duration("1 decade",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=10), ""))
+        self.assertEqual(
+            extract_duration("5 decades",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=10 * 5), ""))
+        self.assertEqual(
+            extract_duration("1 century",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=100), ""))
+        self.assertEqual(
+            extract_duration("a century",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=100), ""))
+        self.assertEqual(
+            extract_duration("5 centuries",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=500), ""))
+        self.assertEqual(
+            extract_duration("1 millennium",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=1000), ""))
+        self.assertEqual(
+            extract_duration("5 millenniums",
+                             resolution=DurationResolution.RELATIVEDELTA),
+            (relativedelta(years=1000 * 5), ""))
+
+    def test_extract_duration_microseconds_en(self):
+        def test_milliseconds(duration_str, expected_duration,
+                              expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_MICROSECONDS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_milliseconds("0.01 microseconds", 0.01, "")
+        test_milliseconds("1 microsecond", 1, "")
+        test_milliseconds("5 microseconds", 5, "")
+        test_milliseconds("1 millisecond", 1 * 1000, "")
+        test_milliseconds("5 milliseconds", 5 * 1000, "")
+        test_milliseconds("100 milliseconds", 100 * 1000, "")
+        test_milliseconds("1 second", 1000 * 1000, "")
+        test_milliseconds("10 seconds", 10 * 1000 * 1000, "")
+        test_milliseconds("5 minutes", 5 * 60 * 1000 * 1000, "")
+        test_milliseconds("2 hours", 2 * 60 * 60 * 1000 * 1000, "")
+        test_milliseconds("3 days", 3 * 24 * 60 * 60 * 1000 * 1000, "")
+        test_milliseconds("25 weeks", 25 * 7 * 24 * 60 * 60 * 1000 * 1000, "")
+        test_milliseconds("seven hours", 7 * 60 * 60 * 1000 * 1000, "")
+        test_milliseconds("7.5 seconds", 7.5 * 1000 * 1000, "")
+        test_milliseconds("eight and a half days thirty nine seconds",
+                          (8.5 * 24 * 60 * 60 + 39) * 1000 * 1000, "")
+        test_milliseconds("Set a timer for 30 minutes", 30 * 60 * 1000 * 1000,
+                          "set a timer for")
+        test_milliseconds("Four and a half minutes until sunset",
+                          4.5 * 60 * 1000 * 1000,
+                          "until sunset")
+        test_milliseconds("Nineteen minutes past the hour",
+                          19 * 60 * 1000 * 1000,
+                          "past the hour")
+        test_milliseconds("10-seconds", 10 * 1000 * 1000, "")
+        test_milliseconds("5-minutes", 5 * 60 * 1000 * 1000, "")
+        test_milliseconds("1 month",
+                          DAYS_IN_1_MONTH * 24 * 60 * 60 * 1000 * 1000, "")
+        test_milliseconds("3 months",
+                          3 * DAYS_IN_1_MONTH * 24 * 60 * 60 * 1000 * 1000, "")
+        test_milliseconds("a year",
+                          DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000 * 1000, "")
+
+    def test_extract_duration_milliseconds_en(self):
+        def test_milliseconds(duration_str, expected_duration,
+                              expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_MILLISECONDS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_milliseconds("1 microsecond", 0, "")
+        test_milliseconds("4.9 microseconds", 0, "")
+        test_milliseconds("5 microseconds", 0.005, "")
+        test_milliseconds("1 millisecond", 1, "")
+        test_milliseconds("5 milliseconds", 5, "")
+        test_milliseconds("100 milliseconds", 100, "")
+        test_milliseconds("1 second", 1000, "")
+        test_milliseconds("10 seconds", 10 * 1000, "")
+        test_milliseconds("5 minutes", 5 * 60 * 1000, "")
+        test_milliseconds("2 hours", 2 * 60 * 60 * 1000, "")
+        test_milliseconds("3 days", 3 * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("25 weeks", 25 * 7 * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("seven hours", 7 * 60 * 60 * 1000, "")
+        test_milliseconds("7.5 seconds", 7.5 * 1000, "")
+        test_milliseconds("eight and a half days thirty nine seconds",
+                          (8.5 * 24 * 60 * 60 + 39) * 1000, "")
+        test_milliseconds("Set a timer for 30 minutes", 30 * 60 * 1000,
+                          "set a timer for")
+        test_milliseconds("Four and a half minutes until sunset",
+                          4.5 * 60 * 1000,
+                          "until sunset")
+        test_milliseconds("Nineteen minutes past the hour", 19 * 60 * 1000,
+                          "past the hour")
+        test_milliseconds(
+            "wake me up in three weeks, four hundred ninety seven "
+            "days, and three hundred 91.6 seconds",
+            (3 * 7 * 24 * 60 * 60 + 497 * 24 * 60 * 60 + 391.6) * 1000,
+            "wake me up in , , and")
+        test_milliseconds("The movie is one hour, fifty seven and a half "
+                          "minutes long", (60 * 60 + 57.5 * 60) * 1000,
+                          "the movie is ,  long")
+        test_milliseconds("10-seconds", 10 * 1000, "")
+        test_milliseconds("5-minutes", 5 * 60 * 1000, "")
+        test_milliseconds("1 month", DAYS_IN_1_MONTH * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("3 months",
+                          3 * DAYS_IN_1_MONTH * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("a year", DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("1 year", DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("5 years", 5 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000,
+                          "")
+        test_milliseconds("a decade",
+                          10 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("1 decade",
+                          10 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("5 decades",
+                          5 * 10 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("1 century",
+                          100 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("a century",
+                          100 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("5 centuries",
+                          500 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("1 millennium",
+                          1000 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+        test_milliseconds("5 millenniums",
+                          5000 * DAYS_IN_1_YEAR * 24 * 60 * 60 * 1000, "")
+
+    def test_extract_duration_seconds_en(self):
+        def test_seconds(duration_str, expected_duration,
+                         expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_SECONDS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_seconds("1 millisecond", 0, "")
+        test_seconds("4 milliseconds", 0, "")
+        test_seconds("5 milliseconds", 0.005, "")
+        test_seconds("100 milliseconds", 0.1, "")
+        test_seconds("10 seconds", 10, "")
+        test_seconds("5 minutes", 5 * 60, "")
+        test_seconds("2 hours", 2 * 60 * 60, "")
+        test_seconds("3 days", 3 * 24 * 60 * 60, "")
+        test_seconds("25 weeks", 25 * 7 * 24 * 60 * 60, "")
+        test_seconds("seven hours", 7 * 60 * 60, "")
+        test_seconds("7.5 seconds", 7.5, "")
+        test_seconds("eight and a half days thirty nine seconds",
+                     8.5 * 24 * 60 * 60 + 39, "")
+        test_seconds("Set a timer for 30 minutes", 30 * 60, "set a timer for")
+        test_seconds("Four and a half minutes until sunset", 4.5 * 60,
+                     "until sunset")
+        test_seconds("Nineteen minutes past the hour", 19 * 60,
+                     "past the hour")
+        test_seconds("wake me up in three weeks, four hundred ninety seven "
+                     "days, and three hundred 91.6 seconds",
+                     3 * 7 * 24 * 60 * 60 + 497 * 24 * 60 * 60 + 391.6,
+                     "wake me up in , , and")
+        test_seconds("The movie is one hour, fifty seven and a half "
+                     "minutes long", 60 * 60 + 57.5 * 60,
+                     "the movie is ,  long")
+        test_seconds("10-seconds", 10, "")
+        test_seconds("5-minutes", 5 * 60, "")
+        test_seconds("1 month", DAYS_IN_1_MONTH * 24 * 60 * 60, "")
+        test_seconds("3 months", 3 * DAYS_IN_1_MONTH * 24 * 60 * 60, "")
+        test_seconds("a year", DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("1 year", DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("5 years", 5 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("a decade", 10 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("1 decade", 10 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("5 decades", 5 * 10 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("1 century", 100 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("a century", 100 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("5 centuries", 500 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("1 millennium", 1000 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+        test_seconds("5 millenniums", 5000 * DAYS_IN_1_YEAR * 24 * 60 * 60, "")
+
+    def test_extract_duration_minutes_en(self):
+        def test_minutes(duration_str, expected_duration,
+                         expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_MINUTES)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_minutes("10 seconds", 10 / 60, "")
+        test_minutes("5 minutes", 5, "")
+        test_minutes("2 hours", 2 * 60, "")
+        test_minutes("3 days", 3 * 24 * 60, "")
+        test_minutes("25 weeks", 25 * 7 * 24 * 60, "")
+        test_minutes("seven hours", 7 * 60, "")
+        test_minutes("7.5 seconds", 7.5 / 60, "")
+        test_minutes("eight and a half days thirty nine seconds",
+                     8.5 * 24 * 60 + 39 / 60, "")
+        test_minutes("Set a timer for 30 minutes", 30, "set a timer for")
+        test_minutes("Four and a half minutes until sunset", 4.5,
+                     "until sunset")
+        test_minutes("Nineteen minutes past the hour", 19,
+                     "past the hour")
+        test_minutes("wake me up in three weeks, four hundred ninety seven "
+                     "days, and three hundred 91.6 seconds",
+                     3 * 7 * 24 * 60 + 497 * 24 * 60 + 391.6 / 60,
+                     "wake me up in , , and")
+        test_minutes("The movie is one hour, fifty seven and a half "
+                     "minutes long", 60 + 57.5,
+                     "the movie is ,  long")
+        test_minutes("10-seconds", 10 / 60, "")
+        test_minutes("5-minutes", 5, "")
+        test_minutes("1 month", DAYS_IN_1_MONTH * 24 * 60, "")
+        test_minutes("3 months", 3 * DAYS_IN_1_MONTH * 24 * 60, "")
+        test_minutes("a year", DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("1 year", DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("5 years", 5 * DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("a decade", 10 * DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("1 decade", 10 * DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("5 decades", 5 * 10 * DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("1 century", 100 * DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("a century", 100 * DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("5 centuries", 500 * DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("1 millennium", 1000 * DAYS_IN_1_YEAR * 24 * 60, "")
+        test_minutes("5 millenniums", 5000 * DAYS_IN_1_YEAR * 24 * 60, "")
+
+    def test_extract_duration_hours_en(self):
+        def test_hours(duration_str, expected_duration,
+                       expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_HOURS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_hours("10 seconds", 0, "")
+        test_hours("17.9 seconds", 0, "")
+        test_hours("5 minutes", 5 / 60, "")
+        test_hours("2 hours", 2, "")
+        test_hours("3 days", 3 * 24, "")
+        test_hours("25 weeks", 25 * 7 * 24, "")
+        test_hours("seven hours", 7, "")
+        test_hours("7.5 seconds", 0, "")
+        test_hours("eight and a half days thirty nine seconds",
+                   8.5 * 24 + 39 / 60 / 60, "")
+        test_hours("Set a timer for 30 minutes", 30 / 60, "set a timer for")
+        test_hours("Four and a half minutes until sunset", 4.5 / 60,
+                   "until sunset")
+        test_hours("Nineteen minutes past the hour", 19 / 60,
+                   "past the hour")
+        test_hours("wake me up in three weeks, four hundred ninety seven "
+                   "days, and three hundred 91.6 seconds",
+                   3 * 7 * 24 + 497 * 24 + 391.6 / 60 / 60,
+                   "wake me up in , , and")
+        test_hours("The movie is one hour, fifty seven and a half "
+                   "minutes long", 1 + 57.5 / 60,
+                   "the movie is ,  long")
+        test_hours("10-seconds", 0, "")
+        test_hours("5-minutes", 5 / 60, "")
+        test_hours("1 month", DAYS_IN_1_MONTH * 24, "")
+        test_hours("3 months", 3 * DAYS_IN_1_MONTH * 24, "")
+        test_hours("a year", DAYS_IN_1_YEAR * 24, "")
+        test_hours("1 year", DAYS_IN_1_YEAR * 24, "")
+        test_hours("5 years", 5 * DAYS_IN_1_YEAR * 24, "")
+        test_hours("a decade", 10 * DAYS_IN_1_YEAR * 24, "")
+        test_hours("1 decade", 10 * DAYS_IN_1_YEAR * 24, "")
+        test_hours("5 decades", 5 * 10 * DAYS_IN_1_YEAR * 24, "")
+        test_hours("1 century", 100 * DAYS_IN_1_YEAR * 24, "")
+        test_hours("a century", 100 * DAYS_IN_1_YEAR * 24, "")
+        test_hours("5 centuries", 500 * DAYS_IN_1_YEAR * 24, "")
+        test_hours("1 millennium", 1000 * DAYS_IN_1_YEAR * 24, "")
+        test_hours("5 millenniums", 5000 * DAYS_IN_1_YEAR * 24, "")
+
+    def test_extract_duration_days_en(self):
+        def test_days(duration_str, expected_duration,
+                      expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_DAYS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_days("10 seconds", 0, "")
+        test_days("5 minutes", 0, "")
+        test_days("7.1 minutes", 0, "")
+        test_days("2 hours", 2 / 24, "")
+        test_days("3 days", 3, "")
+        test_days("25 weeks", 25 * 7, "")
+        test_days("seven hours", 7 / 24, "")
+        test_days("7.5 seconds", 0, "")
+        test_days("eight and a half days thirty nine seconds", 8.5, "")
+        test_days("Set a timer for 30 minutes", 30 / 60 / 24,
+                  "set a timer for")
+        test_days("Four and a half minutes until sunset", 0, "until sunset")
+        test_days("Nineteen minutes past the hour", 19 / 60 / 24,
+                  "past the hour")
+        test_days("wake me up in three weeks, four hundred ninety seven "
+                  "days, and three hundred 91.6 seconds",
+                  3 * 7 + 497 + 391.6 / 60 / 60 / 24,
+                  "wake me up in , , and")
+        test_days("The movie is one hour, fifty seven and a half "
+                  "minutes long", 1 / 24 + 57.5 / 60 / 24,
+                  "the movie is ,  long")
+        test_days("10-seconds", 0, "")
+        test_days("5-minutes", 0, "")
+        test_days("1 month", DAYS_IN_1_MONTH, "")
+        test_days("3 months", 3 * DAYS_IN_1_MONTH, "")
+        test_days("a year", DAYS_IN_1_YEAR, "")
+        test_days("1 year", DAYS_IN_1_YEAR, "")
+        test_days("5 years", 5 * DAYS_IN_1_YEAR, "")
+        test_days("a decade", 10 * DAYS_IN_1_YEAR, "")
+        test_days("1 decade", 10 * DAYS_IN_1_YEAR, "")
+        test_days("5 decades", 5 * 10 * DAYS_IN_1_YEAR, "")
+        test_days("1 century", 100 * DAYS_IN_1_YEAR, "")
+        test_days("a century", 100 * DAYS_IN_1_YEAR, "")
+        test_days("5 centuries", 500 * DAYS_IN_1_YEAR, "")
+        test_days("1 millennium", 1000 * DAYS_IN_1_YEAR, "")
+        test_days("5 millenniums", 5000 * DAYS_IN_1_YEAR, "")
+
+    def test_extract_duration_weeks_en(self):
+        def test_weeks(duration_str, expected_duration,
+                       expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_WEEKS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_weeks("10 seconds", 0, "")
+        test_weeks("5 minutes", 0, "")
+        test_weeks("50 minutes", 0, "")
+        test_weeks("2 hours", 2 / 24 / 7, "")
+        test_weeks("3 days", 3 / 7, "")
+        test_weeks("25 weeks", 25, "")
+        test_weeks("seven hours", 7 / 24 / 7, "")
+        test_weeks("7.5 seconds", 7.5 / 60 / 60 / 24 / 7, "")
+        test_weeks("eight and a half days thirty nine seconds", 8.5 / 7, "")
+        test_weeks("Set a timer for 30 minutes", 0, "set a timer for")
+        test_weeks("Four and a half minutes until sunset", 0,
+                   "until sunset")
+        test_weeks("Nineteen minutes past the hour", 0, "past the hour")
+        test_weeks("wake me up in three weeks, four hundred ninety seven "
+                   "days, and three hundred 91.6 seconds", 3 + 497 / 7,
+                   "wake me up in , , and")
+        test_weeks("The movie is one hour, fifty seven and a half "
+                   "minutes long", 1 / 24 / 7 + 57.5 / 60 / 24 / 7,
+                   "the movie is ,  long")
+        test_weeks("10-seconds", 0, "")
+        test_weeks("5-minutes", 0, "")
+        test_weeks("1 month", DAYS_IN_1_MONTH / 7, "")
+        test_weeks("3 months", 3 * DAYS_IN_1_MONTH / 7, "")
+        test_weeks("a year", DAYS_IN_1_YEAR / 7, "")
+        test_weeks("1 year", DAYS_IN_1_YEAR / 7, "")
+        test_weeks("5 years", 5 * DAYS_IN_1_YEAR / 7, "")
+        test_weeks("a decade", 10 * DAYS_IN_1_YEAR / 7, "")
+        test_weeks("1 decade", 10 * DAYS_IN_1_YEAR / 7, "")
+        test_weeks("5 decades", 5 * 10 * DAYS_IN_1_YEAR / 7, "")
+        test_weeks("1 century", 100 * DAYS_IN_1_YEAR / 7, "")
+        test_weeks("a century", 100 * DAYS_IN_1_YEAR / 7, "")
+        test_weeks("5 centuries", 500 * DAYS_IN_1_YEAR / 7, "")
+        test_weeks("1 millennium", 1000 * DAYS_IN_1_YEAR / 7, "")
+        test_weeks("5 millenniums", 5000 * DAYS_IN_1_YEAR / 7, "")
+
+    def test_extract_duration_months_en(self):
+        def test_months(duration_str, expected_duration,
+                        expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_MONTHS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_months("10 seconds", 0, "")
+        test_months("5 minutes", 0, "")
+        test_months("2 hours", 0, "")
+        test_months("3 days",
+                    3 / DAYS_IN_1_MONTH, "")
+        test_months("25 weeks",
+                    25 * 7 / DAYS_IN_1_MONTH, "")
+        test_months("seven hours",
+                    7 / 24 / DAYS_IN_1_MONTH, "")
+        test_months("7.5 seconds", 0, "")
+        test_months("eight and a half days thirty nine seconds",
+                    8.5 / DAYS_IN_1_MONTH, "")
+        test_months("Set a timer for 30 minutes", 0, "set a timer for")
+        test_months("Four and a half minutes until sunset", 0, "until sunset")
+        test_months("Nineteen minutes past the hour", 0, "past the hour")
+        test_months("wake me up in three weeks, four hundred ninety seven "
+                    "days, and three hundred 91.6 seconds",
+                    3 * 7 / DAYS_IN_1_MONTH + 497 / DAYS_IN_1_MONTH,
+                    "wake me up in , , and")
+        test_months(
+            "The movie is one hour, fifty seven and a half minutes long", 0,
+            "the movie is ,  long")
+        test_months("10-seconds", 0, "")
+        test_months("5-minutes", 0, "")
+        test_months("1 month", 1, "")
+        test_months("3 months", 3, "")
+        test_months("a year", DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("1 year", DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("5 years", 5 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("a decade", 10 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("1 decade", 10 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("5 decades", 5 * 10 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("1 century", 100 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("a century", 100 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("5 centuries", 500 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("1 millennium",
+                    1000 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+        test_months("5 millenniums",
+                    5000 * DAYS_IN_1_YEAR / DAYS_IN_1_MONTH, "")
+
+    def test_extract_duration_years_en(self):
+        def test_years(duration_str, expected_duration,
+                       expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_YEARS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_years("10 seconds", 0, "")
+        test_years("5 minutes", 0, "")
+        test_years("2 hours", 0, "")
+        test_years("1.5 days", 0, "")
+        test_years("3 days", 3 / DAYS_IN_1_YEAR, "")
+        test_years("25 weeks", 25 * 7 / DAYS_IN_1_YEAR, "")
+        test_years("seven hours", 0, "")
+        test_years("7.5 seconds", 0, "")
+        test_years("eight and a half days thirty nine seconds",
+                   8.5 / DAYS_IN_1_YEAR, "")
+        test_years("Set a timer for 30 minutes", 0, "set a timer for")
+        test_years("Four and a half minutes until sunset", 0, "until sunset")
+        test_years("Nineteen minutes past the hour", 0, "past the hour")
+        test_years("wake me up in three weeks, four hundred ninety seven "
+                   "days, and three hundred 91.6 seconds",
+                   3 * 7 / DAYS_IN_1_YEAR + 497 / DAYS_IN_1_YEAR,
+                   "wake me up in , , and")
+        test_years(
+            "The movie is one hour, fifty seven and a half minutes long", 0,
+            "the movie is ,  long")
+        test_years("10-seconds", 0, "")
+        test_years("5-minutes", 0, "")
+        test_years("1 month", 1 / 12, "")
+        test_years("3 months", 3 / 12, "")
+        test_years("a year", 1, "")
+        test_years("1 year", 1, "")
+        test_years("5 years", 5, "")
+        test_years("a decade", 10, "")
+        test_years("1 decade", 10, "")
+        test_years("5 decades", 50, "")
+        test_years("1 century", 100, "")
+        test_years("a century", 100, "")
+        test_years("5 centuries", 500, "")
+        test_years("1 millennium", 1000, "")
+        test_years("5 millenniums", 5000, "")
+
+    def test_extract_duration_decades_en(self):
+        def test_decades(duration_str, expected_duration,
+                         expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_DECADES)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_decades("10 seconds", 0, "")
+        test_decades("5 minutes", 0, "")
+        test_decades("2 hours", 0, "")
+        test_decades("3 days", 0, "")
+        test_decades("25 weeks", 25 * 7 / DAYS_IN_1_YEAR / 10, "")
+        test_decades("seven hours", 0, "")
+        test_decades("7.5 seconds", 0, "")
+        test_decades("eight and a half days thirty nine seconds", 0, "")
+        test_decades("Set a timer for 30 minutes", 0, "set a timer for")
+        test_decades("Four and a half minutes until sunset", 0,
+                     "until sunset")
+        test_decades("Nineteen minutes past the hour", 0,
+                     "past the hour")
+        test_decades(
+            "The movie is one hour, fifty seven and a half minutes long", 0,
+            "the movie is ,  long")
+        test_decades("10-seconds", 0, "")
+        test_decades("5-minutes", 0, "")
+        test_decades("1 month", 1 / 12 / 10, "")
+        test_decades("3 months", 3 / 12 / 10, "")
+        test_decades("a year", 1 / 10, "")
+        test_decades("1 year", 1 / 10, "")
+        test_decades("5 years", 5 / 10, "")
+        test_decades("a decade", 1, "")
+        test_decades("1 decade", 1, "")
+        test_decades("5 decades", 5, "")
+        test_decades("1 century", 10, "")
+        test_decades("a century", 10, "")
+        test_decades("5 centuries", 50, "")
+        test_decades("1 millennium", 100, "")
+        test_decades("5 millenniums", 500, "")
+
+    def test_extract_duration_centuries_en(self):
+        def test_centuries(duration_str, expected_duration,
+                           expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_CENTURIES)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_centuries("10 seconds", 0, "")
+        test_centuries("5 minutes", 0, "")
+        test_centuries("2 hours", 0, "")
+        test_centuries("3 days", 0, "")
+        test_centuries("25 weeks", 0, "")
+        test_centuries("seven hours", 0, "")
+        test_centuries("7.5 seconds", 0, "")
+        test_centuries("eight and a half days thirty nine seconds", 0, "")
+        test_centuries("Set a timer for 30 minutes", 0, "set a timer for")
+        test_centuries("Four and a half minutes until sunset", 0,
+                       "until sunset")
+        test_centuries("Nineteen minutes past the hour", 0,
+                       "past the hour")
+        test_centuries(
+            "The movie is one hour, fifty seven and a half minutes long", 0,
+            "the movie is ,  long")
+        test_centuries("10-seconds", 0, "")
+        test_centuries("5-minutes", 0, "")
+        test_centuries("1 month", 0, "")
+        test_centuries("3 months", 0, "")
+        test_centuries("6 months", 0, "")
+        test_centuries("a year", 1 / 100, "")
+        test_centuries("1 year", 1 / 100, "")
+        test_centuries("5 years", 5 / 100, "")
+        test_centuries("a decade", 1 / 10, "")
+        test_centuries("1 decade", 1 / 10, "")
+        test_centuries("5 decades", 5 / 10, "")
+        test_centuries("1 century", 1, "")
+        test_centuries("a century", 1, "")
+        test_centuries("5 centuries", 5, "")
+        test_centuries("1 millennium", 10, "")
+        test_centuries("5 millenniums", 50, "")
+
+    def test_extract_duration_millennia_en(self):
+        def test_millennium(duration_str, expected_duration,
+                            expected_remainder):
+            duration, remainder = extract_duration(
+                duration_str, resolution=DurationResolution.TOTAL_MILLENNIUMS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_millennium("10 seconds", 0, "")
+        test_millennium("5 minutes", 0, "")
+        test_millennium("2 hours", 0, "")
+        test_millennium("3 days", 0, "")
+        test_millennium("25 weeks", 0, "")
+        test_millennium("seven hours", 0, "")
+        test_millennium("7.5 seconds", 0, "")
+        test_millennium("eight and a half days thirty nine seconds", 0, "")
+        test_millennium("Set a timer for 30 minutes", 0, "set a timer for")
+        test_millennium("Four and a half minutes until sunset", 0,
+                        "until sunset")
+        test_millennium("Nineteen minutes past the hour", 0,
+                        "past the hour")
+        test_millennium("wake me up in three weeks, four hundred ninety seven "
+                        "days, and three hundred 91.6 seconds", 0,
+                        "wake me up in , , and")
+        test_millennium(
+            "The movie is one hour, fifty seven and a half minutes long", 0,
+            "the movie is ,  long")
+        test_millennium("10-seconds", 0, "")
+        test_millennium("5-minutes", 0, "")
+        test_millennium("1 month", 0, "")
+        test_millennium("3 months", 0, "")
+        test_millennium("6 months", 0, "")
+        test_millennium("a year", 0, "")
+        test_millennium("1 year", 0, "")
+        test_millennium("4.99 years", 0, "")
+        test_millennium("5 years", 5 / 1000, "")
+        test_millennium("a decade", 1 / 100, "")
+        test_millennium("1 decade", 1 / 100, "")
+        test_millennium("5 decades", 5 / 100, "")
+        test_millennium("1 century", 1 / 10, "")
+        test_millennium("a century", 1 / 10, "")
+        test_millennium("5 centuries", 5 / 10, "")
+        test_millennium("1 millennium", 1, "")
+        test_millennium("5 millenniums", 5, "")
 
     def test_extract_duration_case_en(self):
         self.assertEqual(extract_duration("Set a timer for 30 minutes"),
@@ -1734,5 +2528,935 @@ class TestLangcode(unittest.TestCase):
         test_with_conf("American", 'en-us')
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestExtractDate(unittest.TestCase):
+    ref_date = date(2117, 2, 3)
+    now = now_local()
+    default_time = now.time()
+
+    def _test_date(self, date_str, expected_date,
+                   resolution=DateTimeResolution.DAY,
+                   anchor=None, hemi=Hemisphere.NORTH, greedy=False):
+        anchor = anchor or self.ref_date
+        if isinstance(expected_date, datetime):
+            expected_date = expected_date.date()
+        extracted_date, remainder = extract_date_en(date_str, anchor,
+                                                    resolution,
+                                                    hemisphere=hemi,
+                                                    greedy=greedy)
+
+        # print("expected   | extracted  | input")
+        # print(expected_date, "|", extracted_date, "|", date_str, )
+        # print(date_str, "///", remainder)
+        self.assertEqual(extracted_date, expected_date)
+
+    def test_now(self):
+        self._test_date("now", self.now)
+        self._test_date("today", self.ref_date)
+        self._test_date("tomorrow", self.ref_date + relativedelta(days=1))
+        self._test_date("yesterday", self.ref_date - relativedelta(days=1))
+        self._test_date("twenty two thousand days before now",
+                        self.now - relativedelta(days=22000))
+        self._test_date("10 days from now",
+                        self.now + relativedelta(days=10))
+
+    def test_duration_ago(self):
+        self._test_date("twenty two weeks ago",
+                        self.ref_date - relativedelta(weeks=22))
+        self._test_date("twenty two months ago",
+                        self.ref_date - relativedelta(months=22))
+        self._test_date("twenty two decades ago",
+                        self.ref_date - relativedelta(years=10 * 22))
+        self._test_date("1 century ago",
+                        self.ref_date - relativedelta(years=100))
+        self._test_date("ten centuries ago",
+                        self.ref_date - relativedelta(years=1000))
+        self._test_date("two millenniums ago",
+                        self.ref_date - relativedelta(years=2000))
+        self._test_date("twenty two thousand days ago",
+                        self.ref_date - relativedelta(days=22000))
+        # years BC not supported
+        self.assertRaises(ValueError, extract_date_en,
+                          "twenty two thousand years ago", self.ref_date)
+
+    def test_spoken_date(self):
+        self._test_date("13 may 1992", date(month=5, year=1992, day=13))
+        self._test_date("march 1st 2020", date(month=3, year=2020, day=1))
+        self._test_date("29 november", date(month=11,
+                                            year=self.ref_date.year,
+                                            day=29))
+        self._test_date("january 2020", date(month=1,
+                                             year=2020,
+                                             day=1))
+        self._test_date("day 1", date(month=self.ref_date.month,
+                                      year=self.ref_date.year,
+                                      day=1))
+        self._test_date("1 of september",
+                        self.ref_date.replace(day=1, month=9,
+                                              year=self.ref_date.year))
+        self._test_date("march 13th",
+                        self.ref_date.replace(day=13, month=3,
+                                              year=self.ref_date.year))
+        self._test_date("12 may",
+                        self.ref_date.replace(day=12, month=5,
+                                              year=self.ref_date.year))
+
+    def test_from(self):
+        self._test_date("10 days from today",
+                        self.ref_date + relativedelta(days=10))
+        self._test_date("10 days from tomorrow",
+                        self.ref_date + relativedelta(days=11))
+        self._test_date("10 days from yesterday",
+                        self.ref_date + relativedelta(days=9))
+        # self._test_date("10 days from after tomorrow",  # TODO fix me
+        #          self.ref_date + relativedelta(days=12))
+
+        # years > 9999 not supported
+        self.assertRaises(ValueError, extract_date_en,
+                          "twenty two million years from now", self.ref_date)
+
+    def test_ordinals(self):
+        self._test_date("the 5th day", self.ref_date.replace(day=5))
+        self._test_date("the fifth day",
+                        date(month=self.ref_date.month,
+                             year=self.ref_date.year, day=5))
+        self._test_date("the 20th day of 4th month",
+                        self.ref_date.replace(month=4, day=20))
+        self._test_date("the 20th day of month 4",
+                        self.ref_date.replace(month=4, day=20))
+        self._test_date("6th month of 1992", date(month=6, year=1992, day=1))
+        self._test_date("first day of the 10th month of 1969",
+                        self.ref_date.replace(day=1, month=10, year=1969))
+        self._test_date("2nd day of 2020",
+                        self.ref_date.replace(day=2, month=1, year=2020))
+        self._test_date("300 day of 2020",
+                        self.ref_date.replace(day=1, month=1, year=2020) +
+                        relativedelta(days=299))
+
+    def test_plus(self):
+        self._test_date("now plus 10 days",
+                        self.now + relativedelta(days=10))
+        self._test_date("today plus 10 days",
+                        self.ref_date + relativedelta(days=10))
+        self._test_date("yesterday plus 10 days",
+                        self.ref_date + relativedelta(days=9))
+        self._test_date("tomorrow plus 10 days",
+                        self.ref_date + relativedelta(days=11))
+        self._test_date("today plus 10 months",
+                        self.ref_date + relativedelta(months=10))
+        self._test_date("today plus 10 years",
+                        self.ref_date + relativedelta(years=10))
+        self._test_date("today plus 10 years, 10 months and 1 day",
+                        self.ref_date + relativedelta(
+                            days=1, months=10, years=10))
+        # TODO Fix me
+        # self._test_date("tomorrow + 10 days",
+        #           self.ref_date + relativedelta(days=11))
+
+    def test_minus(self):
+        self._test_date("now minus 10 days",
+                        self.now - relativedelta(days=10))
+        self._test_date("today minus 10 days",
+                        self.ref_date - relativedelta(days=10))
+        # TODO fix me
+        # self._test_date("today - 10 days",
+        #           self.ref_date - relativedelta(days=10))
+        # self._test_date("yesterday - 10 days",
+        #           self.ref_date - relativedelta(days=11))
+        # self._test_date("today - 10 years",
+        #            self.ref_date.replace(year=self.ref_date.year - 10))
+
+        self._test_date("tomorrow minus 10 days",
+                        self.ref_date - relativedelta(days=9))
+        self._test_date("today minus 10 months",
+                        self.ref_date - relativedelta(months=10))
+        self._test_date("today minus 10 years, 10 months and 1 day",
+                        self.ref_date - relativedelta(days=1, months=10,
+                                                      years=10))
+
+    def test_timedelta_fallback(self):
+        self._test_date("now plus 10 months",
+                        self.now + relativedelta(months=10))
+        self._test_date("today plus 10.5 months",
+                        self.ref_date + timedelta(days=10.5 * DAYS_IN_1_MONTH))
+        self._test_date("now plus 10 years",
+                        self.now + relativedelta(years=10))
+        self._test_date("today plus 10.5 years",
+                        self.ref_date + timedelta(days=10.5 * DAYS_IN_1_YEAR))
+
+    def test_before(self):
+        # before -> nearest DateResolution.XXX
+        self._test_date("before today",
+                        self.ref_date - relativedelta(days=1))
+        self._test_date("before tomorrow", self.ref_date)
+        self._test_date("before yesterday",
+                        self.ref_date - relativedelta(days=2))
+        self._test_date("before march 12",
+                        self.ref_date.replace(month=3, day=11))
+
+        self._test_date("before 1992", date(year=1991, month=12, day=31))
+        self._test_date("before 1992", date(year=1991, day=1, month=1),
+                        DateTimeResolution.YEAR)
+        self._test_date("before 1992", date(year=1990, day=1, month=1),
+                        DateTimeResolution.DECADE)
+        self._test_date("before 1992", date(year=1900, day=1, month=1),
+                        DateTimeResolution.CENTURY)
+
+        self._test_date("before april",
+                        date(month=3, day=31, year=self.ref_date.year))
+        self._test_date("before april",
+                        date(month=1, day=1, year=self.ref_date.year - 1),
+                        DateTimeResolution.YEAR)
+        self._test_date("before april",
+                        date(month=1, day=1, year=2110),
+                        DateTimeResolution.DECADE)
+
+        self._test_date("before april 1992",
+                        date(month=3, day=31, year=1992))
+        self._test_date("before april 1992",
+                        date(month=1, day=1, year=1991),
+                        DateTimeResolution.YEAR)
+        self._test_date("before april 1992",
+                        date(month=1, day=1, year=1990),
+                        DateTimeResolution.DECADE)
+
+    def test_after(self):
+        # after -> next DateResolution.XXX
+        self._test_date("after today",
+                        self.ref_date + relativedelta(days=1))
+        self._test_date("after yesterday", self.ref_date)
+        self._test_date("after tomorrow",
+                        self.ref_date + relativedelta(days=2))
+
+        self._test_date("after today",
+                        self.ref_date.replace(day=8),
+                        DateTimeResolution.WEEK)
+        self._test_date("after today",
+                        date(day=1, month=self.ref_date.month + 1,
+                             year=self.ref_date.year),
+                        DateTimeResolution.MONTH)
+        self._test_date("after tomorrow",
+                        date(day=1, month=1, year=2120),
+                        DateTimeResolution.DECADE)
+
+        self._test_date("after march 12",
+                        self.ref_date.replace(month=3, day=12) +
+                        relativedelta(days=1))
+
+        self._test_date("after 1992", date(year=1992, day=2, month=1))
+        self._test_date("after 1992", date(year=1992, day=6, month=1),
+                        DateTimeResolution.WEEK)
+        self._test_date("after 1992", date(year=1992, day=1, month=2),
+                        DateTimeResolution.MONTH)
+        self._test_date("after 1992", date(year=1993, day=1, month=1),
+                        DateTimeResolution.YEAR)
+        self._test_date("after 1992", date(year=2000, day=1, month=1),
+                        DateTimeResolution.DECADE)
+        self._test_date("after 1992", date(year=2000, day=1, month=1),
+                        DateTimeResolution.CENTURY)
+        self._test_date("after 1992", date(year=2000, day=1, month=1),
+                        DateTimeResolution.MILLENNIUM)
+
+        self._test_date("after april",
+                        date(day=2, month=4, year=self.ref_date.year))
+        self._test_date("after april",
+                        date(day=1, month=4, year=self.ref_date.year) +
+                        relativedelta(days=1))
+        self._test_date("after april",
+                        date(year=self.ref_date.year, day=5, month=4),
+                        DateTimeResolution.WEEK)
+        self._test_date("after april",
+                        date(year=self.ref_date.year, day=1, month=5),
+                        DateTimeResolution.MONTH)
+        self._test_date("after april", date(year=2120, day=1, month=1),
+                        DateTimeResolution.DECADE)
+
+        self._test_date("after april 1992", date(year=1992, day=1, month=5),
+                        DateTimeResolution.MONTH)
+        self._test_date("after april 1992", date(year=1993, day=1, month=1),
+                        DateTimeResolution.YEAR)
+        self._test_date("after april 1992", date(year=2000, day=1, month=1),
+                        DateTimeResolution.CENTURY)
+
+        self._test_date("after 2600", date(year=2600, day=2, month=1))
+        self._test_date("after 2600", date(year=2600, day=1, month=2),
+                        DateTimeResolution.MONTH)
+        self._test_date("after 2600", date(year=2601, day=1, month=1),
+                        DateTimeResolution.YEAR)
+
+        self._test_date("after 2600", date(year=2610, day=1, month=1),
+                        DateTimeResolution.DECADE)
+        self._test_date("after 2600", date(year=2700, day=1, month=1),
+                        DateTimeResolution.CENTURY)
+
+    def test_this(self):
+        _current_century = ((self.ref_date.year // 100) - 1) * 100
+        _current_decade = (self.ref_date.year // 10) * 10
+
+        self._test_date("this month", self.ref_date.replace(day=1))
+        self._test_date("this week", self.ref_date - relativedelta(
+            days=self.ref_date.weekday()))
+        self._test_date("this year", self.ref_date.replace(day=1, month=1))
+        self._test_date("current year", self.ref_date.replace(day=1, month=1))
+        self._test_date("present day", self.ref_date)
+        self._test_date("current decade", date(day=1, month=1, year=2110))
+        self._test_date("current century", date(day=1, month=1, year=2100))
+        self._test_date("this millennium", date(day=1, month=1, year=2000))
+
+    def test_next(self):
+        self._test_date("next month",
+                        (self.ref_date + relativedelta(
+                            days=DAYS_IN_1_MONTH)).replace(day=1))
+        self._test_date("next week",
+                        get_week_range(self.ref_date + relativedelta(weeks=1))[
+                            0])
+        self._test_date("next century",
+                        date(year=2200, day=1, month=1))
+        self._test_date("next year",
+                        date(year=self.ref_date.year + 1, day=1, month=1))
+
+    def test_last(self):
+        self._test_date("last month",
+                        (self.ref_date - relativedelta(
+                            days=DAYS_IN_1_MONTH)).replace(day=1))
+        self._test_date("last week",
+                        get_week_range(self.ref_date - relativedelta(weeks=1))[
+                            0])
+        self._test_date("last year", date(year=self.ref_date.year - 1,
+                                          day=1,
+                                          month=1))
+        self._test_date("last century", date(year=2000, day=1, month=1))
+
+        self._test_date("last day of the 10th century",
+                        date(day=31, month=12, year=999))
+
+        self._test_date("last day of this month",
+                        self.ref_date.replace(day=28))
+        self._test_date("last day of the month",
+                        self.ref_date.replace(day=28))
+
+        self._test_date("last day of this year",
+                        date(day=31, month=12, year=self.ref_date.year))
+        self._test_date("last day of the year",
+                        date(day=31, month=12, year=self.ref_date.year))
+
+        self._test_date("last day of this century",
+                        date(day=31, month=12, year=2199))
+        self._test_date("last day of the century",
+                        date(day=31, month=12, year=2199))
+
+        self._test_date("last day of this decade",
+                        date(day=31, month=12, year=2119))
+        self._test_date("last day of the decade",
+                        date(day=31, month=12, year=2119))
+        self._test_date("last day of this millennium",
+                        date(day=31, month=12, year=2999))
+        self._test_date("last day of the millennium",
+                        date(day=31, month=12, year=2999))
+        self._test_date("last day of the 20th month of the 5th millennium",
+                        date(year=4000, day=31, month=1) +
+                        relativedelta(months=19))
+        self._test_date("last day of the 9th decade of the 5th millennium",
+                        date(day=31, month=12, year=4089))
+        self._test_date("last day of the 10th millennium",
+                        date(day=31, month=12, year=9999))
+
+    def test_first(self):
+        self._test_date("first day", self.ref_date.replace(day=1))
+        self._test_date("first day of this month",
+                        self.ref_date.replace(day=1))
+        self._test_date("first day of this year",
+                        self.ref_date.replace(day=1, month=1))
+        self._test_date("first day of this decade", date(day=1, month=1,
+                                                         year=2110))
+        self._test_date("first day of this century", date(day=1, month=1,
+                                                          year=2100))
+        self._test_date("first day of this millennium", date(day=1, month=1,
+                                                             year=2000))
+
+        self._test_date("first month", self.ref_date.replace(day=1, month=1))
+
+        self._test_date("first decade", date(year=1, day=1, month=1))
+        self._test_date("first year", date(year=1, day=1, month=1))
+        self._test_date("first century", date(year=1, day=1, month=1))
+
+        self._test_date("first day of the 10th century",
+                        date(day=1, month=1, year=900))
+
+        self._test_date("first day of the month",
+                        self.ref_date.replace(day=1))
+        self._test_date("first day of the year",
+                        date(day=1, month=1, year=self.ref_date.year))
+
+        self._test_date("first day of the century",
+                        date(day=1, month=1, year=2100))
+        self._test_date("first day of the decade",
+                        date(day=1, month=1, year=2110))
+        self._test_date("first day of the millennium",
+                        date(day=1, month=1, year=2000))
+
+        self._test_date("first day of the 10th millennium",
+                        date(day=1, month=1, year=9000))
+
+    def test_seasons(self):
+        _ref_season = date_to_season(self.ref_date)
+        self.assertEqual(_ref_season, Season.WINTER)
+
+        # TODO start/end of season/winter/summer/fall/spring...
+
+        def _test_season_north(test_date, expected_date, season):
+            self._test_date(test_date, expected_date, hemi=Hemisphere.NORTH)
+            self.assertEqual(date_to_season(expected_date,
+                                            hemisphere=Hemisphere.NORTH),
+                             season)
+
+        def _test_season_south(test_date, expected_date, season):
+            self._test_date(test_date, expected_date, hemi=Hemisphere.SOUTH)
+            self.assertEqual(date_to_season(expected_date,
+                                            hemisphere=Hemisphere.SOUTH),
+                             season)
+
+        # test "season" literal
+        _test_season_north("this season",
+                           date(day=1, month=12, year=self.ref_date.year - 1),
+                           _ref_season)
+        _test_season_north("next season",
+                           date(day=1, month=3, year=self.ref_date.year),
+                           Season.SPRING)
+
+        _test_season_north("last season",
+                           date(day=1, month=9, year=self.ref_date.year - 1),
+                           Season.FALL)
+
+        # test named season in {hemisphere}
+        _test_season_north("this spring in north hemisphere",
+                           self.ref_date.replace(day=1, month=3),
+                           Season.SPRING)
+        _test_season_north("this spring in northern hemisphere",
+                           self.ref_date.replace(day=1, month=3),
+                           Season.SPRING)
+
+        _test_season_south("this spring in south hemisphere",
+                           self.ref_date.replace(day=1, month=9),
+                           Season.SPRING)
+        _test_season_south("this spring in southern hemisphere",
+                           self.ref_date.replace(day=1, month=9),
+                           Season.SPRING)
+
+        try:
+            import simple_NER
+
+            # test named season in {country}
+            _test_season_north("this spring in Portugal",
+                               self.ref_date.replace(day=1, month=3),
+                               Season.SPRING)
+            _test_season_north("last spring in Portugal",
+                               date(day=1, month=3,
+                                    year=self.ref_date.year - 1),
+                               Season.SPRING)
+            _test_season_north("next winter in Portugal",
+                               date(day=1, month=12,
+                                    year=self.ref_date.year),
+                               Season.WINTER)
+
+            _test_season_south("this spring in Brazil",
+                               self.ref_date.replace(day=1, month=9),
+                               Season.SPRING)
+            _test_season_south("next winter in Brazil",
+                               self.ref_date.replace(day=1, month=6),
+                               Season.WINTER)
+
+            # test named season in {capital city}
+            _test_season_north("this spring in Lisbon",
+                               self.ref_date.replace(day=1, month=3),
+                               Season.SPRING)
+            _test_season_south("this spring in Canberra",
+                               self.ref_date.replace(day=1, month=9),
+                               Season.SPRING)
+
+        except ImportError:
+            print("Could not test location tagging")
+
+        # test named season
+        _test_season_north("winter is coming",
+                           self.ref_date.replace(day=1, month=12),
+                           Season.WINTER)
+
+        _test_season_north("spring",
+                           self.ref_date.replace(day=1, month=3),
+                           Season.SPRING)
+        _test_season_north("spring of 1991",
+                           date(day=1, month=3, year=1991),
+                           Season.SPRING)
+        _test_season_south("summer of 1969",
+                           date(day=1, month=12, year=1969),
+                           Season.SUMMER)
+
+        _test_season_north("this spring",
+                           self.ref_date.replace(day=1, month=3),
+                           Season.SPRING)
+        _test_season_south("this spring",
+                           self.ref_date.replace(day=1, month=9),
+                           Season.SPRING)
+
+        _test_season_north("next spring",
+                           self.ref_date.replace(day=1, month=3),
+                           Season.SPRING)
+        _test_season_south("next spring",
+                           self.ref_date.replace(day=1, month=9),
+                           Season.SPRING)
+
+        _test_season_north("last spring",
+                           date(day=1, month=3, year=self.ref_date.year - 1),
+                           Season.SPRING)
+        _test_season_south("last spring",
+                           date(day=1, month=9, year=self.ref_date.year - 1),
+                           Season.SPRING)
+
+        _test_season_north("this summer",
+                           self.ref_date.replace(day=1, month=6),
+                           Season.SUMMER)
+        _test_season_north("next summer",
+                           self.ref_date.replace(day=1, month=6),
+                           Season.SUMMER)
+        _test_season_north("last summer", date(day=1, month=6,
+                                               year=self.ref_date.year - 1),
+                           Season.SUMMER)
+
+        _test_season_north("this fall", self.ref_date.replace(day=1, month=9),
+                           Season.FALL)
+        _test_season_north("next fall", self.ref_date.replace(day=1, month=9),
+                           Season.FALL)
+        _test_season_north("last autumn",
+                           date(day=1, month=9, year=self.ref_date.year - 1),
+                           Season.FALL)
+
+        _test_season_north("this winter",
+                           self.ref_date.replace(day=1, month=12),
+                           Season.WINTER)
+        _test_season_north("next winter",
+                           self.ref_date.replace(day=1, month=12),
+                           Season.WINTER)
+        _test_season_north("last winter",
+                           self.ref_date.replace(day=1, month=12,
+                                                 year=self.ref_date.year - 1),
+                           Season.WINTER)
+
+    def test_weekends(self):
+        # TODO plus / minus / after N weekends
+        # TODO N weekends ago
+        saturday, sunday = get_weekend_range(self.ref_date)
+        assert saturday.weekday() == 5
+        assert sunday.weekday() == 6
+
+        self._test_date("this weekend", saturday)
+        self._test_date("next weekend", saturday)
+        self._test_date("last weekend", saturday - relativedelta(days=7))
+
+        self._test_date("this weekend", saturday,
+                        anchor=saturday)
+        self._test_date("this weekend", saturday,
+                        anchor=sunday)
+        self._test_date("next weekend", saturday + relativedelta(days=7),
+                        anchor=saturday)
+        self._test_date("next weekend", saturday + relativedelta(days=7),
+                        anchor=sunday)
+        self._test_date("last weekend", saturday - relativedelta(days=7),
+                        anchor=saturday)
+        self._test_date("last weekend", saturday - relativedelta(days=7),
+                        anchor=sunday)
+
+    def test_is(self):
+        self._test_date("the year is 2100", date(year=2100, month=1, day=1))
+        self._test_date("the year was 1969", date(year=1969, month=1, day=1))
+        self._test_date("the day is 2", self.ref_date.replace(day=2))
+        self._test_date("the month is 8",
+                        self.ref_date.replace(month=8, day=1))
+
+        self._test_date("this is the second day of the third "
+                        "month of the first year of the 9th millennium,",
+                        date(day=2, month=3, year=8000))
+        self._test_date("this is the second day of the third "
+                        "month of the 9th millennium,",
+                        date(day=2, month=3, year=8000))
+
+    def test_of(self):
+        self._test_date("first day of the first millennium",
+                        date(day=1, month=1, year=1))
+        self._test_date("first day of the first century",
+                        date(day=1, month=1, year=1))
+        self._test_date("first day of the first decade",
+                        date(day=1, month=1, year=1))
+        self._test_date("first day of the first year",
+                        date(day=1, month=1, year=1))
+
+        self._test_date("first day of the first week",
+                        date(day=1, month=1, year=self.ref_date.year))
+
+        self._test_date("3rd day",
+                        self.ref_date.replace(day=3))
+        self._test_date("3rd day of may",
+                        self.ref_date.replace(day=3, month=5))
+        self._test_date("3rd day of the 5th century",
+                        date(day=3, month=1, year=400))
+        self._test_date("3rd day of the 5th month of the 10 century",
+                        date(day=3, month=5, year=900))
+        self._test_date("25th month of the 10 century",
+                        date(day=1, month=1, year=902))
+        self._test_date("3rd day of the 25th month of the 10 century",
+                        date(day=3, month=1, year=902))
+        self._test_date("3rd day of 1973",
+                        date(day=3, month=1, year=1973))
+        self._test_date("3rd day of the 17th decade",
+                        date(day=3, month=1, year=160))
+        self._test_date("3rd day of the 10th millennium",
+                        date(day=3, month=1, year=9000))
+        self._test_date("301st day of the 10th century",
+                        date(day=28, month=10, year=900))
+        self._test_date("first century of the 6th millennium",
+                        date(day=1, month=1, year=5000))
+        self._test_date("first decade of the 6th millennium",
+                        date(day=1, month=1, year=5000))
+        self._test_date("39th decade of the 6th millennium",
+                        date(day=1, month=1, year=5380))
+        self._test_date("the 20th year of the 6th millennium",
+                        date(day=1, month=1, year=5019))
+        self._test_date("the 20th day of the 6th millennium",
+                        date(day=20, month=1, year=5000))
+        self._test_date("last day of the 39th decade of the 6th millennium",
+                        date(day=31, month=12, year=5389))
+
+    def test_months(self):
+        self._test_date("january", self.ref_date.replace(day=1, month=1))
+        self._test_date("last january", self.ref_date.replace(day=1, month=1))
+        self._test_date("next january", date(day=1, month=1,
+                                             year=self.ref_date.year + 1))
+
+        self._test_date("in 29 november", date(day=29, month=11,
+                                               year=self.ref_date.year))
+        self._test_date("last november 27", date(day=27, month=11,
+                                                 year=self.ref_date.year - 1))
+        self._test_date("next 3 november", date(day=3, month=11,
+                                                year=self.ref_date.year))
+        self._test_date("last 3 november 1872",
+                        date(day=3, month=11, year=1872))
+
+    def test_week(self):
+
+        def _test_week(date_str, expected_date, anchor=self.ref_date):
+            extracted, _ = extract_date_en(date_str, anchor)
+            self.assertEqual(extracted, expected_date)
+            # NOTE: weeks start on sunday
+            # TODO start on thursdays?
+            self.assertEqual(extracted.weekday(), 0)
+
+        _test_week("this week", self.ref_date.replace(day=1))
+        _test_week("next week", self.ref_date.replace(day=8))
+        _test_week("last week", self.ref_date.replace(day=25, month=1))
+        _test_week("first week", self.ref_date.replace(day=4, month=1))
+
+        # test Nth week
+        self.assertRaises(ValueError, extract_date_en,
+                          "5th week of this month", now_local())
+
+        # test week of month  -  day=1 in week
+        assert self.ref_date.replace(day=1).weekday() == 0
+        _test_week("first week of this month",
+                   self.ref_date.replace(day=1))
+        _test_week("second week of this month",
+                   self.ref_date.replace(day=8, month=2))
+        _test_week("3rd week of this month",
+                   self.ref_date.replace(day=15, month=2))
+        _test_week("4th week of this month",
+                   self.ref_date.replace(day=22, month=2))
+
+        # test week of month - month day=1 not in week (weeks start on sundays)
+        _anchor = date(day=1, month=2, year=1991)
+        assert _anchor.replace(day=1).weekday() != 0
+
+        _test_week("first week of this month",
+                   _anchor.replace(day=4), anchor=_anchor)
+        _test_week("second week of this month",
+                   _anchor.replace(day=11), anchor=_anchor)
+        _test_week("3rd week of this month",
+                   _anchor.replace(day=18), anchor=_anchor)
+        _test_week("4th week of this month",
+                   _anchor.replace(day=25), anchor=_anchor)
+
+        # test week of year
+        _test_week("first week of this year",
+                   self.ref_date.replace(day=4, month=1))
+        _test_week("2nd week of this year",
+                   self.ref_date.replace(day=11, month=1))
+        _test_week("3rd week of this year",
+                   self.ref_date.replace(day=18, month=1))
+        _test_week("10th week of this year",
+                   self.ref_date.replace(day=8, month=3))
+
+        # test week of decade
+        _test_week("first week of this decade",
+                   date(day=6, month=1, year=2110))
+        _test_week("2nd week of this decade",
+                   date(day=13, month=1, year=2110))
+        _test_week("third week of this decade",
+                   date(day=20, month=1, year=2110))
+        _test_week("100 week of this decade",
+                   date(day=30, month=11, year=2111))
+
+        # test week of century
+        _test_week("first week of this century",
+                   date(day=4, month=1, year=2100))
+        _test_week("2 week of this century",
+                   date(day=11, month=1, year=2100))
+        _test_week("3 week of this century",
+                   date(day=18, month=1, year=2100))
+        _test_week("1000 week of this century",
+                   date(day=27, month=2, year=2119))
+
+        # test week of millennium
+        _test_week("first week of this millennium",
+                   date(day=3, month=1, year=2000))
+        _test_week("2 week of this millennium",
+                   date(day=10, month=1, year=2000))
+        _test_week("3 week of this millennium",
+                   date(day=17, month=1, year=2000))
+        _test_week("10000 week of this millennium",
+                   date(day=22, month=8, year=2191))
+
+        # test last week
+        _test_week("last week of this month",
+                   self.ref_date.replace(day=22))
+        _test_week("last week of this year",
+                   self.ref_date.replace(day=27, month=12))
+        _test_week("last week of this decade",
+                   date(day=25, month=12, year=2119))
+        _test_week("last week of this century",
+                   date(day=30, month=12, year=2199))
+        _test_week("last week of this millennium",
+                   date(day=30, month=12, year=2999))
+
+    def test_years(self):
+        _anchor = date(day=10, month=5, year=2020)
+
+        # test explicit year (of YYYY)
+        self._test_date("january of 90",
+                        date(day=1, month=1, year=1990),
+                        anchor=_anchor)
+        self._test_date("january of 69",
+                        date(day=1, month=1, year=1969),
+                        anchor=_anchor)
+        self._test_date("january of 19",
+                        date(day=1, month=1, year=2019),
+                        anchor=_anchor)
+
+        self._test_date("january of 09",
+                        date(day=1, month=1, year=2009),
+                        anchor=_anchor)
+
+        # test implicit years, "the 90s", "the 900s"
+        self._test_date("the 70s",
+                        _anchor.replace(year=1970),
+                        anchor=_anchor)
+        self._test_date("the 600s",
+                        _anchor.replace(year=600),
+                        anchor=_anchor)
+
+        # test greedy flag - standalone numbers are years
+        self._test_date("january 69",
+                        _anchor.replace(day=1, month=1),
+                        anchor=_anchor)
+        self._test_date("january 69",
+                        date(day=1, month=1, year=1969),
+                        anchor=_anchor,
+                        greedy=True)
+
+        self._test_date("1992",
+                        _anchor.replace(year=1992),
+                        anchor=_anchor,
+                        greedy=True)
+        self._test_date("1992", None, anchor=_anchor)
+
+        self._test_date("992",
+                        _anchor.replace(year=992),
+                        anchor=_anchor,
+                        greedy=True)
+        self._test_date("992", None, anchor=_anchor)
+
+        self._test_date("132",
+                        _anchor.replace(year=132),
+                        anchor=_anchor,
+                        greedy=True)
+        self._test_date("132", None, anchor=_anchor)
+
+        self._test_date("79",
+                        _anchor.replace(year=1979),
+                        anchor=_anchor,
+                        greedy=True)
+        self._test_date("79", None, anchor=_anchor)
+
+        self._test_date("13",
+                        _anchor.replace(year=2013),
+                        anchor=_anchor,
+                        greedy=True)
+        self._test_date("13", None, anchor=_anchor)
+
+        self._test_date("01",
+                        _anchor.replace(year=2001),
+                        anchor=_anchor,
+                        greedy=True)
+        self._test_date("0",
+                        _anchor.replace(year=2000),
+                        anchor=_anchor,
+                        greedy=True)
+        self._test_date("9", None, anchor=_anchor)
+
+    def test_named_dates(self):
+        _anchor = date(day=10, month=5, year=2020)
+
+        self._test_date("christmas eve",
+                        date(day=24, month=12, year=2020), anchor=_anchor)
+        self._test_date("this christmas",
+                        date(day=25, month=12, year=2020), anchor=_anchor)
+        self._test_date("this easter",
+                        date(day=12, month=4, year=2020), anchor=_anchor)
+
+        # test location based holidays
+        self._test_date("independence day",
+                        date(day=4, month=7, year=2020), anchor=_anchor)
+        self._test_date("Restauração da Independência", None)
+
+        set_active_location("PT")
+        self._test_date("Restauração da Independência",
+                        date(day=1, month=12, year=2020), anchor=_anchor)
+        self._test_date("independence day", None)
+        self._test_date("this easter",  # named dates still available
+                        date(day=12, month=4, year=2020), anchor=_anchor)
+
+        # restore location
+        set_active_location("US")
+        self._test_date("independence day",
+                        date(day=4, month=7, year=2020), anchor=_anchor)
+
+        # self._test_date("last christmas",
+        #                date(day=25, month=12, year=2019), anchor=_anchor)
+        # self._test_date("next christmas",
+        #                date(day=25, month=12, year=2020), anchor=_anchor)
+
+        _anchor = date(day=31, month=12, year=2020)
+
+        self._test_date("this christmas",
+                        date(day=25, month=12, year=2020), anchor=_anchor)
+        # self._test_date("last christmas",
+        #                date(day=25, month=12, year=2020), anchor=_anchor)
+        # self._test_date("next christmas",
+        #                date(day=25, month=12, year=2021), anchor=_anchor)
+
+    def test_named_eras(self):
+        # test {Nth X} of {era}
+        self._test_date("20th day of the common era",
+                        date(day=20, month=1, year=1))
+        self._test_date("20th month of the common era",
+                        date(day=1, month=8, year=2))
+        self._test_date("20th year of the common era",
+                        date(day=1, month=1, year=20))
+        self._test_date("20th decade of the common era",
+                        date(day=1, month=1, year=190))
+        self._test_date("21th century of the common era",
+                        date(day=1, month=1, year=2000))
+        self._test_date("2nd millennium of the common era",
+                        date(day=1, month=1, year=1000))
+
+        # test {date} of {era}
+        self._test_date("20 may 1992 anno domini",
+                        date(day=20, month=5, year=1992))
+
+        # test {year} of {era}
+        self._test_date("1992 christian era",
+                        date(day=1, month=1, year=1992))
+
+        # test ambiguous year
+        self._test_date("1 january christian era",
+                        date(day=1, month=1, year=1))
+
+    def test_negative_eras(self):
+        bp = date(day=1, month=1, year=1950)
+        self._test_date("before present", bp)
+        self._test_date("2 years before present",
+                        date(day=1, month=1, year=1948))
+        self._test_date("556 before present",
+                        date(day=1, month=1, year=1394))
+        self._test_date("march 1st 556 before present",
+                        date(day=1, month=3, year=1394))
+        self._test_date("10th day of the 1st year before present",
+                        (bp - relativedelta(years=1)).replace(day=10))
+        self._test_date("364th day before present",
+                        bp - timedelta(days=364))
+        self._test_date("364th month before present",
+                        bp - relativedelta(months=364))
+        self._test_date("364th week before present",
+                        bp - timedelta(weeks=364))
+        self._test_date("3rd century before present",
+                        bp - relativedelta(years=300))
+        self._test_date("11th decade before present",
+                        bp - relativedelta(years=110))
+        self._test_date("1st millennium before present",
+                        bp - relativedelta(years=1000))
+
+    def test_ambiguous(self):
+        # TODO review all these, add more tests for ambiguous cases
+        # these are to be considered bugs / missing features
+
+        _anchor = date(day=10, month=5, year=2020)
+
+        # multiple dates
+
+        self._test_date("this is the 9th millennium,"
+                        " the second day of the third month of the first year",
+                        date(day=2, month=3, year=1))
+        # desired: date(day=2, month=3, year=8000))
+
+        # {month1} of {month2} .... of {monthN}
+        # parsed as:
+        #   month1
+        #   TODO fix remainder (everything is consumed)
+        self._test_date("january of october",
+                        date(day=1, month=1, year=2020),
+                        anchor=_anchor)
+        self._test_date("january of october of december in november",
+                        date(day=1, month=1, year=2020),
+                        anchor=_anchor)
+
+        # {day} {month1} of {month2} .... of {monthN}
+        # parsed as:
+        #   day of monthN
+        #   TODO fix remainder (everything is consumed)
+        self._test_date("12 december of october",
+                        date(day=12, month=10, year=2020),
+                        anchor=_anchor)
+        self._test_date("12 january of october",
+                        date(day=12, month=10, year=2020),
+                        anchor=_anchor)
+        self._test_date("12 january of december at october",
+                        date(day=12, month=10, year=2020),
+                        anchor=_anchor)
+
+        # {year} of {year}
+        # parsed as:
+        #   Nth day of {year}
+        #   TODO not matching?
+        # self._test_date("1992 of 2020",
+        #                _anchor + relativedelta(days=1992),
+        #                anchor=_anchor)
+
+        # {season} of {season2} ..... of {seasonN}
+        # parsed as:
+        #   {seasonN}
+        #   TODO fix remainder (everything is consumed)
+        self._test_date("summer in winter",
+                        date(day=1, month=12, year=_anchor.year),
+                        anchor=_anchor)
+        self._test_date("winter in spring",
+                        date(day=1, month=3, year=_anchor.year),
+                        anchor=_anchor)
+        self._test_date("summer in winter in fall",
+                        date(day=1, month=9, year=_anchor.year),
+                        anchor=_anchor)

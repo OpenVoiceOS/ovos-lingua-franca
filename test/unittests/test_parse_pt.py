@@ -14,11 +14,18 @@
 # limitations under the License.
 #
 import unittest
-from datetime import datetime, time
+from datetime import datetime, time, date
+from dateutil.relativedelta import relativedelta
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no
 from lingua_franca.time import default_timezone
+from lingua_franca.parse import get_gender
+from lingua_franca.parse import extract_datetime
+from lingua_franca.parse import extract_date
+from lingua_franca.parse import extract_number
+from lingua_franca.parse import normalize
+from lingua_franca.time import now_local
 
 
 def setUpModule():
@@ -308,6 +315,27 @@ class TestYesNo(unittest.TestCase):
         # double negatives
         # it's not a lie -> True
         test_utt("não é mentira", True)
+
+
+class TestExtractDate(unittest.TestCase):
+    def test_fallback_parser(self):
+        # pt parser not implemented, testing fallback to dateparser module
+        self.assertEqual(extract_date("1 Janeiro 2020", lang="pt"),
+                         date(day=1, month=1, year=2020))
+        self.assertEqual(extract_date("o meu aniversário é a 12 janeiro 2020",
+                                      lang="pt"),
+                         date(day=12, month=1, year=2020))
+
+        # relative dates
+        now = now_local()
+        self.assertEqual(extract_date("ontem", lang="pt"),
+                         now.date() - relativedelta(days=1))
+        self.assertEqual(extract_date("2 dias atrás", lang="pt"),
+                         now.date() - relativedelta(days=2))
+
+        # ambiguous, parsed as 20/2/9
+        self.assertEqual(extract_date("2029", lang="pt"),
+                         date(day=9, month=2, year=2020))
 
 
 if __name__ == "__main__":
