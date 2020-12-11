@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from lingua_franca.lang.format_common import convert_to_mixed_fraction
+from lingua_franca.lang.format_common import convert_to_mixed_fraction, PluralCategory, PluralAmount
 from lingua_franca.lang.common_data_en import _NUM_STRING_EN, \
     _FRACTION_STRING_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN, _SHORT_ORDINAL_EN, _LONG_ORDINAL_EN
 
@@ -384,3 +384,30 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
                 speak += " a.m."
 
         return speak
+
+
+def get_plural_category_en(amount, type=PluralCategory.CARDINAL):
+    if type == PluralCategory.CARDINAL:
+        if amount == 1:
+            return PluralAmount.ONE
+        else:
+            return PluralAmount.OTHER
+
+    elif type == PluralCategory.ORDINAL:
+        if amount % 10 == 1 and amount % 100 != 11:
+            return PluralAmount.ONE
+        elif amount % 10 == 2 and amount % 100 != 12:
+            return PluralAmount.TWO
+        elif amount % 10 == 3 and amount % 100 != 13:
+            return PluralAmount.FEW
+        else:
+            return PluralAmount.OTHER
+
+    elif type == PluralCategory.RANGE:
+        if not (isinstance(amount, tuple) or isinstance(amount, list)) or len(amount) != 2:
+            raise ValueError("Argument \"number\" must be tuple|list type with the start and end numbers")
+
+        return PluralAmount.OTHER
+
+    else:
+        return ValueError("Argument \"type\" must be cardinal|ordinal|range")

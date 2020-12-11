@@ -13,15 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import json
 import unittest
 import datetime
-import ast
-import warnings
 import sys
-from dateutil import tz
-from pathlib import Path
-
 # TODO either write a getter for lingua_franca.internal._SUPPORTED_LANGUAGES,
 # or make it public somehow
 from lingua_franca import load_language, unload_language, set_default_lang, \
@@ -31,6 +25,9 @@ from lingua_franca.format import nice_number
 from lingua_franca.format import nice_time
 from lingua_franca.format import nice_date
 from lingua_franca.format import nice_date_time
+from lingua_franca.format import nice_duration
+from lingua_franca.format import nice_number, get_plural_category
+from lingua_franca.format import nice_time
 from lingua_franca.format import nice_year
 from lingua_franca.format import nice_duration
 from lingua_franca.format import pronounce_number
@@ -541,6 +538,42 @@ class TestLangcode(unittest.TestCase):
         self.assertEqual(pronounce_lang(lang_code="pt-br"), "Brazilian Portuguese")
         self.assertEqual(pronounce_lang(lang_code="pt-pt"), "Portuguese")
         self.assertEqual(pronounce_lang(lang_code="en-us"), "American English")
+
+
+class TestPluralCategory(unittest.TestCase):
+    def test_cardinal_numbers(self):
+        self.assertEqual(get_plural_category(0), "other")
+        self.assertEqual(get_plural_category(1), "one")
+        self.assertEqual(get_plural_category(2), "other")
+        self.assertEqual(get_plural_category(3), "other")
+        self.assertEqual(get_plural_category(10), "other")
+        self.assertEqual(get_plural_category(101), "other")
+
+    def test_ordinal_numbers(self):
+        self.assertEqual(get_plural_category(1, type="ordinal"), "one")
+        self.assertEqual(get_plural_category(21, type="ordinal"), "one")
+        self.assertEqual(get_plural_category(101, type="ordinal"), "one")
+
+        self.assertEqual(get_plural_category(2, type="ordinal"), "two")
+        self.assertEqual(get_plural_category(22, type="ordinal"), "two")
+        self.assertEqual(get_plural_category(102, type="ordinal"), "two")
+
+        self.assertEqual(get_plural_category(3, type="ordinal"), "few")
+        self.assertEqual(get_plural_category(23, type="ordinal"), "few")
+        self.assertEqual(get_plural_category(103, type="ordinal"), "few")
+
+        self.assertEqual(get_plural_category(4, type="ordinal"), "other")
+        self.assertEqual(get_plural_category(11, type="ordinal"), "other")
+        self.assertEqual(get_plural_category(12, type="ordinal"), "other")
+        self.assertEqual(get_plural_category(13, type="ordinal"), "other")
+        self.assertEqual(get_plural_category(45, type="ordinal"), "other")
+        self.assertEqual(get_plural_category(75, type="ordinal"), "other")
+        self.assertEqual(get_plural_category(155, type="ordinal"), "other")
+
+    def test_range_numbers(self):
+        self.assertEqual(get_plural_category((1, 2), type="range"), "other")
+        self.assertEqual(get_plural_category((0, 1), type="range"), "other")
+        self.assertEqual(get_plural_category((0, 2), type="range"), "other")
 
 
 if __name__ == "__main__":

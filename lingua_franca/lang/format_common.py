@@ -13,6 +13,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import enum
+
+
+class PluralCategory(str, enum.Enum):
+    """
+    plural category for the specified amount. Category can be one of
+    the categories specified by Unicode CLDR Plural Rules.
+
+    For more details:
+    http://cldr.unicode.org/index/cldr-spec/plural-rules
+    https://unicode-org.github.io/cldr-staging/charts/37/supplemental/language_plural_rules.html
+
+    """
+    CARDINAL = "cardinal"
+    ORDINAL = "ordinal"
+    RANGE = "range"
+
+
+class PluralAmount(str, enum.Enum):
+    """
+    For more details:
+    http://cldr.unicode.org/index/cldr-spec/plural-rules
+    https://unicode-org.github.io/cldr-staging/charts/37/supplemental/language_plural_rules.html
+    """
+    ZERO = "zero"
+    ONE = "one"
+    TWO = "two"
+    FEW = "few"
+    MANY = "many"
+    OTHER = "other"
 
 
 def convert_to_mixed_fraction(number, denominators=range(1, 21)):

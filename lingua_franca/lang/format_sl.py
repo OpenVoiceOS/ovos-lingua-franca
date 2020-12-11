@@ -17,7 +17,7 @@
 
 from lingua_franca.lang.common_data_sl import _NUM_STRING_SL, \
     _FRACTION_STRING_SL, _LONG_SCALE_SL, _SHORT_SCALE_SL, _SHORT_ORDINAL_SL
-from lingua_franca.lang.format_common import convert_to_mixed_fraction
+from lingua_franca.lang.format_common import convert_to_mixed_fraction, PluralCategory, PluralAmount
 
 
 def nice_number_sl(number, speech=True, denominators=range(1, 21)):
@@ -417,3 +417,34 @@ def nice_time_sl(dt, speech=True, use_24hour=False, use_ampm=False):
                 speak += " a.m."
 
         return speak
+
+
+def get_plural_category_sl(amount, type=PluralCategory.CARDINAL):
+    if type == PluralCategory.CARDINAL:
+        if amount % 100 == 1 and amount % 1 == 0:
+            return PluralAmount.ONE
+        elif amount % 100 == 2 and amount % 1 == 0:
+            return PluralAmount.TWO
+        elif amount % 100 == 3 or amount % 100 == 4 or amount % 1 != 0:
+            return PluralAmount.FEW
+        else:
+            return PluralAmount.OTHER
+
+    elif type == PluralCategory.ORDINAL:
+        return PluralAmount.OTHER
+
+    elif type == PluralCategory.RANGE:
+        if not (isinstance(amount, tuple) or isinstance(amount, list)) or len(amount) != 2:
+            raise ValueError("Argument \"number\" must be tuple|list type with the start and end numbers")
+
+        end = get_plural_category_sl(amount[1])
+
+        if end == PluralAmount.ONE or end == PluralAmount.FEW:
+            return PluralAmount.FEW
+        elif end == PluralAmount.TWO:
+            return PluralAmount.TWO
+        elif end == PluralAmount.OTHER:
+            return PluralAmount.OTHER
+
+    else:
+        return ValueError("Argument \"type\" must be cardinal|ordinal|range")
