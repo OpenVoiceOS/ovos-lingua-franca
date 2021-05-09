@@ -65,6 +65,42 @@ def nice_number_en(number, speech=True, denominators=range(1, 21)):
     return return_string
 
 
+def pronounce_digits_en(number, places=2, all_digits=False):
+    if isinstance(number, str):
+        op_val = number
+        decimal_part = ""
+        if "." in number:
+            op_val, decimal_part = number.split(".")
+        if all_digits:
+            op_val = " ".join([pronounce_number_en(int(ch))
+                               for ch in op_val])
+        else:
+
+            op_val = pronounce_number_en(int(op_val))
+        if decimal_part:
+            decimal_part = " ".join([pronounce_number_en(int(ch))
+                                     for ch in decimal_part[:places]])
+            return op_val + " point " + decimal_part
+        return op_val
+
+    if "." in str(number):
+        op_val, decimal_part = str(number).split(".")
+        decimal_part = " ".join([pronounce_number_en(int(ch))
+                                 for ch in decimal_part[:places]])
+    else:
+        op_val = str(number)
+        decimal_part = ""
+
+    if all_digits:
+        op_val = " ".join([pronounce_number_en(int(ch))
+                           for ch in op_val])
+    else:
+        op_val = pronounce_number_en(int(op_val))
+    if decimal_part:
+        return op_val + " point " + decimal_part
+    return op_val
+
+
 def pronounce_number_en(number, places=2, short_scale=True, scientific=False,
                         ordinals=False):
     """
