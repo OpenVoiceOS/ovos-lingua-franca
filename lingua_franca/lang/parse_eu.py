@@ -23,6 +23,7 @@ from dateutil.tz import gettz
 from lingua_franca.lang.format_eu import pronounce_number_eu
 from lingua_franca.lang.parse_common import *
 from lingua_franca.lang.common_data_eu import _NUM_STRING_EU
+from lingua_franca.lang.parse_common import normalize_decimals
 
 
 def isFractional_eu(input_str):
@@ -283,7 +284,7 @@ def eu_number_parse(words, i):
     return eu_number(i)
 
 
-def extract_numbers_eu(text, short_scale=True, ordinals=False):
+def extract_numbers_eu(text, short_scale=True, ordinals=False, decimal='.'):
     """
         Takes in a string and extracts a list of numbers.
 
@@ -294,9 +295,16 @@ def extract_numbers_eu(text, short_scale=True, ordinals=False):
             is now common in most English speaking countries.
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         list: list of extracted numbers as floats
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
+
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     return extract_numbers_generic(text, pronounce_number_eu, extract_number_eu,
                                    short_scale=short_scale, ordinals=ordinals)
 

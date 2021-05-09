@@ -23,7 +23,7 @@ from lingua_franca.lang.common_data_cs import _NUM_STRING_CS, \
     _LONG_ORDINAL_CS, _LONG_SCALE_CS, _SHORT_SCALE_CS, _SHORT_ORDINAL_CS, \
     _FRACTION_STRING_CS, _MONTHS_CONVERSION, _MONTHS_CZECH, _TIME_UNITS_CONVERSION, \
     _ORDINAL_BASE_CS  # _ARTICLES_CS
-
+from lingua_franca.lang.parse_common import normalize_decimals
 import re
 import json
 from lingua_franca import resolve_resource_file
@@ -579,7 +579,7 @@ def _initialize_number_data(short_scale):
     return multiplies, string_num_ordinal_cs, string_num_scale_cs
 
 
-def extract_number_cs(text, short_scale=True, ordinals=False):
+def extract_number_cs(text, short_scale=True, ordinals=False, decimal='.'):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -590,11 +590,17 @@ def extract_number_cs(text, short_scale=True, ordinals=False):
         text (str): the string to normalize
         short_scale (bool): use short scale if True, long scale if False
         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         (int) or (float) or False: The extracted number or False if no number
                                    was found
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
 
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     return _extract_number_with_text_cs(tokenize(text.lower()),
                                         short_scale, ordinals).value
 
@@ -1560,7 +1566,7 @@ def isFractional_cs(input_str, short_scale=True):
     return False
 
 
-def extract_numbers_cs(text, short_scale=True, ordinals=False):
+def extract_numbers_cs(text, short_scale=True, ordinals=False, decimal='.'):
     """
         Takes in a string and extracts a list of numbers.
 
@@ -1571,9 +1577,16 @@ def extract_numbers_cs(text, short_scale=True, ordinals=False):
             is now common in most English speaking countries.
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         list: list of extracted numbers as floats
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
+
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     results = _extract_numbers_with_text_cs(tokenize(text),
                                             short_scale, ordinals)
     return [float(result.value) for result in results]

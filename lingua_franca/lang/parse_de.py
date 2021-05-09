@@ -21,6 +21,7 @@ from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
 from lingua_franca.lang.common_data_de import _DE_NUMBERS
 from lingua_franca.lang.format_de import pronounce_number_de
 from lingua_franca.time import now_local
+from lingua_franca.lang.parse_common import normalize_decimals
 
 
 de_numbers = {
@@ -143,20 +144,31 @@ def extract_duration_de(text):
     return (duration, text)
 
 
-def extract_number_de(text, short_scale=True, ordinals=False):
+def extract_number_de(text, short_scale=True, ordinals=False, decimal='.'):
     """
-    This function prepares the given text for parsing by making
-    numbers consistent, getting rid of contractions, etc.
+    This function extracts a number from a text string,
+    handles pronunciations in long scale and short scale
+
+    https://en.wikipedia.org/wiki/Names_of_large_numbers
+
     Args:
         text (str): the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
-        (int) or (float): The value of extracted number
+        (int) or (float) or False: The extracted number or False if no number
+                                   was found
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
 
-
-    undefined articles cannot be suppressed in German:
-    'ein Pferd' means 'one horse' and 'a horse'
+        undefined articles cannot be suppressed in German:
+        'ein Pferd' means 'one horse' and 'a horse'
 
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     # TODO: short_scale and ordinals don't do anything here.
     # The parameters are present in the function signature for API compatibility
     # reasons.
@@ -1003,7 +1015,7 @@ def normalize_de(text, remove_articles=True):
     return normalized[1:]  # strip the initial space
 
 
-def extract_numbers_de(text, short_scale=True, ordinals=False):
+def extract_numbers_de(text, short_scale=True, ordinals=False, decimal='.'):
     """
         Takes in a string and extracts a list of numbers.
 
@@ -1014,9 +1026,12 @@ def extract_numbers_de(text, short_scale=True, ordinals=False):
             is now common in most English speaking countries.
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         list: list of extracted numbers as floats
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     return extract_numbers_generic(text, pronounce_number_de, extract_number_de,
                                    short_scale=short_scale, ordinals=ordinals)
 

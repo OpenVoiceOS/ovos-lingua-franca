@@ -56,7 +56,8 @@ def extract_langcode(text, lang=""):
 
 
 @localized_function()
-def extract_numbers(text, short_scale=True, ordinals=False, lang=''):
+def extract_numbers(text, short_scale=True, ordinals=False, lang='',
+                    decimal='.'):
     """
         Takes in a string and extracts a list of numbers.
 
@@ -69,13 +70,18 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang=''):
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
         lang (str, optional): an optional BCP-47 language code, if omitted
                               the default language will be used.
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         list: list of extracted numbers as floats, or empty list if none found
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
     """
 
 
 @localized_function()
-def extract_number(text, short_scale=True, ordinals=False, lang=''):
+def extract_number(text, short_scale=True, ordinals=False, lang='',
+                   decimal='.'):
     """Takes in a string and extracts a number.
 
     Args:
@@ -87,9 +93,13 @@ def extract_number(text, short_scale=True, ordinals=False, lang=''):
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
         lang (str, optional): an optional BCP-47 language code, if omitted
                               the default language will be used.
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         (int, float or False): The number extracted or False if the input
                                text contains no numbers
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
     """
 
 

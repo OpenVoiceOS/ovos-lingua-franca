@@ -192,6 +192,18 @@ class Normalizer:
         return utterance
 
 
+def normalize_decimals(text, decimal, lang=""):
+    """
+        Replace 'decimal' with decimal periods so Python can floatify them
+    """
+    regex = r"\b\d+" + decimal + r"{1}\d+\b"
+    sanitize_decimals = re.compile(regex)
+    for _, match in enumerate(re.finditer(sanitize_decimals, text)):
+        text = text.replace(match.group(
+            0), match.group(0).replace(decimal, '.'))
+    return text
+
+
 def match_yes_or_no(text, lang):
     resource_file = resolve_resource_file(f"text/{lang}/yesno.json")
     if not resource_file:

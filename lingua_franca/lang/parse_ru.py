@@ -28,6 +28,7 @@ import re
 import json
 from lingua_franca import resolve_resource_file
 from lingua_franca.time import now_local
+from lingua_franca.lang.parse_common import normalize_decimals
 
 
 def generate_plurals_ru(originals):
@@ -1577,7 +1578,7 @@ def is_fractional_ru(input_str, short_scale=True):
     return False
 
 
-def extract_numbers_ru(text, short_scale=True, ordinals=False):
+def extract_numbers_ru(text, short_scale=True, ordinals=False, decimal='.'):
     """
         Takes in a string and extracts a list of numbers.
 
@@ -1588,9 +1589,16 @@ def extract_numbers_ru(text, short_scale=True, ordinals=False):
             is now common in most English speaking countries.
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         list: list of extracted numbers as floats
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
+
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     results = _extract_numbers_with_text_ru(tokenize(text),
                                             short_scale, ordinals)
     return [float(result.value) for result in results]
