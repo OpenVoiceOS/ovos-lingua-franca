@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 from lingua_franca.time import now_local
+from lingua_franca.lang.parse_common import normalize_decimals
 
 from .parse_common import (is_numeric, look_for_fractions, Normalizer,
                            tokenize, Token)
@@ -156,15 +157,23 @@ def extract_duration_sv(text):
     return (td, remainder) if valid else None
 
 
-def extract_number_sv(text, short_scale=True, ordinals=False):
+def extract_number_sv(text, short_scale=True, ordinals=False, decimal='.'):
     """
     This function prepares the given text for parsing by making
     numbers consistent, getting rid of contractions, etc.
     Args:
         text (str): the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         (int) or (float): The value of extracted number
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     # TODO: short_scale and ordinals don't do anything here.
     # The parameters are present in the function signature for API
     # compatibility reasons.

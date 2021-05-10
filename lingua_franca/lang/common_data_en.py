@@ -247,7 +247,7 @@ _LONG_ORDINAL_EN.update(_ORDINAL_BASE_EN)
 
 
 # negate next number (-2 = 0 - 2)
-_NEGATIVES_EN = {"negative", "minus"}
+_NEGATIVES_EN = {"negative", "minus", "-"}
 
 # sum the next number (twenty two = 20 + 2)
 _SUMS_EN = {'twenty', '20', 'thirty', '30', 'forty', '40', 'fifty', '50',

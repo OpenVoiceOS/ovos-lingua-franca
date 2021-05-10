@@ -20,14 +20,10 @@ from dateutil.relativedelta import relativedelta
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.internal import FunctionNotLocalizedError
-from lingua_franca.parse import extract_datetime
-from lingua_franca.parse import extract_duration
-from lingua_franca.parse import extract_number, extract_numbers
-from lingua_franca.parse import get_gender
-from lingua_franca.parse import normalize
 from lingua_franca.time import default_timezone, to_local
-from lingua_franca.parse import extract_langcode
-from lingua_franca.parse import yes_or_no
+from lingua_franca.parse import extract_datetime, extract_duration, extract_number, \
+    extract_numbers, get_gender, normalize, extract_langcode, yes_or_no, extract_number_spans
+from lingua_franca.lang.parse_en import extract_number_en_v2
 
 
 def setUpModule():
@@ -290,6 +286,17 @@ class TestNormalize(unittest.TestCase):
 
 
 class TestExtractNumber(unittest.TestCase):
+    def test_extract_number_decimal_markers(self):
+        # Test decimal normalization
+        self.assertEqual(extract_number("4,4", decimal=','), 4.4)
+        self.assertEqual(extract_number("we have 3,5 kilometers to go",
+                                        decimal=','), 3.5)
+        self.assertEqual(extract_numbers("this is a seven eight 9,5 test",
+                                         decimal=','),
+                         [7.0, 8.0, 9.5])
+        self.assertEqual(extract_numbers("this is a 7,0 8.0 9,6 test",
+                                         decimal=','), [7.0, 8.0, 9.6])
+
     def test_extract_number_priority(self):
         # sanity check
         self.assertEqual(extract_number("third", ordinals=True), 3)
@@ -1740,6 +1747,329 @@ class TestLangcode(unittest.TestCase):
 
         test_with_conf("Brazilian", 'pt-br')
         test_with_conf("American", 'en-us')
+
+
+class TestNumberSpans(unittest.TestCase):
+    def test_number_spans(self):
+        self.assertEqual(extract_number_spans("this is test 1 2 3 666 1.5"),
+                         [(1, (13, 14)),
+                          (2, (15, 16)),
+                          (3, (17, 18)),
+                          (666, (19, 22)),
+                          (1.5, (23, 26))])
+        self.assertEqual(extract_number_spans("this is test 1.5.5"),
+                         [(1.5, (13, 16)),
+                          (5, (17, 18))])
+
+    def test_number_spans_frac(self):
+        self.assertEqual(extract_number_spans("2 and 3/4"),
+                         [(2.75, (0, 9))])
+        self.assertEqual(extract_number_spans("2 and 3/4 and after that "
+                                              "comes 1.5"),
+                         [(2.75, (0, 9)),
+                          (1.5, (31, 34))])
+        self.assertEqual(extract_number_spans("2 and 3/4 and after that "
+                                              "comes 0.5"),
+                         [(2.75, (0, 9)),
+                          (0.5, (31, 34))])
+        self.assertEqual(extract_number_spans("2 and 3/4 and 27"),
+                         [(2.75, (0, 9)),
+                          (27, (14, 16))])
+
+    def test_number_spoken_frac(self):
+        self.assertEqual(extract_number_spans("half cup"),
+                         [(0.5, (0, 4))])
+        self.assertEqual(extract_number_spans("third cup"),
+                         [(1 / 3, (0, 5))])
+
+    def test_number_ordinals(self):
+        self.assertEqual(extract_number_spans("this is the 1st the 2nd the "
+                                              "3rd the 4th and the Nth"),
+                         [(1, (12, 15)),
+                          (2, (20, 23)),
+                          (3, (28, 31)),
+                          (4, (36, 39))])
+
+    def test_number_spoken_ordinals(self):
+        self.assertEqual(extract_number_spans("fourth cup", ordinals=True),
+                         [(4, (0, 6))])
+        self.assertEqual(extract_number_spans("third cup", ordinals=True),
+                         [(3, (0, 5))])
+
+    def test_integers(self):
+        self.assertEqual(extract_number_spans("number one"),
+                         [(1, (7, 10))])
+        self.assertEqual(extract_number_spans("number one number two number "
+                                              "four"),
+                         [(1, (7, 10)),
+                          (2, (20, 23)),
+                          (3, (28, 31)),
+                          (4, (36, 39))])
+
+    def test_scale(self):
+        self.assertEqual(extract_number_spans("a trillion numbers"),
+                         [(1e+12, (2, 10))])
+        self.assertEqual(extract_number_spans("a trillion numbers",
+                                              short_scale=False),
+                         [(1e+18, (2, 10))])
+
+
+class TestExtractNumberV2(unittest.TestCase):
+    def test_extract_percent(self):
+        self.assertEqual(extract_number_en_v2("totally 100%"), 100)
+
+    def test_extract_number_decimal_markers(self):
+        # Test decimal normalization
+        self.assertEqual(extract_number_en_v2("4,4", decimal=','), 4.4)
+        self.assertEqual(extract_number_en_v2("we have 3,5 kilometers to go",
+                                              decimal=','), 3.5)
+
+    def test_extract_number_priority(self):
+        # sanity check
+        self.assertEqual(extract_number_en_v2("third", ordinals=True), 3)
+        self.assertEqual(extract_number_en_v2("sixth", ordinals=True), 6)
+        self.assertEqual(extract_number_en_v2("sixth third", ordinals=True), 6)
+        self.assertEqual(extract_number_en_v2("third sixth", ordinals=True), 3)
+
+        # TODO FIXME
+        self.assertEqual(extract_number_en_v2("Twenty two and Three Fifths",
+                                              ordinals=True), 22)
+
+    def test_extract_number_explicit_ordinals(self):
+        # test explicit ordinals
+        self.assertEqual(extract_number_en_v2("this is the 1st",
+                                              ordinals=True), 1)
+        self.assertEqual(extract_number_en_v2("this is the 2nd",
+                                              ordinals=False), 2)
+        self.assertEqual(extract_number_en_v2("this is the 3rd",
+                                              ordinals=None), 3)
+        self.assertEqual(extract_number_en_v2("this is the 4th",
+                                              ordinals=None), 4)
+        self.assertEqual(extract_number_en_v2("this is the 7th test",
+                                              ordinals=True), 7)
+        self.assertEqual(extract_number_en_v2("this is the 7th test",
+                                              ordinals=False), 7)
+        self.assertEqual(extract_number_en_v2("this is the 1st test"), 1)
+        self.assertEqual(extract_number_en_v2("this is the 2nd test"), 2)
+        self.assertEqual(extract_number_en_v2("this is the 3rd test"), 3)
+        self.assertEqual(extract_number_en_v2("this is the 31st test"), 31)
+        self.assertEqual(extract_number_en_v2("this is the 32nd test"), 32)
+        self.assertEqual(extract_number_en_v2("this is the 33rd test"), 33)
+        self.assertEqual(extract_number_en_v2("this is the 34th test"), 34)
+
+        self.assertTrue(extract_number_en_v2("this is the nth test") is False)
+
+    def test_extract_number_spoken_ordinals(self):
+        # test non ambiguous ordinals
+        self.assertEqual(extract_number_en_v2("this is the first test",
+                                              ordinals=True), 1)
+        self.assertEqual(extract_number_en_v2("this is the first test",
+                                              ordinals=False), False)
+        self.assertEqual(extract_number_en_v2("this is the first test",
+                                              ordinals=None), False)
+
+        # test ambiguous ordinal/time unit
+        self.assertEqual(extract_number_en_v2("this is second test",
+                                              ordinals=True), 2)
+        self.assertEqual(extract_number_en_v2("this is second test",
+                                              ordinals=False), False)
+        self.assertEqual(extract_number_en_v2("remind me in a second",
+                                              ordinals=True), 2)
+        self.assertEqual(extract_number_en_v2("remind me in a second",
+                                              ordinals=False), False)
+        self.assertEqual(extract_number_en_v2("remind me in a second",
+                                              ordinals=None), False)
+
+        # test ambiguous ordinal/fractional
+        self.assertEqual(extract_number_en_v2("this is the third test",
+                                              ordinals=True), 3.0)
+        self.assertEqual(extract_number_en_v2("this is the third test",
+                                              ordinals=False), 1.0 / 3.0)
+        self.assertEqual(extract_number_en_v2("this is the third test",
+                                              ordinals=None), False)
+
+        # TODO FIXME
+        self.assertEqual(extract_number_en_v2("one third of a cup",
+                                              ordinals=False), 1.0 / 3.0)
+        self.assertEqual(extract_number_en_v2("one third of a cup",
+                                              ordinals=True), 3)
+        self.assertEqual(extract_number_en_v2("one third of a cup",
+                                              ordinals=None), 1)
+
+    def test_extract_number_nth_one(self):
+        # test the Nth one
+        self.assertEqual(extract_number_en_v2("the fourth one",
+                                              ordinals=True), 4.0)
+        self.assertEqual(extract_number_en_v2("you are the second one",
+                                              ordinals=False), 1)
+        self.assertEqual(extract_number_en_v2("you are the second one",
+                                              ordinals=True), 2)
+        self.assertEqual(extract_number_en_v2("you are the 1st one",
+                                              ordinals=None), 1)
+        self.assertEqual(extract_number_en_v2("you are the 2nd one",
+                                              ordinals=None), 2)
+        self.assertEqual(extract_number_en_v2("you are the 3rd one",
+                                              ordinals=None), 3)
+        self.assertEqual(extract_number_en_v2("you are the 8th one",
+                                              ordinals=None), 8)
+
+        # TODO FIXME
+        self.assertEqual(extract_number_en_v2("the thirty sixth one",
+                                              ordinals=True), 36.0)
+
+    def test_scale(self):
+        # test big numbers / short vs long scale
+        self.assertEqual(extract_number_en_v2("this is the billionth test",
+                                              ordinals=True), 1e09)
+        self.assertEqual(extract_number_en_v2("this is the billionth test",
+                                              ordinals=None), False)
+
+        self.assertEqual(extract_number_en_v2("this is the billionth test",
+                                              ordinals=False), 1e-9)
+        self.assertEqual(extract_number_en_v2("this is the billionth test",
+                                              ordinals=True,
+                                              short_scale=False), 1e12)
+        self.assertEqual(extract_number_en_v2("this is the billionth test",
+                                              ordinals=None,
+                                              short_scale=False), False)
+        self.assertEqual(extract_number_en_v2("this is the billionth test",
+                                              short_scale=False), 1e-12)
+
+    def test_extract_number_ambiguous_fraction_ordinal(self):
+        # confirm these are not cumulative, prev version would multiple them
+        self.assertEqual(extract_number_en_v2("sixth third", ordinals=False),
+                         1 / 6)
+
+        # test plurals
+        # NOTE plurals are never considered ordinals, but also not
+        # considered explicit fractions
+        self.assertEqual(extract_number_en_v2("2 fifths",
+                                              ordinals=True), 2)
+        self.assertEqual(extract_number_en_v2("2 fifth",
+                                              ordinals=True), 5)
+        self.assertEqual(extract_number_en_v2("2 fifths",
+                                              ordinals=False), 2 / 5)
+        self.assertEqual(extract_number_en_v2("2 fifths",
+                                              ordinals=None), 2)
+
+        self.assertEqual(extract_number_en_v2("Twenty two and Three Fifths"),
+                         22.6)
+
+        # test multiple ambiguous
+        self.assertEqual(extract_number_en_v2("sixth third", ordinals=None),
+                         False)
+        self.assertEqual(extract_number_en_v2("thirty second", ordinals=False),
+                         30)
+        self.assertEqual(extract_number_en_v2("thirty second", ordinals=None),
+                         30)
+        self.assertEqual(extract_number_en_v2("thirty second", ordinals=True),
+                         32)
+
+        self.assertEqual(extract_number_en_v2("sixth third", ordinals=False),
+                         6)
+
+    def test_extract_number_negative(self):
+        self.assertEqual(extract_number_en_v2("minus two"), -2)
+        self.assertEqual(extract_number_en_v2("minus 2"), -2)
+        self.assertEqual(extract_number_en_v2("negative two"), -2)
+        self.assertEqual(extract_number_en_v2("minus 1/3"), - 1 / 3)
+        self.assertEqual(extract_number_en_v2("-2"), -2)
+        self.assertEqual(extract_number_en_v2("- 2"), -2)
+        self.assertEqual(extract_number_en_v2("-1/3"), - 1/3)
+        self.assertEqual(extract_number_en_v2("- 1/3"), - 1 / 3)
+
+    def test_extract_number_fracs(self):
+        self.assertEqual(extract_number_en_v2("1/3 cups"), 1.0 / 3.0)
+        self.assertEqual(extract_number_en_v2("quarter cup"), 0.25)
+        self.assertEqual(extract_number_en_v2("1/4 cup"), 0.25)
+        self.assertEqual(extract_number_en_v2("2/3 cups"), 2.0 / 3.0)
+        self.assertEqual(extract_number_en_v2("3/4 cups"), 3.0 / 4.0)
+        self.assertEqual(extract_number_en_v2("1 and 3/4 cups"), 1.75)
+
+        # TODO FIXME
+        self.assertEqual(extract_number_en_v2("three quarter cups"), 3.0 / 4.0)
+        self.assertEqual(extract_number_en_v2("three quarters cups"),
+                         3.0 / 4.0)
+        self.assertEqual(extract_number_en_v2("one and one half cups"), 1.5)
+        self.assertEqual(extract_number_en_v2("one and a half cups"), 1.5)
+        self.assertEqual(extract_number_en_v2("one cup and a half"), 1.5)
+        self.assertEqual(extract_number_en_v2("1 cup and a half"), 1.5)
+        self.assertEqual(extract_number_en_v2("one fourth cup"), 0.25)
+
+    def test_extract_number(self):
+        self.assertEqual(extract_number_en_v2("this is 2 test"), 2)
+        self.assertEqual(extract_number_en_v2("this is test number 4"), 4)
+        self.assertEqual(extract_number_en_v2("three cups"), 3)
+        self.assertEqual(extract_number_en_v2("twenty two"), 22)
+        self.assertEqual(extract_number_en_v2(
+            "Twenty two with a leading capital letter"), 22)
+        self.assertEqual(extract_number_en_v2(
+            "twenty Two with Two capital letters"), 22)
+        self.assertEqual(extract_number_en_v2(
+            "twenty Two with mixed capital letters"), 22)
+        self.assertEqual(extract_number_en_v2("two hundred"), 200)
+        self.assertEqual(extract_number_en_v2("nine thousand"), 9000)
+        self.assertEqual(extract_number_en_v2("six hundred sixty six"), 666)
+        self.assertEqual(extract_number_en_v2("two million"), 2000000)
+        self.assertEqual(extract_number_en_v2(
+            "two million five hundred thousand tons of spinning metal"),
+            2500000)
+        self.assertEqual(extract_number_en_v2("six trillion"), 6000000000000.0)
+        self.assertEqual(extract_number_en_v2("six trillion",
+                                              short_scale=False), 6e+18)
+        self.assertEqual(extract_number_en_v2("one point five"), 1.5)
+        self.assertEqual(extract_number_en_v2("three dot fourteen"), 3.14)
+        self.assertEqual(extract_number_en_v2("zero point two"), 0.2)
+        self.assertEqual(extract_number_en_v2("billions of years older"),
+                         1000000000.0)
+        self.assertEqual(extract_number_en_v2(
+            "billions of years older", short_scale=False), 1000000000000.0)
+        self.assertEqual(extract_number_en_v2("one hundred thousand"), 100000)
+
+        self.assertEqual(extract_number_en_v2("negative seventy"), -70)
+        self.assertEqual(extract_number_en_v2("thousand million"), 1000000000)
+
+        # Verify non-power multiples of ten no longer discard
+        # adjacent multipliers
+        self.assertEqual(extract_number_en_v2("twenty thousand"), 20000)
+        self.assertEqual(extract_number_en_v2("fifty million"), 50000000)
+
+        # Verify smaller powers of ten no longer cause miscalculation of larger
+        # powers of ten (see MycroftAI#86)
+        self.assertEqual(extract_number_en_v2("twenty billion three hundred million \
+                                        nine hundred fifty thousand six hundred \
+                                        seventy five point eight"),
+                         20300950675.8)
+        self.assertEqual(extract_number_en_v2("nine hundred ninety nine million nine \
+                                        hundred ninety nine thousand nine \
+                                        hundred ninety nine point nine"),
+                         999999999.9)
+
+        # TODO why does "trillion" result in xxxx.0?
+        self.assertEqual(extract_number_en_v2("eight hundred trillion two hundred \
+                                        fifty seven"), 800000000000257.0)
+
+        # TODO handle this case
+        # self.assertEqual(
+        #    extract_number_en_v2("6 dot six six six"),
+        #    6.666)
+
+    def test_extract_no_number(self):
+        self.assertTrue(
+            extract_number_en_v2("The tennis player is fast") is False)
+        self.assertTrue(extract_number_en_v2("fraggle") is False)
+
+        self.assertTrue(extract_number_en_v2("grobo 0") is not False)
+        self.assertEqual(extract_number_en_v2("grobo 0"), 0)
+
+        self.assertTrue(extract_number_en_v2("fraggle zero") is not False)
+        self.assertEqual(extract_number_en_v2("fraggle zero"), 0)
+
+    def test_extract_couple_number(self):
+        # TODO FIXME
+        self.assertEqual(extract_number_en_v2("a couple of beers"), 2)
+        self.assertEqual(extract_number_en_v2("a couple hundred beers"), 200)
+        self.assertEqual(extract_number_en_v2("a couple thousand beers"), 2000)
 
 
 if __name__ == "__main__":

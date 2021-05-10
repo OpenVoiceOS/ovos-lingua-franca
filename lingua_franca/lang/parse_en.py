@@ -18,6 +18,7 @@ import re
 from datetime import datetime, timedelta, time
 
 from dateutil.relativedelta import relativedelta
+from quebra_frases import span_indexed_word_tokenize
 
 from lingua_franca.internal import resolve_resource_file
 from lingua_franca.lang.common_data_en import _ARTICLES_EN, _LONG_ORDINAL_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN, \
@@ -29,6 +30,7 @@ from lingua_franca.lang.common_data_en import _ARTICLES_EN, _LONG_ORDINAL_EN, _L
 from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
     invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer
 from lingua_franca.time import now_local
+from lingua_franca.lang.parse_common import normalize_decimals
 
 
 def _convert_words_to_numbers_en(text, short_scale=True, ordinals=False):
@@ -368,9 +370,9 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
 
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
-        if (prev_word in _SUMS_EN and val and val < 10) or all([prev_word in
-                                                                multiplies,
-                                                                val < prev_val if prev_val else False]):
+        if (prev_word in _SUMS_EN and val and val < 10) or \
+                all([prev_word in multiplies,
+                     val < prev_val if prev_val else False]):
             val = prev_val + val
 
         # is the prev word a number and should we multiply it?
@@ -529,7 +531,231 @@ def _initialize_number_data_en(short_scale, speech=True):
     return multiplies, string_num_ordinal_en, string_num_scale_en
 
 
-def extract_number_en(text, short_scale=True, ordinals=False):
+def extract_number_spans_en(utterance, short_scale=True, ordinals=False,
+                            fractional_numbers=True, decimal="."):
+    """
+        This function tags numbers in an utterance.
+
+        Args:
+            utterance (str): the string to normalize
+            short_scale (bool): use short scale if True, long scale if False
+            ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+            fractional_numbers (bool): True if we should look for fractions and
+                                       decimals.
+            decimal (str): decimal marker
+        Returns:
+            (list): list of tuples with detected number and span of the
+                    number in parent utterance [(number, (start_idx, end_idx))]
+
+        """
+    number_spans = []
+    if isinstance(utterance, str):
+        spans = span_indexed_word_tokenize(utterance)
+    else:
+        spans = utterance
+
+    # load language number data
+    multiplies, string_num_ordinal, string_num_scale = \
+        _initialize_number_data_en(short_scale, speech=ordinals is not None)
+
+    num_ended = False  # number string ended, save prev number
+    num = None
+    num2 = None
+
+    num_start = -1
+    num_end = -1
+    for idx, (start, end, word) in enumerate(spans):
+        if end <= num_end:
+            # token consumed already
+            continue
+
+        prev_span = spans[idx - 1] if idx > 0 else (-1, -1, "")
+        next_span = spans[idx + 1] if idx + 1 < len(spans) else (-1, -1, "")
+        next_next_span = spans[idx + 2] if idx + 2 < len(spans) else (-1, -1, "")
+
+        word = word.lower()
+        prev_word = prev_span[-1].lower()
+        next_word = next_span[-1].lower()
+
+        def found_number():
+            nonlocal num, number_spans, num_end, num_start
+            # found a number!
+            number_spans.append((num, (num_start, num_end)))
+            num = None
+
+        # is the word a number already ?
+        if not num and is_numeric(word):
+            num = int(word)
+            num_start = start
+            num_end = end
+
+        # spoken/text number?
+        elif not is_numeric(word):
+            # let's see if this continuation or end of a previous number
+            if num is not None:
+                # is this word the name of a number ?
+                if word in _STRING_NUM_EN:
+                    num2 = _STRING_NUM_EN.get(word)
+                elif word in string_num_scale:
+                    num2 = string_num_scale.get(word)
+                elif ordinals and word in string_num_ordinal:
+                    num2 = string_num_ordinal[word]
+
+                ## how do num and num2 relate
+                if num is not None and num_ended:
+                    # found a number!
+                    found_number()
+                    continue
+
+            # let's see if this word is the start of a number
+            else:
+                # explicit ordinals, 1st, 2nd, 3rd, 4th.... Nth
+                if is_numeric(word[:-2]) and \
+                        (word.endswith("st") or word.endswith("nd") or
+                         word.endswith("rd") or word.endswith("th")):
+                    num = int(word[:-2])
+                    num_start = start
+                    num_end = end
+
+                    # handle nth one
+                    if next_word == "one":
+                        # consume next span
+                        # would return 1 instead otherwise
+                        spans[idx + 1] = (-1, -1, "")
+
+                    # found a number!
+                    found_number()
+                    continue
+
+                # is this word the name of a number ?
+                if word in _STRING_NUM_EN:
+                    num = _STRING_NUM_EN.get(word)
+                elif word in string_num_scale:
+                    num = string_num_scale.get(word)
+                elif ordinals and word in string_num_ordinal:
+                    num = string_num_ordinal[word]
+
+
+                # is this a spoken fraction?
+                # half cup
+                #elif not (ordinals is None and word in string_num_ordinal):
+                #    num = is_fractional_en(word, short_scale=short_scale,
+                #                            spoken=ordinals is not None)
+
+                # process the number we found
+                if num is not None:
+                    # take note of span
+                    num_start = start
+                    num_end = end
+
+                    # negative number marker
+                    if prev_word in _NEGATIVES_EN:
+                        num = 0 - num
+                        num_start = prev_span[0]
+
+                    ## is this a final number?
+                    num_ended = False
+
+                    # explicit ordinals, 1st, 2nd, 3rd, 4th.... Nth
+                    if is_numeric(next_word[:-2]) and \
+                            (next_word.endswith("st") or next_word.endswith("nd") or
+                             next_word.endswith("rd") or next_word.endswith("th")):
+                        # new number coming up, invalid continuation
+                        num_ended = True
+
+                    if next_word in _NEGATIVES_EN:
+                        # a new negative sign is an invalid number continuation
+                        num_ended = True
+
+                    # end of sentence
+                    if idx == len(spans) - 1:
+                        num_ended = True
+
+                    if num is not None and num_ended:
+                        found_number()
+
+                    continue
+
+        # handle # and fraction, eg. "2 and 3/4"
+        if fractional_numbers and num is not None and \
+                next_span[-1] in _FRACTION_MARKER_EN and \
+                prev_span[-1] not in [decimal, "/"]:
+            fractional_piece = extract_number_spans_en(spans[end:],
+                                                       short_scale,
+                                                       ordinals,
+                                                       fractional_numbers,
+                                                       decimal)
+            if fractional_piece:
+                frac_num = fractional_piece[0][0]
+                # ensure first is not a fraction and second is a fraction
+                if num >= 1 and frac_num < 1:
+                    num += frac_num
+                    num_end = fractional_piece[0][1][1]
+                    number_spans.append((num, (num_start, num_end)))
+                    # return all parsed numbers after the marker
+                    # (do not reparse)
+                    return number_spans + fractional_piece[1:]
+
+        # handle # symbol #, eg. 1.5 or 3/4
+        elif word.isdigit() and \
+                next_next_span[-1].isdigit() and \
+                next_span[-1] in [decimal, "/"] and \
+                prev_span[-1] not in [decimal, "/"]:
+            num = int(word)
+            num_start = start
+            num_end = end
+            num2 = int(next_next_span[-1])
+
+            # negative number marker
+            if prev_word in _NEGATIVES_EN:
+                num = 0 - num
+                num_start = prev_span[0]
+
+            # handle #/#, eg. "1/5"
+            if next_span[-1] == "/":
+                num_start = start
+                num = num / num2
+                num_end = next_next_span[1]
+                # found a number!
+                found_number()
+                continue
+
+            # handle #.#, eg. "1.5"
+            elif next_span[-1] == decimal:
+                num2 = float(f"0.{num2}")
+                num = num + num2
+                num_end = next_next_span[1]
+                # found a number!
+                found_number()
+                continue
+
+        # handle #, eg. "123"
+        elif is_numeric(word):
+            if word.isdigit():  # doesn't work with decimals
+                num = int(word)
+            else:
+                num = float(word)
+            num_start = start
+            num_end = end
+            # negative number marker
+            if prev_word in _NEGATIVES_EN:
+                num = 0 - num
+                num_start = prev_span[0]
+            # found a number!
+            found_number()
+            continue
+
+    return number_spans
+
+
+def extract_number_en_v2(*args, **kwargs):
+    spans = extract_number_spans_en(*args, **kwargs)
+    if not spans:
+        return False
+    return extract_number_spans_en(*args, **kwargs)[0][0]
+
+
+def extract_number_en(text, short_scale=True, ordinals=False, decimal='.'):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -540,11 +766,17 @@ def extract_number_en(text, short_scale=True, ordinals=False):
         text (str): the string to normalize
         short_scale (bool): use short scale if True, long scale if False
         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         (int) or (float) or False: The extracted number or False if no number
                                    was found
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
 
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     return _extract_number_with_text_en(tokenize(text.lower()),
                                         short_scale, ordinals).value
 
@@ -1655,7 +1887,7 @@ def is_fractional_en(input_str, short_scale=True, spoken=True):
     return False
 
 
-def extract_numbers_en(text, short_scale=True, ordinals=False):
+def extract_numbers_en(text, short_scale=True, ordinals=False, decimal='.'):
     """
         Takes in a string and extracts a list of numbers.
 
@@ -1666,9 +1898,15 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
             is now common in most English speaking countries.
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         list: list of extracted numbers as floats
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     results = _extract_numbers_with_text_en(tokenize(text),
                                             short_scale, ordinals)
     return [float(result.value) for result in results]

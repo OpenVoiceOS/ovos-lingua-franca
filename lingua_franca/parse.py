@@ -13,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import re
 import json
 from lingua_franca.util import match_one, fuzzy_match, MatchStrategy
-from lingua_franca.lang.parse_common import match_yes_or_no
+from lingua_franca.lang.parse_common import match_yes_or_no, is_numeric
 from difflib import SequenceMatcher
 from warnings import warn
 from lingua_franca.time import now_local
@@ -24,13 +25,17 @@ from lingua_franca.internal import populate_localized_function_dict, \
     get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
     resolve_resource_file, FunctionNotLocalizedError
 import unicodedata
+from quebra_frases import span_indexed_word_tokenize
 
 
+# TODO deprecate extract_number and extract_numbers in favor of
+#  extract_number_spans to rule them all
 _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_number",
                          "extract_duration",
                          "extract_datetime",
                          "extract_langcode",
+                         "extract_number_spans",
                          "normalize",
                          "get_gender",
                          "yes_or_no",
@@ -38,6 +43,44 @@ _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "is_ordinal")
 
 populate_localized_function_dict("parse", langs=get_active_langs())
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def extract_number_spans(utterance, short_scale=True, ordinals=False,
+                         fractional_numbers=True, decimal=".", lang=''):
+    """
+        This function tags numbers in an utterance.
+
+        Args:
+            utterance (str): the string to normalize
+            short_scale (bool): use short scale if True, long scale if False
+            ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+            fractional_numbers (bool): True if we should look for fractions and
+                                       decimals.
+            decimal (str): decimal marker
+            lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+        Returns:
+            (list): list of tuples with detected number and span of the
+                    number in parent utterance [(number, (start_idx, end_idx))]
+
+        """
+    number_spans = []
+    spans = span_indexed_word_tokenize(utterance)
+    for idx, (start, end, word) in enumerate(spans):
+        next_span = spans[idx + 1] if idx + 1 < len(spans) else ()
+        next_next_span = spans[idx + 2] if idx + 2 < len(spans) else ()
+        if is_numeric(word):
+            if next_span and next_next_span and \
+                    next_span[-1] == decimal and \
+                    is_numeric(next_next_span[-1]):
+                end = next_next_span[1]
+                num = float("".join([word, next_span[-1], next_next_span[-1]]))
+                spans[idx + 1] = spans[idx + 2] = (-1, -1, "")
+            else:
+                num = int(word)
+            number_spans.append((num, (start, end)))
+    return number_spans
 
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
@@ -55,8 +98,9 @@ def extract_langcode(text, lang=""):
     return match_one(text, LANGUAGES, strategy=MatchStrategy.TOKEN_SET_RATIO)
 
 
-@localized_function()
-def extract_numbers(text, short_scale=True, ordinals=False, lang=''):
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def extract_numbers(text, short_scale=True, ordinals=False, lang='',
+                    decimal='.', fractional_numbers=True):
     """
         Takes in a string and extracts a list of numbers.
 
@@ -69,28 +113,83 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang=''):
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
         lang (str, optional): an optional BCP-47 language code, if omitted
                               the default language will be used.
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         list: list of extracted numbers as floats, or empty list if none found
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
     """
+    spans = extract_number_spans(text, short_scale=short_scale, lang=lang,
+                                 ordinals=ordinals, decimal=decimal,
+                                 fractional_numbers=fractional_numbers)
+    if spans:
+        return [a[0] for a in spans]
+    return []
 
 
-@localized_function()
-def extract_number(text, short_scale=True, ordinals=False, lang=''):
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def extract_number(text, short_scale=True, ordinals=False, lang='',
+                   decimal='.', fractional_numbers=True):
+    """backwards compat, use extract_first_number instead"""
+    return extract_first_number(text, short_scale, ordinals,
+                                lang, decimal, fractional_numbers)
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def extract_first_number(text, short_scale=True, ordinals=False, lang='',
+                         decimal='.', fractional_numbers=True):
     """Takes in a string and extracts a number.
 
-    Args:
-        text (str): the string to extract a number from
-        short_scale (bool): Use "short scale" or "long scale" for large
-            numbers -- over a million.  The default is short scale, which
-            is now common in most English speaking countries.
-            See https://en.wikipedia.org/wiki/Names_of_large_numbers
-        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
-        lang (str, optional): an optional BCP-47 language code, if omitted
-                              the default language will be used.
-    Returns:
-        (int, float or False): The number extracted or False if the input
-                               text contains no numbers
-    """
+        Args:
+            text (str): the string to extract a number from
+            short_scale (bool): Use "short scale" or "long scale" for large
+                numbers -- over a million.  The default is short scale, which
+                is now common in most English speaking countries.
+                See https://en.wikipedia.org/wiki/Names_of_large_numbers
+            ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+            lang (str, optional): an optional BCP-47 language code, if omitted
+                                  the default language will be used.
+            decimal (str): character to use as decimal point. defaults to '.'
+        Returns:
+            (int, float or False): The number extracted or False if the input
+                                   text contains no numbers
+        Note:
+            will always extract numbers formatted with a decimal dot/full stop,
+            such as '3.5', even if 'decimal' is specified.
+        """
+    numbers = extract_numbers(text, short_scale, ordinals, lang, decimal, fractional_numbers)
+    if numbers:
+        return numbers[0]
+    return False
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def extract_last_number(text, short_scale=True, ordinals=False, lang='',
+                        decimal='.', fractional_numbers=True):
+    """Takes in a string and extracts a number.
+
+        Args:
+            text (str): the string to extract a number from
+            short_scale (bool): Use "short scale" or "long scale" for large
+                numbers -- over a million.  The default is short scale, which
+                is now common in most English speaking countries.
+                See https://en.wikipedia.org/wiki/Names_of_large_numbers
+            ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+            lang (str, optional): an optional BCP-47 language code, if omitted
+                                  the default language will be used.
+            decimal (str): character to use as decimal point. defaults to '.'
+        Returns:
+            (int, float or False): The number extracted or False if the input
+                                   text contains no numbers
+        Note:
+            will always extract numbers formatted with a decimal dot/full stop,
+            such as '3.5', even if 'decimal' is specified.
+        """
+    numbers = extract_numbers(text, short_scale, ordinals, lang, decimal, fractional_numbers)
+    if numbers:
+        return numbers[-1]
+    return False
 
 
 @localized_function()

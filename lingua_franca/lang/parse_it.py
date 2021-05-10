@@ -28,6 +28,7 @@ from lingua_franca.lang.format_it import _LONG_SCALE_IT, _SHORT_SCALE_IT, \
     pronounce_number_it
 from lingua_franca.lang.common_data_it import _SHORT_ORDINAL_STRING_IT, \
     _ARTICLES_IT, _LONG_ORDINAL_STRING_IT, _STRING_NUM_IT
+from lingua_franca.lang.parse_common import normalize_decimals
 
 
 def is_fractional_it(input_str, short_scale=False):
@@ -224,7 +225,7 @@ def _extract_number_long_it(word):
     return value
 
 
-def extract_number_it(text, short_scale=False, ordinals=False):
+def extract_number_it(text, short_scale=False, ordinals=False, decimal='.'):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -235,11 +236,17 @@ def extract_number_it(text, short_scale=False, ordinals=False):
         text (str): the string to normalize
         short_scale (bool): use short scale if True, long scale if False
         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
         (int) or (float) or False: The extracted number or False if no number
                                    was found
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
 
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
 
     text = text.lower()
     string_num_ordinal_it = {}
@@ -1148,20 +1155,25 @@ def get_gender_it(word, context=""):
     return gender
 
 
-def extract_numbers_it(text, short_scale=False, ordinals=False):
+def extract_numbers_it(text, short_scale=False, ordinals=False, decimal='.'):
     """
         Takes in a string and extracts a list of numbers.
 
-    Args:
-        text (str): the string to extract a number from
-        short_scale (bool): Use "short scale" or "long scale" for large
-            numbers -- over a million.  The default is short scale, which
-            is now common in most English speaking countries.
-            See https://en.wikipedia.org/wiki/Names_of_large_numbers
-        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+     Args:
+        text (str): the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
-        list: list of extracted numbers as floats
+        (int) or (float) or False: The extracted number or False if no number
+                                   was found
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
+
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     return extract_numbers_generic(text, pronounce_number_it,
                                    extract_number_it,
                                    short_scale=short_scale, ordinals=ordinals)

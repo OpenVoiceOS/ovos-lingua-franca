@@ -29,6 +29,8 @@ from lingua_franca.lang.common_data_pt import _NUMBERS_PT, \
 from lingua_franca.internal import resolve_resource_file
 from lingua_franca.lang.parse_common import Normalizer
 from lingua_franca.time import now_local
+from lingua_franca.lang.parse_common import normalize_decimals
+
 import json
 import re
 import unicodedata
@@ -77,16 +79,28 @@ def is_fractional_pt(input_str, short_scale=True):
     return False
 
 
-def extract_number_pt(text, short_scale=True, ordinals=False):
+def extract_number_pt(text, short_scale=True, ordinals=False, decimal='.'):
     """
-    This function prepares the given text for parsing by making
-    numbers consistent, getting rid of contractions, etc.
+    This function extracts a number from a text string,
+    handles pronunciations in long scale and short scale
+
+    https://en.wikipedia.org/wiki/Names_of_large_numbers
+
     Args:
         text (str): the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        decimal (str): character to use as decimal point. defaults to '.'
     Returns:
-        (int) or (float): The value of extracted number
+        (int) or (float) or False: The extracted number or False if no number
+                                   was found
+    Note:
+        will always extract numbers formatted with a decimal dot/full stop,
+        such as '3.5', even if 'decimal' is specified.
 
     """
+    if decimal != '.':
+        text = normalize_decimals(text, decimal)
     # TODO: short_scale and ordinals don't do anything here.
     # The parameters are present in the function signature for API compatibility
     # reasons.

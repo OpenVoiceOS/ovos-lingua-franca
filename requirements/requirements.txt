@@ -1,2 +1,3 @@
 python-dateutil~=2.6
 rapidfuzz
+quebra_frases>=0.3.4
