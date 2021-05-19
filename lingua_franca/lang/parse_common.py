@@ -19,6 +19,8 @@ import json
 from lingua_franca.internal import  resolve_resource_file, FunctionNotLocalizedError
 import unicodedata
 
+ROMAN_NUMERALS = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
+
 
 class Normalizer:
     """

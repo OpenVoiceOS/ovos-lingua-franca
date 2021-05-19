@@ -561,6 +561,14 @@ def localized_function(run_own_code_on=[type(None)]):
             # If we didn't find a localized function to correspond with
             # the wrapped function, we cached NotImplementedError in its
             # place.
+
+            # first account for the function not being present in any
+            # module, meaning all modules are falling back to a catch all
+            # parser, this usually means the function will need localization
+            # only in future languages not currently supported
+            if func_name not in _localized_functions[_module_name][lang_code]:
+                raise FunctionNotLocalizedError(func_name, lang_code)
+
             loc_signature = _localized_functions[_module_name][lang_code][func_name]
             if isinstance(loc_signature, type(NotImplementedError())):
                 raise loc_signature
