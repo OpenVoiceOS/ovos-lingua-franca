@@ -28,7 +28,9 @@ from lingua_franca.internal import localized_function, \
     get_full_lang_code, get_default_lang, get_default_loc, \
     is_supported_full_lang, _raise_unsupported_language, \
     UnsupportedLanguageError, NoneLangWarning, InvalidLangWarning, \
-    FunctionNotLocalizedError, resolve_resource_file, FunctionNotLocalizedError
+    FunctionNotLocalizedError, resolve_resource_file, FunctionNotLocalizedError,\
+    get_primary_lang_code
+from lingua_franca.time import now_local
 
 
 _REGISTERED_FUNCTIONS = ("nice_number",
@@ -370,6 +372,35 @@ def nice_date_time(dt, lang='', now=None, use_24hour=False,
                                              use_ampm)
 
 
+def nice_day(dt, date_format='MDY', include_month=True, lang=""):
+    if include_month:
+        month = nice_month(dt, date_format, lang)
+        if date_format == 'MDY':
+            return "{} {}".format(month, dt.strftime("%d"))
+        else:
+            return "{} {}".format(dt.strftime("%d"), month)
+    return dt.strftime("%d")
+
+
+def nice_weekday(dt, lang=""):
+    if lang in date_time_format.lang_config.keys():
+        localized_day_names = list(
+            date_time_format.lang_config[lang]['weekday'].values())
+        weekday = localized_day_names[dt.weekday()]
+    else:
+        weekday = dt.strftime("%A")
+    return weekday.capitalize()
+
+
+def nice_month(dt, date_format='MDY', lang=""):
+    if lang in date_time_format.lang_config.keys():
+        localized_month_names = date_time_format.lang_config[lang]['month']
+        month = localized_month_names[str(int(dt.strftime("%m")))]
+    else:
+        month = dt.strftime("%B")
+    return month.capitalize()
+
+
 def nice_year(dt, lang='', bc=False):
     """
         Format a datetime to a pronounceable year
@@ -390,6 +421,35 @@ def nice_year(dt, lang='', bc=False):
     date_time_format.cache(full_code)
 
     return date_time_format.year_format(dt, full_code, bc)
+
+
+def get_date_strings(dt=None, date_format='MDY', time_format="full", lang=""):
+    lang = get_primary_lang_code(lang)
+    dt = dt or now_local()
+    timestr = nice_time(dt, lang, speech=False,
+                         use_24hour=time_format == "full")
+    monthstr = nice_month(dt, date_format, lang)
+    weekdaystr = nice_weekday(dt, lang)
+    yearstr = dt.strftime("%Y")
+    daystr = nice_day(dt, date_format, include_month=False, lang=lang)
+    if date_format == 'MDY':
+        return {
+            "date_string": dt.strftime("%-m/%-d/%Y"),
+            "time_string": timestr,
+            "month_string": monthstr,
+            "day_string": daystr,
+            'year_string': yearstr,
+            "weekday_string": weekdaystr
+        }
+    else:
+        return {
+            "date_string": dt.strftime("%Y/%-d/%-m"),
+            "time_string": timestr,
+            "month_string": monthstr,
+            "day_string": daystr,
+            'year_string': yearstr,
+            "weekday_string": weekdaystr
+        }
 
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
