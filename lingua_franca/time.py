@@ -46,7 +46,7 @@ def now_utc():
     Returns:
         (datetime): The current time in Universal Time, aka GMT
     """
-    return to_utc(datetime.utcnow())
+    return datetime.utcnow().replace(tzinfo=gettz("UTC"))
 
 
 def now_local(tz=None):
@@ -58,8 +58,7 @@ def now_local(tz=None):
     Returns:
         (datetime): The current time
     """
-    if not tz:
-        tz = default_timezone()
+    tz = tz or default_timezone()
     return datetime.now(tz)
 
 
@@ -71,11 +70,10 @@ def to_utc(dt):
     Returns:
         (datetime): time converted to UTC
     """
-    tzUTC = gettz("UTC")
-    if dt.tzinfo:
-        return dt.astimezone(tzUTC)
-    else:
-        return dt.replace(tzinfo=gettz("UTC")).astimezone(tzUTC)
+    tz = gettz("UTC")
+    if not dt.tzinfo:
+        dt = dt.replace(tzinfo=default_timezone())
+    return dt.astimezone(tz)
 
 
 def to_local(dt):
@@ -87,8 +85,20 @@ def to_local(dt):
         (datetime): time converted to the local timezone
     """
     tz = default_timezone()
-    if dt.tzinfo:
-        return dt.astimezone(tz)
-    else:
-        return dt.replace(tzinfo=gettz("UTC")).astimezone(tz)
+    if not dt.tzinfo:
+        dt = dt.replace(tzinfo=default_timezone())
+    return dt.astimezone(tz)
 
+
+def to_system(dt):
+    """Convert a datetime to the system's local timezone
+
+    Args:
+        dt (datetime): A datetime (if no timezone, assumed to be UTC)
+    Returns:
+        (datetime): time converted to the operation system's timezone
+    """
+    tz = tzlocal()
+    if not dt.tzinfo:
+        dt = dt.replace(tzinfo=default_timezone())
+    return dt.astimezone(tz)
