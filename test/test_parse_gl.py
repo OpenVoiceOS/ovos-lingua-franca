@@ -19,7 +19,7 @@ import unittest
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.parse import (normalize, extract_numbers, extract_number,
                                  extract_datetime)
-from lingua_franca.lang.parse_es import extract_datetime_gl, is_fractional_gl
+from lingua_franca.lang.parse_gl import extract_datetime_gl, is_fractional_gl
 from lingua_franca.time import default_timezone
 
 
