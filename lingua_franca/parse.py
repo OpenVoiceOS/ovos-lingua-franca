@@ -13,18 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+import json
+from lingua_franca.util import match_one, fuzzy_match
 from difflib import SequenceMatcher
 from warnings import warn
 from lingua_franca.time import now_local
 from lingua_franca.internal import populate_localized_function_dict, \
     get_active_langs, get_full_lang_code, get_primary_lang_code, \
-    get_default_lang, localized_function, _raise_unsupported_language
+    get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
+    resolve_resource_file, FunctionNotLocalizedError
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_number",
                          "extract_duration",
                          "extract_datetime",
+                         "extract_langcode",
                          "normalize",
                          "get_gender",
                          "is_fractional",
@@ -33,44 +36,12 @@ _REGISTERED_FUNCTIONS = ("extract_numbers",
 populate_localized_function_dict("parse", langs=get_active_langs())
 
 
-def fuzzy_match(x: str, against: str) -> float:
-    """Perform a 'fuzzy' comparison between two strings.
-
-    Returns:
-        match percentage -- 1.0 for perfect match,
-        down to 0.0 for no match at all.
-    """
-    return SequenceMatcher(None, x, against).ratio()
-
-
-def match_one(query, choices):
-    """
-        Find best match from a list or dictionary given an input
-
-        Args:
-            query (str): string to test
-            choices (list): list or dictionary of choices
-
-        Returns:
-            tuple: (best match, score)
-    """
-    if isinstance(choices, dict):
-        _choices = list(choices.keys())
-    elif isinstance(choices, list):
-        _choices = choices
-    else:
-        raise ValueError('a list or dict of choices must be provided')
-
-    best = (_choices[0], fuzzy_match(query, _choices[0]))
-    for c in _choices[1:]:
-        score = fuzzy_match(query, c)
-        if score > best[1]:
-            best = (c, score)
-
-    if isinstance(choices, dict):
-        return (choices[best[0]], best[1])
-    else:
-        return best
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
+def extract_langcode(text, lang=""):
+    resource_file = resolve_resource_file(f"text/{lang}/langs.json") or resolve_resource_file("text/en-us/langs.json")
+    with open(resource_file) as f:
+        LANGUAGES = {v: k for k, v in json.load(f).items()}
+    return match_one(text, LANGUAGES)
 
 
 @localized_function()

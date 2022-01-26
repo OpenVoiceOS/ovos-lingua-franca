@@ -36,6 +36,7 @@ from lingua_franca.format import nice_duration
 from lingua_franca.format import pronounce_number
 from lingua_franca.format import date_time_format
 from lingua_franca.format import join_list
+from lingua_franca.format import pronounce_lang
 from lingua_franca.time import default_timezone, set_default_tz, now_local, \
     to_local
 
@@ -531,6 +532,15 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(join_list(["a", "b", "c", "d"], "or"), "a, b, c or d")
 
         self.assertEqual(join_list([1, "b", 3, "d"], "or"), "1, b, 3 or d")
+
+
+class TestLangcode(unittest.TestCase):
+    def test_format_lang_code(self):
+        self.assertEqual(pronounce_lang(lang_code="en"), "English")
+        self.assertEqual(pronounce_lang(lang_code="pt"), "Portuguese")
+        self.assertEqual(pronounce_lang(lang_code="pt-br"), "Brazilian Portuguese")
+        self.assertEqual(pronounce_lang(lang_code="pt-pt"), "Portuguese")
+        self.assertEqual(pronounce_lang(lang_code="en-us"), "American English")
 
 
 if __name__ == "__main__":

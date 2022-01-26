@@ -21,19 +21,20 @@ from collections import namedtuple
 from warnings import warn
 from os.path import join
 
-
+from lingua_franca.util import match_one, fuzzy_match
 from lingua_franca.bracket_expansion import SentenceTreeParser
 from lingua_franca.internal import localized_function, \
     populate_localized_function_dict, get_active_langs, \
     get_full_lang_code, get_default_lang, get_default_loc, \
     is_supported_full_lang, _raise_unsupported_language, \
     UnsupportedLanguageError, NoneLangWarning, InvalidLangWarning, \
-    FunctionNotLocalizedError
+    FunctionNotLocalizedError, resolve_resource_file, FunctionNotLocalizedError
 
 
 _REGISTERED_FUNCTIONS = ("nice_number",
                          "nice_time",
                          "pronounce_number",
+                         "pronounce_lang",
                          "nice_response",
                          "nice_duration")
 
@@ -240,6 +241,17 @@ class DateTimeFormat:
 
 date_time_format = DateTimeFormat(os.path.join(os.path.dirname(__file__),
                                                'res/text'))
+
+
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
+def pronounce_lang(lang_code, lang=""):
+    resource_file = resolve_resource_file(f"text/{lang}/langs.json") or \
+                    resolve_resource_file("text/en-us/langs.json")
+    with open(resource_file) as f:
+        LANGUAGES = json.load(f)
+    lang_code = lang_code.lower()
+    lang2 = lang_code.split("-")[0]
+    return LANGUAGES.get(lang_code) or LANGUAGES.get(lang2) or lang_code
 
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError])
