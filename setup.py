@@ -4,6 +4,8 @@ from distutils.command.install import install
 import pip
 from setuptools import setup
 
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+
 
 class CustomInstall(install):
     """Custom handler for the 'install' command."""
@@ -32,6 +34,31 @@ def required(requirements_file):
                 if pkg.strip() and not pkg.startswith("#")]
 
 
+def get_version():
+    """ Find the version of ovos-core"""
+    version = None
+    version_file = os.path.join(BASEDIR, 'lingua_franca', 'version', '__init__.py')
+    major, minor, build, alpha = (None, None, None, None)
+    with open(version_file) as f:
+        for line in f:
+            if 'CORE_VERSION_MAJOR' in line:
+                major = line.split('=')[1].strip()
+            elif 'CORE_VERSION_MINOR' in line:
+                minor = line.split('=')[1].strip()
+            elif 'CORE_VERSION_BUILD' in line:
+                build = line.split('=')[1].strip()
+            elif 'CORE_VERSION_ALPHA' in line:
+                alpha = line.split('=')[1].strip()
+
+            if ((major and minor and build and alpha) or
+                    '# END_VERSION_BLOCK' in line):
+                break
+    version = f"{major}.{minor}.{build}"
+    if alpha:
+        version += f"a{alpha}"
+    return version
+
+
 extra_files = package_files('lingua_franca')
 
 with open("readme.md", "r") as fh:
@@ -39,8 +66,8 @@ with open("readme.md", "r") as fh:
 
 setup(
     name='ovos-lingua-franca',
-    version='0.4.3a1',
-    packages=['lingua_franca', 'lingua_franca.lang'],
+    version=get_version(),
+    packages=['lingua_franca', 'lingua_franca.lang', 'lingua_franca.version'],
     cmdclass={'install': CustomInstall},
     url='https://github.com/OpenVoiceOS/ovos-lingua-franca',
     license='Apache2.0',
