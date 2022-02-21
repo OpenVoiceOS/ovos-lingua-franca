@@ -4,7 +4,7 @@ from os.path import join, dirname
 
 version_file = join(dirname(__file__), "lingua_franca", "version",
                     "__init__.py")
-version_var_name = "CORE_VERSION_ALPHA"
+version_var_name = "VERSION_ALPHA"
 
 with open(version_file, "r", encoding="utf-8") as v:
     for line in v.readlines():

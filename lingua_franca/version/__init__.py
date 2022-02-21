@@ -1,18 +1,18 @@
 # The following lines are replaced during the release process.
 # START_VERSION_BLOCK
 
-CORE_VERSION_MAJOR = 0
-CORE_VERSION_MINOR = 4
-CORE_VERSION_BUILD = 3
-CORE_VERSION_ALPHA = 1
+VERSION_MAJOR = 0
+VERSION_MINOR = 4
+VERSION_BUILD = 3
+VERSION_ALPHA = 1
 
 # END_VERSION_BLOCK
 
 
-CORE_VERSION_TUPLE = (CORE_VERSION_MAJOR,
-                      CORE_VERSION_MINOR,
-                      CORE_VERSION_BUILD)
-CORE_VERSION_STR = '.'.join(map(str, CORE_VERSION_TUPLE))
+VERSION_TUPLE = (VERSION_MAJOR,
+                 VERSION_MINOR,
+                 VERSION_BUILD)
+VERSION_STR = '.'.join(map(str, VERSION_TUPLE))
 
 
 

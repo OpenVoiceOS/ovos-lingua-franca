@@ -41,13 +41,13 @@ def get_version():
     major, minor, build, alpha = (None, None, None, None)
     with open(version_file) as f:
         for line in f:
-            if 'CORE_VERSION_MAJOR' in line:
+            if 'VERSION_MAJOR' in line:
                 major = line.split('=')[1].strip()
-            elif 'CORE_VERSION_MINOR' in line:
+            elif 'VERSION_MINOR' in line:
                 minor = line.split('=')[1].strip()
-            elif 'CORE_VERSION_BUILD' in line:
+            elif 'VERSION_BUILD' in line:
                 build = line.split('=')[1].strip()
-            elif 'CORE_VERSION_ALPHA' in line:
+            elif 'VERSION_ALPHA' in line:
                 alpha = line.split('=')[1].strip()
 
             if ((major and minor and build and alpha) or
