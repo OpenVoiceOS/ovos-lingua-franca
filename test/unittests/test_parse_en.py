@@ -953,13 +953,6 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('i had things to do 2 years ago', dt)[0],
             datetime(2015, 6, 2, tzinfo=default_timezone()))
 
-    @unittest.skip("not yet implemented")
-    def test_extract_this_en(self):
-        dt = datetime(2017, 6, 1)
-        self.assertEqual(
-            extract_datetime('i have things to do this week', dt)[0],
-            datetime(2017, 6, 1, tzinfo=default_timezone()))
-
     def test_extract_with_other_tzinfo(self):
         local_tz = default_timezone()
         local_dt = datetime(2019, 7, 4, 7, 1, 2, tzinfo=local_tz)
