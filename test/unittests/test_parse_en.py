@@ -750,6 +750,22 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_datetime('in 2007', date)[0],
                          datetime(2007, 6, 27, tzinfo=date.tzinfo))
 
+    def test_extract_ambiguous_month_en(self):
+        dec = datetime(2017, 12, 27, 8, 1, 2)
+        jun = datetime(2017, 6, 27, 20, 1, 2)
+        self.assertEqual(
+            extract_datetime('when is september', jun)[0],
+            datetime(2017, 9, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('when was september', dec)[0],
+            datetime(2017, 9, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('when was september', jun)[0],
+            datetime(2016, 9, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('when is september', dec)[0],
+            datetime(2018, 9, 1, tzinfo=default_timezone()))
+
     def test_extract_ambiguous_time_en(self):
         morning = datetime(2017, 6, 27, 8, 1, 2, tzinfo=default_timezone())
         evening = datetime(2017, 6, 27, 20, 1, 2, tzinfo=default_timezone())

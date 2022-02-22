@@ -707,6 +707,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                    'sept', 'oct', 'nov', 'dec']
     year_multiples = ["decade", "century", "millennium"]
     day_multiples = ["weeks", "months", "years"]
+    past_markers = ["was"]
 
     words = clean_string(text)
 
@@ -895,12 +896,25 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                     hasYear = True
                 else:
                     hasYear = False
-
             # if no date indicators found, it may not be the month of May
             # may "i/we" ...
             # "... may be"
             elif word == 'may' and wordNext in ['i', 'we', 'be']:
                 datestr = ""
+            # when was MONTH
+            elif not hasYear and wordPrev in past_markers:
+                if anchorDate.month > m:
+                    datestr += f" {anchorDate.year}"
+                else:
+                    datestr += f" {anchorDate.year - 1}"
+                hasYear = True
+            # when is MONTH
+            elif not hasYear:
+                if anchorDate.month > m:
+                    datestr += f" {anchorDate.year + 1}"
+                else:
+                    datestr += f" {anchorDate.year}"
+                hasYear = True
 
         # parse 5 days from tomorrow, 10 weeks from next thursday,
         # 2 months from July
@@ -1364,7 +1378,15 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
             temp = datetime.strptime(datestr, "%B %d")
         except ValueError:
             # Try again, allowing the year
-            temp = datetime.strptime(datestr, "%B %d %Y")
+            try:
+                temp = datetime.strptime(datestr, "%B %d %Y")
+            except ValueError:
+                # Try again, without day
+                try:
+                    temp = datetime.strptime(datestr, "%B %Y")
+                except ValueError:
+                    # Try again, with only month
+                    temp = datetime.strptime(datestr, "%B")
         extractedDate = extractedDate.replace(hour=0, minute=0, second=0)
         if not hasYear:
             temp = temp.replace(year=extractedDate.year,
