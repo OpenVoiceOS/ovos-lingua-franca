@@ -685,6 +685,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
     monthOffset = 0
     yearOffset = 0
     today = anchorDate.strftime("%w")
+    wkday = anchorDate.weekday()  # 0 - monday
     currentYear = anchorDate.strftime("%Y")
     fromFlag = False
     datestr = ""
@@ -800,12 +801,29 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used += 1
         # parse 5 days, 10 weeks, last week, next week
-        elif word == "day":
+        elif word == "day" and wordNext != "ago":
             if wordPrev and wordPrev[0].isdigit():
-                dayOffset += int(wordPrev)
+                    dayOffset += int(wordPrev)
+                    start -= 1
+                    used = 2
+            elif wordPrev and wordPrev == "next":
+                dayOffset += 1
                 start -= 1
                 used = 2
-        elif word == "week" and not fromFlag and wordPrev:
+            # normalize step makes "in a day" -> "in day"
+            elif wordPrev and wordPrev == "in":
+                dayOffset += 1
+                start -= 1
+                used = 2
+        elif word == "day" and wordNext == "ago":
+            if wordPrev and wordPrev[0].isdigit():
+                dayOffset -= int(wordPrev)
+                start -= 1
+                used = 3
+            else:
+                dayOffset -= 1
+                used = 2
+        elif word == "week" and not fromFlag and wordPrev and wordNext != "ago":
             if wordPrev[0].isdigit():
                 dayOffset += int(wordPrev) * 7
                 start -= 1
@@ -814,12 +832,58 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset = 7
                 start -= 1
                 used = 2
+            # normalize step makes "in a week" -> "in week"
+            elif wordPrev == "in":
+                dayOffset += 7
+                start -= 1
+                used = 2
             elif wordPrev in past_markers:
                 dayOffset = -7
                 start -= 1
                 used = 2
+        elif word == "week" and not fromFlag and wordNext == "ago":
+            dayOffset -= 7
+            used = 2
+        elif word == "weekend" and not fromFlag and wordPrev and wordNext != "ago":
+            # in/after X weekends
+            if wordPrev[0].isdigit():
+                n = int(wordPrev)
+                dayOffset += 7 - wkday  # next monday -> 1 weekend
+                n -= 1
+                dayOffset += n * 7
+                start -= 1
+                used = 2
+            # next/last weekend
+            elif wordPrev == "next":
+                    if wkday == 5:  # sat
+                        dayOffset = 7
+                    elif wkday == 6:  # sun
+                        dayOffset = 6
+                    else:
+                        dayOffset = 6 - wkday
+                    start -= 1
+                    used = 2
+            # normalize step makes "in a weekend" -> "in weekend"
+            elif wordPrev == "in":
+                dayOffset += 7 - wkday  # next monday
+                start -= 1
+                used = 2
+            # last/past weekend -> last/past saturday
+            elif wordPrev in past_markers:
+                dayOffset -= wkday + 2
+                start -= 1
+                used = 2
+        elif word == "weekend" and not fromFlag and wordNext == "ago":
+            dayOffset -= wkday + 3  # past friday "one weekend ago"
+            used = 2
+            # X weekends ago
+            if wordPrev and wordPrev[0].isdigit():
+                n = int(wordPrev) - 1
+                dayOffset -= n * 7
+                start -= 1
+                used = 3
         # parse 10 months, next month, last month
-        elif word == "month" and not fromFlag and wordPrev:
+        elif word == "month" and not fromFlag and wordPrev and wordNext != "ago":
             if wordPrev[0].isdigit():
                 monthOffset = int(wordPrev)
                 start -= 1
@@ -828,12 +892,25 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 monthOffset = 1
                 start -= 1
                 used = 2
+            # normalize step makes "in a month" -> "in month"
+            elif wordPrev == "in":
+                dayOffset += 30
+                start -= 1
+                used = 2
             elif wordPrev in past_markers:
                 monthOffset = -1
                 start -= 1
                 used = 2
+        elif word == "month" and wordNext == "ago":
+            if wordPrev and wordPrev[0].isdigit():
+                dayOffset -= int(wordPrev) * 31
+                start -= 1
+                used = 3
+            else:
+                dayOffset -= 31
+                used = 2
         # parse 5 years, next year, last year
-        elif word == "year" and not fromFlag and wordPrev:
+        elif word == "year" and not fromFlag and wordPrev and wordNext != "ago":
             if wordPrev[0].isdigit():
                 yearOffset = int(wordPrev)
                 start -= 1
@@ -842,9 +919,22 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 yearOffset = 1
                 start -= 1
                 used = 2
+            # normalize step makes "in a year" -> "in year"
+            elif wordPrev == "in":
+                dayOffset += 365
+                start -= 1
+                used = 2
             elif wordPrev in past_markers:
                 yearOffset = -1
                 start -= 1
+                used = 2
+        elif word == "year" and wordNext == "ago":
+            if wordPrev and wordPrev[0].isdigit():
+                dayOffset -= int(wordPrev) * 365
+                start -= 1
+                used = 3
+            else:
+                dayOffset -= 365
                 used = 2
         # parse Monday, Tuesday, etc., and next Monday,
         # last Tuesday, etc.

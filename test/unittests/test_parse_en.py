@@ -817,8 +817,52 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('On 24th of may I want a reminder', may_date)[0],
             datetime(2019, 5, 24, 0, 0, 0, tzinfo=default_timezone()))
 
-    def test_extract_next_last_en(self):
+    def test_extract_weekend_en(self):
         dt = datetime(2017, 6, 1)
+        self.assertEqual(
+            extract_datetime('i have things to do next weekend', dt)[0],
+            datetime(2017, 6, 4, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in a weekend', dt)[0],
+            datetime(2017, 6, 5, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in a weekend', dt)[0],
+            extract_datetime('i have things to do next monday', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in 1 weekend', dt)[0],
+            extract_datetime('i have things to do next monday', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in 1 weekend', dt)[0],
+            datetime(2017, 6, 5, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in 2 weekends', dt)[0],
+            datetime(2017, 6, 12, tzinfo=default_timezone()))
+
+        self.assertEqual(
+            extract_datetime('i had things to do last weekend', dt)[0],
+            extract_datetime('i had things to do last saturday', dt)[0])
+        self.assertEqual(
+            extract_datetime('i had things to do last weekend', dt)[0],
+            datetime(2017, 5, 27, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do past weekend', dt)[0],
+            datetime(2017, 5, 27, tzinfo=default_timezone()))
+
+        self.assertEqual(
+            extract_datetime('i had things to do a weekend ago', dt)[0],
+            extract_datetime('i had things to do last friday', dt)[0])
+        self.assertEqual(
+            extract_datetime('i had things to do a weekend ago', dt)[0],
+            datetime(2017, 5, 26, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do 2 weekends ago', dt)[0],
+            datetime(2017, 5, 19, tzinfo=default_timezone()))
+
+    def test_extract_next_last_in_en(self):
+        dt = datetime(2017, 6, 1)
+        self.assertEqual(
+            extract_datetime('i have things to do next day', dt)[0],
+            datetime(2017, 6, 2, tzinfo=default_timezone()))
         self.assertEqual(
             extract_datetime('i have things to do next week', dt)[0],
             datetime(2017, 6, 8, tzinfo=default_timezone()))
@@ -847,6 +891,51 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('i had things to do the past year', dt)[0],
             datetime(2016, 6, 1, tzinfo=default_timezone()))
 
+        self.assertEqual(
+            extract_datetime('i have things to do in a day', dt)[0],
+            datetime(2017, 6, 2, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in a week', dt)[0],
+            datetime(2017, 6, 8, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in a month', dt)[0],
+            datetime(2017, 7, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in a year', dt)[0],
+            datetime(2018, 6, 1, tzinfo=default_timezone()))
+
+        self.assertEqual(
+            extract_datetime('i have things to do in 1 day', dt)[0],
+            datetime(2017, 6, 2, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in 2 days', dt)[0],
+            datetime(2017, 6, 3, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in 1 week', dt)[0],
+            datetime(2017, 6, 8, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in 1 month', dt)[0],
+            datetime(2017, 7, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in 1 year', dt)[0],
+            datetime(2018, 6, 1, tzinfo=default_timezone()))
+
+    def test_extract_ago_en(self):
+        dt = datetime(2017, 6, 1)
+        self.assertEqual(
+            extract_datetime('i had things to do a day ago', dt)[0],
+            datetime(2017, 5, 31, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do a week ago', dt)[0],
+            datetime(2017, 5, 25, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do a month ago', dt)[0],
+            datetime(2017, 5, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do a year ago', dt)[0],
+            datetime(2016, 6, 1, tzinfo=default_timezone()))
+
+    @unittest.skip("not yet implemented")
     def test_extract_this_en(self):
         dt = datetime(2017, 6, 1)
         self.assertEqual(
