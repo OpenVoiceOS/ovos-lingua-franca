@@ -28,6 +28,70 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest
         pip install -r requirements.txt
-    - name: Test with pytest
+    - name: Test Base
       run: |
-        pytest
+        pytest test/test_format.py
+        pytest test/test_parse.py
+        pytest test/test_localizer.py
+    - name: Test ca
+      run: |
+        pytest test/test_format_ca.py
+        pytest test/test_parse_ca.py
+    - name: Test cs
+      run: |
+        pytest test/test_format_cs.py
+        pytest test/test_parse_cs.py
+    - name: Test da
+      run: |
+        pytest test/test_format_da.py
+        pytest test/test_parse_da.py
+    - name: Test de
+      run: |
+        pytest test/test_format_de.py
+        pytest test/test_parse_de.py
+    - name: Test en
+      run: |
+        pytest test/test_format_en.py
+        pytest test/test_parse_en.py
+    - name: Test es
+      run: |
+        pytest test/test_format_es.py
+        pytest test/test_parse_es.py
+    - name: Test fa
+      run: |
+        pytest test/test_format_fa.py
+        pytest test/test_parse_fa.py
+    - name: Test fr
+      run: |
+        pytest test/test_format_fr.py
+        pytest test/test_parse_fr.py
+    - name: Test hu
+      run: |
+        pytest test/test_format_hu.py
+    - name: Test it
+      run: |
+        pytest test/test_format_it.py
+        pytest test/test_parse_it.py
+    - name: Test nl
+      run: |
+        pytest test/test_format_nl.py
+        pytest test/test_parse_nl.py
+    - name: Test pl
+      run: |
+        pytest test/test_format_pl.py
+        pytest test/test_parse_pl.py
+    - name: Test pt
+      run: |
+        pytest test/test_format_pt.py
+        pytest test/test_parse_pt.py
+    - name: Test ru
+      run: |
+        pytest test/test_format_ru.py
+        pytest test/test_parse_ru.py
+    - name: Test sl
+      run: |
+        pytest test/test_format_sl.py
+    - name: Test sv
+      run: |
+        pytest test/test_format_sv.py
+        pytest test/test_parse_sv.py

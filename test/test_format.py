@@ -20,6 +20,7 @@ import unittest
 from pathlib import Path
 
 from dateutil import tz
+
 # TODO either write a getter for lingua_franca.internal._SUPPORTED_LANGUAGES,
 # or make it public somehow
 from lingua_franca import load_language, unload_language, set_default_lang
@@ -29,6 +30,7 @@ from lingua_franca.format import nice_date_time
 from lingua_franca.format import nice_number
 from lingua_franca.format import nice_time
 from lingua_franca.format import nice_year
+from lingua_franca.lang.format_common import convert_to_mixed_fraction as cmf
 from lingua_franca.time import default_timezone, set_default_tz, now_local, \
     to_local
 
@@ -211,6 +213,15 @@ class TestNiceDateFormat(unittest.TestCase):
             unload_language(lang)
 
         set_default_lang('en')
+
+
+class TestMixedFraction(unittest.TestCase):
+    def test_convert_to_fraction(self):
+        self.assertEqual(cmf(8), (8, 0, 1))
+        self.assertEqual(cmf(8.00001), (8, 0, 1))
+        self.assertEqual(cmf(8.5), (8, 1, 2))
+        self.assertEqual(cmf(8.587465135), None)
+        self.assertEqual(cmf(8.587465135, range(1, 101)), (8, 47, 80))
 
 
 if __name__ == "__main__":

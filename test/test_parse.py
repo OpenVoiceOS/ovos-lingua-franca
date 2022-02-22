@@ -17,7 +17,9 @@ import unittest
 from datetime import datetime
 
 from dateutil import tz
+
 from lingua_franca import load_language, unload_language, set_default_lang
+from lingua_franca.lang.parse_common import tokenize, Token
 from lingua_franca.parse import extract_datetime
 from lingua_franca.parse import fuzzy_match
 from lingua_franca.parse import match_one
@@ -98,6 +100,23 @@ class TestFuzzyMatch(unittest.TestCase):
         choices = {'frank': 1, 'kate': 2, 'harry': 3, 'henry': 4}
         self.assertEqual(match_one('frank', choices)[0], 1)
         self.assertEqual(match_one('enry', choices)[0], 4)
+
+
+class TestParseCommon(unittest.TestCase):
+    def test_tokenize(self):
+        self.assertEqual(tokenize('One small step for man'),
+                         [Token('One', 0), Token('small', 1), Token('step', 2),
+                          Token('for', 3), Token('man', 4)])
+
+        self.assertEqual(tokenize('15%'),
+                         [Token('15', 0), Token('%', 1)])
+
+        self.assertEqual(tokenize('I am #1'),
+                         [Token('I', 0), Token('am', 1), Token('#', 2),
+                          Token('1', 3)])
+
+        self.assertEqual(tokenize('hashtag #1world'),
+                         [Token('hashtag', 0), Token('#1world', 1)])
 
 
 if __name__ == "__main__":
