@@ -883,17 +883,62 @@ class TestNormalize(unittest.TestCase):
             datetime(2018, 6, 1, tzinfo=default_timezone()))
 
         self.assertEqual(
+            extract_datetime('i have things to do in a second', dt)[0],
+            datetime(2017, 6, 1, 0, 0, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in a second', dt)[0],
+            extract_datetime('i have things to do within a second', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in a minute', dt)[0],
+            datetime(2017, 6, 1, 0, 1, 0, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in a minute', dt)[0],
+            extract_datetime('i have things to do within a minute', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in a minute', dt)[0],
+            extract_datetime('i have things to do in 60 seconds', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in an hour', dt)[0],
+            datetime(2017, 6, 1, 1, 0, 0, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in an hour', dt)[0],
+            extract_datetime('i have things to do within the hour', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in a day', dt)[0],
+            extract_datetime('i have things to do in 24 hours', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do within a day', dt)[0],
+            extract_datetime('i have things to do in 24 hours', dt)[0])
+        self.assertEqual(
             extract_datetime('i have things to do in a day', dt)[0],
             datetime(2017, 6, 2, tzinfo=default_timezone()))
         self.assertEqual(
             extract_datetime('i have things to do in a week', dt)[0],
             datetime(2017, 6, 8, tzinfo=default_timezone()))
         self.assertEqual(
+            extract_datetime('i have things to do in a week', dt)[0],
+            extract_datetime('i have things to do within a week', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in a week', dt)[0],
+            extract_datetime('i have things to do in 7 days', dt)[0])
+        self.assertEqual(
             extract_datetime('i have things to do in a month', dt)[0],
-            datetime(2017, 7, 1, tzinfo=default_timezone()))
+            extract_datetime('i have things to do in 31 days', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in a month', dt)[0],
+            extract_datetime('i have things to do within the month', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in a month', dt)[0],
+            datetime(2017, 7, 2, tzinfo=default_timezone()))
         self.assertEqual(
             extract_datetime('i have things to do in a year', dt)[0],
             datetime(2018, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do in a year', dt)[0],
+            extract_datetime('i have things to do in 365 days', dt)[0])
+        self.assertEqual(
+            extract_datetime('i have things to do in a year', dt)[0],
+            extract_datetime('i have things to do within the year', dt)[0])
 
         self.assertEqual(
             extract_datetime('i have things to do in 1 day', dt)[0],

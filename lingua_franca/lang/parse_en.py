@@ -811,7 +811,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
             # normalize step makes "in a day" -> "in day"
-            elif wordPrev and wordPrev == "in":
+            elif wordPrev and wordPrev  in ["in", "next", "within"]:
                 dayOffset += 1
                 start -= 1
                 used = 2
@@ -833,7 +833,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
             # normalize step makes "in a week" -> "in week"
-            elif wordPrev == "in":
+            elif wordPrev  in ["in", "next", "within"]:
                 dayOffset += 7
                 start -= 1
                 used = 2
@@ -869,7 +869,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                     start -= 1
                     used = 2
             # normalize step makes "in a weekend" -> "in weekend"
-            elif wordPrev == "in":
+            elif wordPrev  in ["in", "next", "within"]:
                 dayOffset += 7 - wkday  # next monday
                 start -= 1
                 used = 2
@@ -898,8 +898,8 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
             # normalize step makes "in a month" -> "in month"
-            elif wordPrev == "in":
-                dayOffset += 30
+            elif wordPrev  in ["in", "next", "within"]:
+                dayOffset += 31
                 start -= 1
                 used = 2
             elif wordPrev in past_markers:
@@ -925,7 +925,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
             # normalize step makes "in a year" -> "in year"
-            elif wordPrev == "in":
+            elif wordPrev in ["in", "next", "within"]:
                 dayOffset += 365
                 start -= 1
                 used = 2
@@ -1115,13 +1115,14 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 minOffset = 2
             elif wordNextNext == "seconds":
                 secOffset = 2
-        elif word == "hour" and wordPrev == "next":
+        # parse in a/next second/minute/hour
+        elif wordNext == "hour" and word in ["in", "next", "within"]:
             used += 2
             hrOffset = 1
-        elif word == "minute" and wordPrev == "next":
+        elif wordNext == "minute" and word in ["in", "next", "within"]:
             used += 2
             minOffset = 1
-        elif word == "second" and wordPrev == "next":
+        elif wordNext == "second" and word in ["in", "next", "within"]:
             used += 2
             secOffset = 1
         # parse half an hour, quarter hour
@@ -1148,17 +1149,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
             used += 1
             hrAbs = -1
             minAbs = -1
-            # parse 5:00 am, 12:00 p.m., etc
-        # parse in a minute
-        elif word == "minute" and wordPrev == "in":
-            minOffset = 1
-            words[idx - 1] = ""
-            used += 1
-        # parse in a second
-        elif word == "second" and wordPrev == "in":
-            secOffset = 1
-            words[idx - 1] = ""
-            used += 1
+        # parse 5:00 am, 12:00 p.m., etc
         elif word[0].isdigit():
             isTime = True
             strHH = ""
