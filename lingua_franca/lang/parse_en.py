@@ -842,8 +842,13 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
         elif word == "week" and not fromFlag and wordNext == "ago":
-            dayOffset -= 7
-            used = 2
+            if wordPrev[0].isdigit():
+                dayOffset -= int(wordPrev) * 7
+                start -= 1
+                used = 3
+            else:
+                dayOffset -= 7
+                used = 2
         elif word == "weekend" and not fromFlag and wordPrev and wordNext != "ago":
             # in/after X weekends
             if wordPrev[0].isdigit():

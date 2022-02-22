@@ -926,14 +926,32 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('i had things to do a day ago', dt)[0],
             datetime(2017, 5, 31, tzinfo=default_timezone()))
         self.assertEqual(
+            extract_datetime('i had things to do 2 days ago', dt)[0],
+            datetime(2017, 5, 30, tzinfo=default_timezone()))
+        self.assertEqual(
             extract_datetime('i had things to do a week ago', dt)[0],
             datetime(2017, 5, 25, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do 2 weeks ago', dt)[0],
+            datetime(2017, 5, 18, tzinfo=default_timezone()))
         self.assertEqual(
             extract_datetime('i had things to do a month ago', dt)[0],
             datetime(2017, 5, 1, tzinfo=default_timezone()))
         self.assertEqual(
+            extract_datetime('i had things to do 2 months ago', dt)[0],
+            extract_datetime('i had things to do 62 days ago', dt)[0])
+        self.assertEqual(
+            extract_datetime('i had things to do 2 months ago', dt)[0],
+            datetime(2017, 3, 31, tzinfo=default_timezone()))
+        self.assertEqual(
             extract_datetime('i had things to do a year ago', dt)[0],
             datetime(2016, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do 2 years ago', dt)[0],
+            extract_datetime('i had things to do 730 days ago', dt)[0])
+        self.assertEqual(
+            extract_datetime('i had things to do 2 years ago', dt)[0],
+            datetime(2015, 6, 2, tzinfo=default_timezone()))
 
     @unittest.skip("not yet implemented")
     def test_extract_this_en(self):
