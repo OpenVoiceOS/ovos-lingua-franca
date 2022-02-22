@@ -707,7 +707,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                    'sept', 'oct', 'nov', 'dec']
     year_multiples = ["decade", "century", "millennium"]
     day_multiples = ["weeks", "months", "years"]
-    past_markers = ["was"]
+    past_markers = ["was", "last", "past"]
 
     words = clean_string(text)
 

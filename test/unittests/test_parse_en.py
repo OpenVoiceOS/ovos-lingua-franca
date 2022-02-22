@@ -765,6 +765,12 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extract_datetime('when is september', dec)[0],
             datetime(2018, 9, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i did the thing last september', jun)[0],
+            datetime(2016, 9, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('past september the thing was done', dec)[0],
+            datetime(2017, 9, 1, tzinfo=default_timezone()))
 
     def test_extract_ambiguous_time_en(self):
         morning = datetime(2017, 6, 27, 8, 1, 2, tzinfo=default_timezone())
