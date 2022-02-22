@@ -1115,6 +1115,15 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 minOffset = 2
             elif wordNextNext == "seconds":
                 secOffset = 2
+        elif word == "hour" and wordPrev == "next":
+            used += 2
+            hrOffset = 1
+        elif word == "minute" and wordPrev == "next":
+            used += 2
+            minOffset = 1
+        elif word == "second" and wordPrev == "next":
+            used += 2
+            secOffset = 1
         # parse half an hour, quarter hour
         elif word == "hour" and \
                 (wordPrev in markers or wordPrevPrev in markers):

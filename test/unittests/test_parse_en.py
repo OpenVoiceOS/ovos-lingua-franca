@@ -858,8 +858,17 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('i had things to do 2 weekends ago', dt)[0],
             datetime(2017, 5, 19, tzinfo=default_timezone()))
 
-    def test_extract_next_last_in_en(self):
-        dt = datetime(2017, 6, 1)
+    def test_extract_next_in_en(self):
+        dt = datetime(2017, 6, 1, 0, 0, 0)
+        self.assertEqual(
+            extract_datetime('i have things to do next second', dt)[0],
+            datetime(2017, 6, 1, 0, 0, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do next minute', dt)[0],
+            datetime(2017, 6, 1, 0, 1, 0, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do next hour', dt)[0],
+            datetime(2017, 6, 1, 1, 0, 0, tzinfo=default_timezone()))
         self.assertEqual(
             extract_datetime('i have things to do next day', dt)[0],
             datetime(2017, 6, 2, tzinfo=default_timezone()))
@@ -872,24 +881,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extract_datetime('i have things to do next year', dt)[0],
             datetime(2018, 6, 1, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do last week', dt)[0],
-            datetime(2017, 5, 25, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do the past week', dt)[0],
-            datetime(2017, 5, 25, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do last month', dt)[0],
-            datetime(2017, 5, 1, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do the past month', dt)[0],
-            datetime(2017, 5, 1, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do last year', dt)[0],
-            datetime(2016, 6, 1, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do the past year', dt)[0],
-            datetime(2016, 6, 1, tzinfo=default_timezone()))
 
         self.assertEqual(
             extract_datetime('i have things to do in a day', dt)[0],
@@ -919,6 +910,27 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extract_datetime('i have things to do in 1 year', dt)[0],
             datetime(2018, 6, 1, tzinfo=default_timezone()))
+
+    def test_extract_last_past_en(self):
+        dt = datetime(2017, 6, 1)
+        self.assertEqual(
+            extract_datetime('i had things to do last week', dt)[0],
+            datetime(2017, 5, 25, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past week', dt)[0],
+            datetime(2017, 5, 25, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do last month', dt)[0],
+            datetime(2017, 5, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past month', dt)[0],
+            datetime(2017, 5, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do last year', dt)[0],
+            datetime(2016, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past year', dt)[0],
+            datetime(2016, 6, 1, tzinfo=default_timezone()))
 
     def test_extract_ago_en(self):
         dt = datetime(2017, 6, 1)
