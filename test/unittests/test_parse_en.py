@@ -817,6 +817,42 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('On 24th of may I want a reminder', may_date)[0],
             datetime(2019, 5, 24, 0, 0, 0, tzinfo=default_timezone()))
 
+    def test_extract_next_last_en(self):
+        dt = datetime(2017, 6, 1)
+        self.assertEqual(
+            extract_datetime('i have things to do next week', dt)[0],
+            datetime(2017, 6, 8, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do next month', dt)[0],
+            datetime(2017, 7, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i have things to do next year', dt)[0],
+            datetime(2018, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do last week', dt)[0],
+            datetime(2017, 5, 25, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past week', dt)[0],
+            datetime(2017, 5, 25, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do last month', dt)[0],
+            datetime(2017, 5, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past month', dt)[0],
+            datetime(2017, 5, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do last year', dt)[0],
+            datetime(2016, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past year', dt)[0],
+            datetime(2016, 6, 1, tzinfo=default_timezone()))
+
+    def test_extract_this_en(self):
+        dt = datetime(2017, 6, 1)
+        self.assertEqual(
+            extract_datetime('i have things to do this week', dt)[0],
+            datetime(2017, 6, 1, tzinfo=default_timezone()))
+
     def test_extract_with_other_tzinfo(self):
         local_tz = default_timezone()
         local_dt = datetime(2019, 7, 4, 7, 1, 2, tzinfo=local_tz)

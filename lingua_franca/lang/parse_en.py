@@ -695,6 +695,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
     timeQualifiersPM = ['afternoon', 'evening', 'night', 'tonight']
     timeQualifiersList = set(timeQualifiersAM + timeQualifiersPM)
     year_markers = ['in', 'on', 'of']
+    past_markers = ["last", "past"]
     markers = year_markers + ['at', 'by', 'this', 'around', 'for', "within"]
     days = ['monday', 'tuesday', 'wednesday',
             'thursday', 'friday', 'saturday', 'sunday']
@@ -813,7 +814,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset = 7
                 start -= 1
                 used = 2
-            elif wordPrev == "last":
+            elif wordPrev in past_markers:
                 dayOffset = -7
                 start -= 1
                 used = 2
@@ -827,7 +828,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 monthOffset = 1
                 start -= 1
                 used = 2
-            elif wordPrev == "last":
+            elif wordPrev in past_markers:
                 monthOffset = -1
                 start -= 1
                 used = 2
@@ -841,7 +842,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 yearOffset = 1
                 start -= 1
                 used = 2
-            elif wordPrev == "last":
+            elif wordPrev in past_markers:
                 yearOffset = -1
                 start -= 1
                 used = 2
@@ -858,7 +859,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                     dayOffset += 7
                 used += 1
                 start -= 1
-            elif wordPrev == "last":
+            elif wordPrev in past_markers:
                 dayOffset -= 7
                 used += 1
                 start -= 1
@@ -924,6 +925,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
         validFollowups.append("yesterday")
         validFollowups.append("next")
         validFollowups.append("last")
+        validFollowups.append("past")
         validFollowups.append("now")
         validFollowups.append("this")
         if (word == "from" or word == "after") and wordNext in validFollowups:
