@@ -13,23 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
+import re
 from datetime import datetime, timedelta, time
 
 from dateutil.relativedelta import relativedelta
 
-from lingua_franca.time import now_local
-from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
-    invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer
-from lingua_franca.lang.common_data_en import _ARTICLES_EN, _NUM_STRING_EN, \
-    _LONG_ORDINAL_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN, _SHORT_ORDINAL_EN, \
+from lingua_franca.internal import resolve_resource_file
+from lingua_franca.lang.common_data_en import _ARTICLES_EN, _LONG_ORDINAL_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN, \
+    _SHORT_ORDINAL_EN, \
     _NEGATIVES_EN, _SUMS_EN, _MULTIPLIES_LONG_SCALE_EN, \
     _MULTIPLIES_SHORT_SCALE_EN, _FRACTION_MARKER_EN, _DECIMAL_MARKER_EN, \
     _STRING_NUM_EN, _STRING_SHORT_ORDINAL_EN, _STRING_LONG_ORDINAL_EN, \
-    _FRACTION_STRING_EN, _generate_plurals_en, _SPOKEN_EXTRA_NUM_EN
-
-import re
-import json
-from lingua_franca.internal import resolve_resource_file
+    _generate_plurals_en, _SPOKEN_EXTRA_NUM_EN
+from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
+    invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer
+from lingua_franca.time import now_local
 
 
 def _convert_words_to_numbers_en(text, short_scale=True, ordinals=False):
@@ -203,7 +202,7 @@ def _extract_fraction_with_text_en(tokens, short_scale, ordinals):
             num2 = numbers2[0]
             if num1.value >= 1 and 0 < num2.value < 1:
                 return num1.value + num2.value, \
-                    num1.tokens + partitions[1] + num2.tokens
+                       num1.tokens + partitions[1] + num2.tokens
 
     return None, None
 
@@ -252,7 +251,7 @@ def _extract_decimal_with_text_en(tokens, short_scale, ordinals):
             # TODO handle number dot number number number
             if "." not in str(decimal.text):
                 return number.value + float('0.' + str(decimal.value)), \
-                    number.tokens + partitions[1] + decimal.tokens
+                       number.tokens + partitions[1] + decimal.tokens
     return None, None
 
 
@@ -415,8 +414,8 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
             if current_val and all([
                 prev_word in _SUMS_EN,
                 word not in _SUMS_EN,
-                    word not in multiplies,
-                    current_val >= 10]):
+                word not in multiplies,
+                current_val >= 10]):
                 # Backtrack - we've got numbers we can't sum.
                 number_words.pop()
                 val = prev_val
@@ -481,7 +480,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
                 # 9907657
 
                 time_to_sum = True
-                for other_token in tokens[idx+1:]:
+                for other_token in tokens[idx + 1:]:
                     if other_token.word.lower() in multiplies:
                         if string_num_scale[other_token.word.lower()] >= current_val:
                             time_to_sum = False
@@ -593,11 +592,12 @@ def extract_duration_en(text):
     text = _convert_words_to_numbers_en(text)
 
     for unit_en in time_units:
-        unit_pattern = pattern.format(unit=unit_en[:-1])   # remove 's' from unit
+        unit_pattern = pattern.format(unit=unit_en[:-1])  # remove 's' from unit
 
         def repl(match):
             time_units[unit_en] += float(match.group(1))
             return ''
+
         text = re.sub(unit_pattern, repl, text)
 
     text = text.strip()
@@ -665,13 +665,13 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
 
     def date_found():
         return found or \
-            (
-                datestr != "" or
-                yearOffset != 0 or monthOffset != 0 or
-                dayOffset is True or hrOffset != 0 or
-                hrAbs or minOffset != 0 or
-                minAbs or secOffset != 0
-            )
+               (
+                       datestr != "" or
+                       yearOffset != 0 or monthOffset != 0 or
+                       dayOffset is True or hrOffset != 0 or
+                       hrAbs or minOffset != 0 or
+                       minAbs or secOffset != 0
+               )
 
     if not anchorDate:
         anchorDate = now_local()
@@ -698,6 +698,8 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
     year_markers = ['in', 'on', 'of']
     past_markers = ["last", "past"]
     markers = year_markers + ['at', 'by', 'this', 'around', 'for', "within"]
+    future_markers = ["in", "within"]  # in a month -> + 1 month timedelta
+    future_1st_markers = ["next"]  # next month -> day 1 of next month
     days = ['monday', 'tuesday', 'wednesday',
             'thursday', 'friday', 'saturday', 'sunday']
     months = ['january', 'february', 'march', 'april', 'may', 'june',
@@ -803,18 +805,20 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
         # parse 5 days, 10 weeks, last week, next week
         elif word == "day" and wordNext != "ago":
             if wordPrev and wordPrev[0].isdigit():
-                    dayOffset += int(wordPrev)
-                    start -= 1
-                    used = 2
-            elif wordPrev and wordPrev == "next":
-                dayOffset += 1
+                dayOffset += int(wordPrev)
                 start -= 1
                 used = 2
+            # next day
             # normalize step makes "in a day" -> "in day"
-            elif wordPrev and wordPrev  in ["in", "next", "within"]:
+            elif wordPrev and wordPrev in future_markers + future_1st_markers:
                 dayOffset += 1
                 start -= 1
                 used = 2
+            elif wordPrev in past_markers:
+                dayOffset = -1
+                start -= 1
+                used = 2
+        # parse X days ago
         elif word == "day" and wordNext == "ago":
             if wordPrev and wordPrev[0].isdigit():
                 dayOffset -= int(wordPrev)
@@ -823,24 +827,27 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
             else:
                 dayOffset -= 1
                 used = 2
+        # parse last/past/next week and in/after X weeks
         elif word == "week" and not fromFlag and wordPrev and wordNext != "ago":
             if wordPrev[0].isdigit():
                 dayOffset += int(wordPrev) * 7
                 start -= 1
                 used = 2
-            elif wordPrev == "next":
-                dayOffset = 7
+            # next week -> next monday
+            elif wordPrev in future_1st_markers:
+                dayOffset = 7 - wkday
                 start -= 1
                 used = 2
             # normalize step makes "in a week" -> "in week"
-            elif wordPrev  in ["in", "next", "within"]:
-                dayOffset += 7
+            elif wordPrev in future_markers:
+                dayOffset = 7
                 start -= 1
                 used = 2
             elif wordPrev in past_markers:
                 dayOffset = -7
                 start -= 1
                 used = 2
+        # parse X weeks ago
         elif word == "week" and not fromFlag and wordNext == "ago":
             if wordPrev[0].isdigit():
                 dayOffset -= int(wordPrev) * 7
@@ -849,6 +856,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
             else:
                 dayOffset -= 7
                 used = 2
+        # parse last/past/next weekend and in/after X weekends
         elif word == "weekend" and not fromFlag and wordPrev and wordNext != "ago":
             # in/after X weekends
             if wordPrev[0].isdigit():
@@ -858,18 +866,18 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset += n * 7
                 start -= 1
                 used = 2
-            # next/last weekend
-            elif wordPrev == "next":
-                    if wkday == 5:  # sat
-                        dayOffset = 7
-                    elif wkday == 6:  # sun
-                        dayOffset = 6
-                    else:
-                        dayOffset = 6 - wkday
-                    start -= 1
-                    used = 2
-            # normalize step makes "in a weekend" -> "in weekend"
-            elif wordPrev  in ["in", "next", "within"]:
+            # next weekend -> next saturday
+            elif wordPrev in future_1st_markers:
+                if wkday < 5:
+                    dayOffset = 5 - wkday
+                elif wkday == 5:
+                    dayOffset = 7
+                else:
+                    dayOffset = 6
+                start -= 1
+                used = 2
+            # normalize step makes "in a weekend" -> "in weekend" (next monday)
+            elif wordPrev in future_markers:
                 dayOffset += 7 - wkday  # next monday
                 start -= 1
                 used = 2
@@ -878,6 +886,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset -= wkday + 2
                 start -= 1
                 used = 2
+        # parse X weekends ago
         elif word == "weekend" and not fromFlag and wordNext == "ago":
             dayOffset -= wkday + 3  # past friday "one weekend ago"
             used = 2
@@ -893,13 +902,15 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 monthOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev == "next":
-                monthOffset = 1
+            # next month -> day 1
+            elif wordPrev in future_1st_markers:
+                next_dt = (anchorDate.replace(day=1) + timedelta(days=32)).replace(day=1)
+                dayOffset = (next_dt - anchorDate).days
                 start -= 1
                 used = 2
             # normalize step makes "in a month" -> "in month"
-            elif wordPrev  in ["in", "next", "within"]:
-                dayOffset += 31
+            elif wordPrev in future_markers:
+                monthOffset = 1
                 start -= 1
                 used = 2
             elif wordPrev in past_markers:
@@ -920,13 +931,15 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 yearOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev == "next":
-                yearOffset = 1
+            # next year -> day 1
+            elif wordPrev in future_1st_markers:
+                next_dt = anchorDate.replace(day=1, month=1, year=anchorDate.year + 1)
+                dayOffset = (next_dt - anchorDate).days
                 start -= 1
                 used = 2
             # normalize step makes "in a year" -> "in year"
-            elif wordPrev in ["in", "next", "within"]:
-                dayOffset += 365
+            elif wordPrev in future_markers:
+                yearOffset = 1
                 start -= 1
                 used = 2
             elif wordPrev in past_markers:
@@ -1011,7 +1024,6 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 else:
                     datestr += f" {anchorDate.year}"
                 hasYear = True
-
         # parse 5 days from tomorrow, 10 weeks from next thursday,
         # 2 months from July
         validFollowups = days + months + monthsShort
@@ -1041,12 +1053,12 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 d = days.index(wordNextNext)
                 tmpOffset = (d + 1) - int(today)
                 used = 3
-                if wordNext == "next":
+                if wordNext in future_1st_markers:
                     if dayOffset <= 2:
                         tmpOffset += 7
                     used += 1
                     start -= 1
-                elif wordNext == "last":
+                elif wordNext in past_markers:
                     tmpOffset -= 7
                     used += 1
                     start -= 1
@@ -1116,15 +1128,25 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
             elif wordNextNext == "seconds":
                 secOffset = 2
         # parse in a/next second/minute/hour
-        elif wordNext == "hour" and word in ["in", "next", "within"]:
+        elif wordNext == "hour" and word in future_markers + future_1st_markers:
             used += 2
             hrOffset = 1
-        elif wordNext == "minute" and word in ["in", "next", "within"]:
+        elif wordNext == "minute" and word in future_markers + future_1st_markers:
             used += 2
             minOffset = 1
-        elif wordNext == "second" and word in ["in", "next", "within"]:
+        elif wordNext == "second" and word in future_markers + future_1st_markers:
             used += 2
             secOffset = 1
+        # parse last/past  second/minute/hour
+        elif wordNext == "hour" and word in past_markers:
+            used += 2
+            hrOffset = - 1
+        elif wordNext == "minute" and word in past_markers:
+            used += 2
+            minOffset = - 1
+        elif wordNext == "second" and word in past_markers:
+            used += 2
+            secOffset = - 1
         # parse half an hour, quarter hour
         elif word == "hour" and \
                 (wordPrev in markers or wordPrevPrev in markers):
@@ -1290,8 +1312,8 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                     if (
                             int(strNum) > 100 and
                             (
-                                wordPrev == "o" or
-                                wordPrev == "oh"
+                                    wordPrev == "o" or
+                                    wordPrev == "oh"
                             )):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = str(int(strNum) // 100)
@@ -1303,10 +1325,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                             (wordNext == "hours" or wordNext == "hour" or
                              remainder == "hours" or remainder == "hour") and
                             word[0] != '0' and
-                            (
-                                int(strNum) < 100 or
-                                int(strNum) > 2400
-                            )):
+                            (int(strNum) < 100 or int(strNum) > 2400)):
                         # ignores military time
                         # "in 3 hours"
                         hrOffset = int(strNum)
@@ -1349,17 +1368,11 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                                 wordNextNext == "hour" or
                                 remainder == "hours" or remainder == "hour"):
                             used += 1
-                    elif (
-                            wordNext == "" or wordNext == "o'clock" or
-                            (
-                                wordNext == "in" and
-                                (
-                                        wordNextNext == "the" or
-                                        wordNextNext == timeQualifier
-                                )
-                            ) or wordNext == 'tonight' or
-                            wordNextNext == 'tonight'):
-
+                    elif (wordNext == ""
+                          or wordNext == "o'clock"
+                          or (wordNext == "in" and (wordNextNext == "the" or wordNextNext == timeQualifier))
+                          or wordNext == 'tonight'
+                          or wordNextNext == 'tonight'):
                         strHH = strNum
                         strMM = "00"
                         if wordNext == "o'clock":
@@ -1458,6 +1471,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
 
             idx += used - 1
             found = True
+
     # check that we found a date
     if not date_found():
         return None
