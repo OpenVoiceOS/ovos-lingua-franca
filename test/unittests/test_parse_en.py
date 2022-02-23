@@ -16,6 +16,7 @@
 import unittest
 from datetime import datetime, timedelta, time
 from dateutil import tz
+from dateutil.relativedelta import relativedelta
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.internal import FunctionNotLocalizedError
@@ -336,6 +337,57 @@ class TestNormalize(unittest.TestCase):
         testExtract("remind me to call mom in a quarter of an hour",
                     "2017-06-27 13:19:00", "remind me to call mom")
 
+    def test_extractdatetime_year_multiples_en(self):
+        def testExtract(text, expected_date, expected_leftover):
+            res = extractWithFormat(normalize(text))
+            self.assertEqual(res[0], expected_date, "for=" + text)
+            self.assertEqual(res[1], expected_leftover, "for=" + text)
+
+        testExtract("in a decade",
+                    "2027-06-27 00:00:00", "")
+        testExtract("in a couple of decades",
+                    "2037-06-27 00:00:00", "")
+        testExtract("next decade",
+                    "2027-06-27 00:00:00", "")
+        testExtract("in a century",
+                    "2117-06-27 00:00:00", "")
+        testExtract("in a millennium",
+                    "3017-06-27 00:00:00", "")
+        testExtract("in a couple decades",
+                    "2037-06-27 00:00:00", "")
+        testExtract("in 5 decades",
+                    "2067-06-27 00:00:00", "")
+        testExtract("in a couple centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in a couple of centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in 2 centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in a couple millenniums",
+                    "4017-06-27 00:00:00", "")
+        testExtract("in a couple of millenniums",
+                    "4017-06-27 00:00:00", "")
+
+        # in {float} year multiple
+        for i in range(1, 500):
+            testExtract(f"in {i} decades",
+                        f"{2017 + 10 * i}-06-27 00:00:00", "")
+            for j in range(1, 9): # TODO fix higher numbers
+                testExtract(f"in {i}.{j} decades",
+                            f"{2017 + j + 10 * i}-06-27 00:00:00", "")
+        for i in range(1, 50):
+            testExtract(f"in {i} centuries",
+                        f"{2017 + 100 * i}-06-27 00:00:00", "")
+            for j in range(1, 9):  # TODO fix higher numbers
+                testExtract(f"in {i}.{j} centuries",
+                            f"{2017 + j * 10 + 100 * i}-06-27 00:00:00", "")
+        for i in range(1, 8):
+            testExtract(f"in {i} millenniums",
+                        f"{2017 + 1000 * i}-06-27 00:00:00", "")
+            for j in range(1, 9):  # TODO fix higher numbers
+                testExtract(f"in {i}.{j} millenniums",
+                            f"{2017 + j * 100 + 1000 * i}-06-27 00:00:00", "")
+
     def test_extractdatetime_en(self):
         def testExtract(text, expected_date, expected_leftover):
             res = extractWithFormat(normalize(text))
@@ -368,30 +420,6 @@ class TestNormalize(unittest.TestCase):
                     "2017-08-27 00:00:00", "")
         testExtract("in a couple of years",
                     "2019-06-27 00:00:00", "")
-        testExtract("in a decade",
-                    "2027-06-27 00:00:00", "")
-        testExtract("in a couple of decades",
-                    "2037-06-27 00:00:00", "")
-        testExtract("next decade",
-                    "2027-06-27 00:00:00", "")
-        testExtract("in a century",
-                    "2117-06-27 00:00:00", "")
-        testExtract("in a millennium",
-                    "3017-06-27 00:00:00", "")
-        testExtract("in a couple decades",
-                    "2037-06-27 00:00:00", "")
-        testExtract("in 5 decades",
-                    "2067-06-27 00:00:00", "")
-        testExtract("in a couple centuries",
-                    "2217-06-27 00:00:00", "")
-        testExtract("in a couple of centuries",
-                    "2217-06-27 00:00:00", "")
-        testExtract("in 2 centuries",
-                    "2217-06-27 00:00:00", "")
-        testExtract("in a couple millenniums",
-                    "4017-06-27 00:00:00", "")
-        testExtract("in a couple of millenniums",
-                    "4017-06-27 00:00:00", "")
         testExtract("in an hour",
                     "2017-06-27 14:04:00", "")
         testExtract("i want it within the hour",
@@ -1036,7 +1064,50 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_datetime('i have things to do within the year', dt)[0],
                          dt.replace(day=1, month=1, year=dt.year + 1, hour=0, minute=0, second=0))
 
-    def test_extract_last_past_en(self):
+    @unittest.skip("TODO fix me")
+    def test_extract_last_int_X_en(self):
+        dt = datetime(2017, 6, 1)
+        self.assertEqual(
+            extract_datetime('i wrote a lot of unittests in the past hour', dt)[0],
+            datetime(2017, 5, 31, 23, 0, 0, tzinfo=default_timezone()))
+
+        for i in range(1, 1500):
+            print(i, dt - timedelta(seconds=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} seconds', dt)[0],
+                dt - timedelta(seconds=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} seconds', dt)[0],
+                dt - timedelta(seconds=i))
+
+        for i in range(1, 1500):
+            print(i, dt - timedelta(minutes=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} minutes', dt)[0],
+                dt - timedelta(minutes=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} minutes', dt)[0],
+                dt - timedelta(minutes=i))
+
+        for i in range(1, 1500):
+            print(i, dt - timedelta(hours=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} hours', dt)[0],
+                dt - timedelta(hours=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} hours', dt)[0],
+                dt - timedelta(hours=i))
+
+        for i in range(1, 1500):
+            print(i, dt - timedelta(days=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} days', dt)[0],
+                dt - timedelta(days=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} days', dt)[0],
+                dt - timedelta(days=i))
+
+    def test_extract_last_X_en(self):
         dt = datetime(2017, 6, 1)
         self.assertEqual(
             extract_datetime('i had things to do last second', dt)[0],
@@ -1082,37 +1153,79 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('i had things to do last year', dt)[0])
 
     def test_extract_ago_en(self):
-        dt = datetime(2017, 6, 1)
+        dt = datetime(2017, 6, 1, tzinfo=default_timezone())
         self.assertEqual(
             extract_datetime('i had things to do a day ago', dt)[0],
             datetime(2017, 5, 31, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do 2 days ago', dt)[0],
-            datetime(2017, 5, 30, tzinfo=default_timezone()))
+        for i in range(1, 1500):
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} days ago', dt)[0],
+                dt - timedelta(days=i))
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} days earlier', dt)[0],
+                dt - timedelta(days=i))
+
         self.assertEqual(
             extract_datetime('i had things to do a week ago', dt)[0],
             datetime(2017, 5, 25, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do 2 weeks ago', dt)[0],
-            datetime(2017, 5, 18, tzinfo=default_timezone()))
+        for i in range(1, 1500):
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} weeks ago', dt)[0],
+                dt - relativedelta(weeks=i))
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} weeks earlier', dt)[0],
+                dt - relativedelta(weeks=i))
+
         self.assertEqual(
             extract_datetime('i had things to do a month ago', dt)[0],
             datetime(2017, 5, 1, tzinfo=default_timezone()))
-        self.assertEqual(
-            extract_datetime('i had things to do 2 months ago', dt)[0],
-            extract_datetime('i had things to do 62 days ago', dt)[0])
-        self.assertEqual(
-            extract_datetime('i had things to do 2 months ago', dt)[0],
-            datetime(2017, 3, 31, tzinfo=default_timezone()))
+        for i in range(1, 1500):
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} months ago', dt)[0],
+                dt - relativedelta(months=i))
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} months earlier', dt)[0],
+                dt - relativedelta(months=i))
+
         self.assertEqual(
             extract_datetime('i had things to do a year ago', dt)[0],
             datetime(2016, 6, 1, tzinfo=default_timezone()))
+        for i in range(1, 1500):
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} years ago', dt)[0],
+                dt - relativedelta(years=i))
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} years earlier', dt)[0],
+                dt - relativedelta(years=i))
         self.assertEqual(
             extract_datetime('i had things to do 2 years ago', dt)[0],
-            extract_datetime('i had things to do 730 days ago', dt)[0])
-        self.assertEqual(
-            extract_datetime('i had things to do 2 years ago', dt)[0],
-            datetime(2015, 6, 2, tzinfo=default_timezone()))
+            datetime(2015, 6, 1, tzinfo=default_timezone()))
+
+    def test_extract_centuries_ago_en(self):
+        dt = datetime(2017, 6, 1, tzinfo=default_timezone())
+        for i in range(1, 9):
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} decades ago', dt)[0],
+                dt - relativedelta(years=i*10))
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} decades earlier', dt)[0],
+                dt - relativedelta(years=i * 10))
+
+        for i in range(1, 9):
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} centuries ago', dt)[0],
+                dt - relativedelta(years=i*100))
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} centuries earlier', dt)[0],
+                dt - relativedelta(years=i * 100))
+
+        for i in range(1, 2):
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} millenniums ago', dt)[0],
+                dt - relativedelta(years=i*1000))
+            self.assertEqual(
+                extract_datetime(f'i had things to do {i} millenniums earlier', dt)[0],
+                dt - relativedelta(years=i * 1000))
 
     def test_extract_with_other_tzinfo(self):
         local_tz = default_timezone()

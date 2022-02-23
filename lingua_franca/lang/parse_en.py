@@ -641,7 +641,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
         # normalize and lowercase utt  (replaces words with numbers)
         s = _convert_words_to_numbers_en(s, ordinals=None)
         # clean unneeded punctuation and capitalization among other things.
-        s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
+        s = s.lower().replace('?', '').replace(',', '') \
             .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ') \
             .replace("o' clock", "o'clock").replace("o clock", "o'clock") \
             .replace("o ' clock", "o'clock").replace("o 'clock", "o'clock") \
@@ -697,9 +697,11 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
     timeQualifiersList = set(timeQualifiersAM + timeQualifiersPM)
     year_markers = ['in', 'on', 'of']
     past_markers = ["last", "past"]
-    markers = year_markers + ['at', 'by', 'this', 'around', 'for', "within"]
+    earlier_markers = ["ago", "earlier"]
+    later_markers = ["after", "later"]
     future_markers = ["in", "within"]  # in a month -> + 1 month timedelta
     future_1st_markers = ["next"]  # next month -> day 1 of next month
+    markers = year_markers + ['at', 'by', 'this', 'around', 'for', "within"]
     days = ['monday', 'tuesday', 'wednesday',
             'thursday', 'friday', 'saturday', 'sunday']
     months = ['january', 'february', 'march', 'april', 'may', 'june',
@@ -728,10 +730,10 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
         start = idx
         used = 0
         # save timequalifier for later
-        if word == "ago" and dayOffset:
+        if word in earlier_markers and dayOffset:
             dayOffset = - dayOffset
             used += 1
-        if word == "now" and not datestr:
+        elif word == "now" and not datestr:
             resultStr = " ".join(words[idx + 1:])
             resultStr = ' '.join(resultStr.split())
             extractedDate = anchorDate.replace(microsecond=0)
@@ -739,16 +741,27 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
         elif wordNext in year_multiples:
             multiplier = None
             if is_numeric(word):
-                multiplier = extract_number_en(word)
+                try:
+                    multiplier = float(word)
+                except:
+                    multiplier = extract_number_en(word)
             multiplier = multiplier or 1
+            _leftover = "0"
+            if int(multiplier) != multiplier:
+                multiplier, _leftover = str(multiplier).split(".")
             multiplier = int(multiplier)
+
             used += 2
             if wordNext == "decade":
-                yearOffset = multiplier * 10
+                yearOffset = multiplier * 10 + int(_leftover[:1])
             elif wordNext == "century":
-                yearOffset = multiplier * 100
+                yearOffset = multiplier * 100 + int(_leftover[:2]) * 10
             elif wordNext == "millennium":
-                yearOffset = multiplier * 1000
+                yearOffset = multiplier * 1000 + int(_leftover[:3]) * 100
+
+            if wordNextNext in earlier_markers:
+                yearOffset = yearOffset * -1
+
         elif word in year_markers and is_numeric(wordNext) and len(wordNext) == 4:
             yearOffset = int(wordNext) - int(currentYear)
             used += 2
@@ -803,7 +816,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used += 1
         # parse 5 days, 10 weeks, last week, next week
-        elif word == "day" and wordNext != "ago":
+        elif word == "day" and wordNext not in earlier_markers:
             if wordPrev and wordPrev[0].isdigit():
                 dayOffset += int(wordPrev)
                 start -= 1
@@ -819,7 +832,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
         # parse X days ago
-        elif word == "day" and wordNext == "ago":
+        elif word == "day" and wordNext in earlier_markers:
             if wordPrev and wordPrev[0].isdigit():
                 dayOffset -= int(wordPrev)
                 start -= 1
@@ -828,7 +841,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset -= 1
                 used = 2
         # parse last/past/next week and in/after X weeks
-        elif word == "week" and not fromFlag and wordPrev and wordNext != "ago":
+        elif word == "week" and not fromFlag and wordPrev and wordNext not in earlier_markers:
             if wordPrev[0].isdigit():
                 dayOffset += int(wordPrev) * 7
                 start -= 1
@@ -848,7 +861,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
         # parse X weeks ago
-        elif word == "week" and not fromFlag and wordNext == "ago":
+        elif word == "week" and not fromFlag and wordNext in earlier_markers:
             if wordPrev[0].isdigit():
                 dayOffset -= int(wordPrev) * 7
                 start -= 1
@@ -857,7 +870,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset -= 7
                 used = 2
         # parse last/past/next weekend and in/after X weekends
-        elif word == "weekend" and not fromFlag and wordPrev and wordNext != "ago":
+        elif word == "weekend" and not fromFlag and wordPrev and wordNext not in earlier_markers:
             # in/after X weekends
             if wordPrev[0].isdigit():
                 n = int(wordPrev)
@@ -887,7 +900,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
         # parse X weekends ago
-        elif word == "weekend" and not fromFlag and wordNext == "ago":
+        elif word == "weekend" and not fromFlag and wordNext in earlier_markers:
             dayOffset -= wkday + 3  # past friday "one weekend ago"
             used = 2
             # X weekends ago
@@ -897,7 +910,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 3
         # parse 10 months, next month, last month
-        elif word == "month" and not fromFlag and wordPrev and wordNext != "ago":
+        elif word == "month" and not fromFlag and wordPrev and wordNext not in earlier_markers:
             if wordPrev[0].isdigit():
                 monthOffset = int(wordPrev)
                 start -= 1
@@ -917,16 +930,16 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 monthOffset = -1
                 start -= 1
                 used = 2
-        elif word == "month" and wordNext == "ago":
+        elif word == "month" and wordNext in earlier_markers:
             if wordPrev and wordPrev[0].isdigit():
-                dayOffset -= int(wordPrev) * 31
+                monthOffset -= int(wordPrev)
                 start -= 1
                 used = 3
             else:
-                dayOffset -= 31
+                monthOffset -= 1
                 used = 2
         # parse 5 years, next year, last year
-        elif word == "year" and not fromFlag and wordPrev and wordNext != "ago":
+        elif word == "year" and not fromFlag and wordPrev and wordNext not in earlier_markers:
             if wordPrev[0].isdigit():
                 yearOffset = int(wordPrev)
                 start -= 1
@@ -946,13 +959,13 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 yearOffset = -1
                 start -= 1
                 used = 2
-        elif word == "year" and wordNext == "ago":
+        elif word == "year" and wordNext in earlier_markers:
             if wordPrev and wordPrev[0].isdigit():
-                dayOffset -= int(wordPrev) * 365
+                yearOffset -= int(wordPrev)
                 start -= 1
                 used = 3
             else:
-                dayOffset -= 365
+                yearOffset -= 1
                 used = 2
         # parse Monday, Tuesday, etc., and next Monday,
         # last Tuesday, etc.
