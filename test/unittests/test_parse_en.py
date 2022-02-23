@@ -800,6 +800,30 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('feed fish at 10 o\'clock', evening)[0],
             datetime(2017, 6, 27, 22, 0, 0, tzinfo=default_timezone()))
 
+    def test_extract_later_en(self):
+        dt = datetime(2017, 1, 1, 13, 12, 30)
+        self.assertEqual(
+            extract_datetime('10 seconds later', dt)[0],
+            datetime(2017, 1, 1, 13, 12, 40, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('15 minutes later', dt)[0],
+            datetime(2017, 1, 1, 13, 27, 30, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('12 hours later', dt)[0],
+            datetime(2017, 1, 2, 1, 12, 30, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('28 days later', dt)[0],
+            datetime(2017, 1, 29, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('2 weeks later', dt)[0],
+            datetime(2017, 1, 15, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('6 months later', dt)[0],
+            datetime(2017, 7, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('10 years later', dt)[0],
+            datetime(2027, 1, 1, tzinfo=default_timezone()))
+
     def test_extract_date_with_may_I_en(self):
         now = datetime(2019, 7, 4, 8, 1, 2, tzinfo=default_timezone())
         may_date = datetime(2019, 5, 2, 10, 11, 20, tzinfo=default_timezone())
@@ -980,9 +1004,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extract_datetime('i have things to do in a week', dt)[0],
             extract_datetime('i have things to do within a week', dt)[0])
-        self.assertEqual(
-            extract_datetime('i have things to do in a week', dt)[0],
-            extract_datetime('i have things to do in 7 days', dt)[0])
         self.assertEqual(
             extract_datetime('i have things to do in a month', dt)[0],
             extract_datetime('i have things to do within the month', dt)[0])
