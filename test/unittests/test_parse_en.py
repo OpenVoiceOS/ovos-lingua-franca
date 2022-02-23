@@ -19,14 +19,12 @@ from dateutil import tz
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.internal import FunctionNotLocalizedError
-from lingua_franca.time import default_timezone, now_local, set_default_tz
 from lingua_franca.parse import extract_datetime
 from lingua_franca.parse import extract_duration
 from lingua_franca.parse import extract_number, extract_numbers
-from lingua_franca.parse import fuzzy_match
 from lingua_franca.parse import get_gender
-from lingua_franca.parse import match_one
 from lingua_franca.parse import normalize
+from lingua_franca.time import default_timezone
 
 
 def setUpModule():
@@ -322,7 +320,6 @@ class TestNormalize(unittest.TestCase):
                          (timedelta(minutes=19), "past THE hour"))
 
     def test_extractdatetime_fractions_en(self):
-
         def testExtract(text, expected_date, expected_leftover):
             res = extractWithFormat(normalize(text))
             self.assertEqual(res[0], expected_date, "for=" + text)
@@ -340,7 +337,6 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-27 13:19:00", "remind me to call mom")
 
     def test_extractdatetime_en(self):
-
         def testExtract(text, expected_date, expected_leftover):
             res = extractWithFormat(normalize(text))
             self.assertEqual(res[0], expected_date, "for=" + text)
@@ -838,7 +834,7 @@ class TestNormalize(unittest.TestCase):
             datetime(2019, 5, 24, 0, 0, 0, tzinfo=default_timezone()))
 
     def test_extract_weekend_en(self):
-        dt = datetime(2017, 6, 1) # thursday <- reference date
+        dt = datetime(2017, 6, 1)  # thursday <- reference date
         self.assertEqual(
             extract_datetime('i have things to do next weekend', dt)[0],
             datetime(2017, 6, 3, tzinfo=default_timezone()))
@@ -916,7 +912,7 @@ class TestNormalize(unittest.TestCase):
             datetime(2018, 1, 1, tzinfo=default_timezone()))
 
         # old test moved here due to new disambiguation between "next week" and "in a week"
-        #testExtract("remind me to call mom next week",
+        # testExtract("remind me to call mom next week",
         #            "2017-07-04 00:00:00", "remind me to call mom")
 
         def testExtract(text, expected_date, expected_leftover):
@@ -982,34 +978,63 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('i have things to do in 1 year', dt)[0],
             datetime(2018, 6, 1, tzinfo=default_timezone()))
 
-    def test_extract_within_en(self):
-        # TODO we can not disambiguate a/the minute/hour/day/week/month/year
+    def test_extract_within_a_en(self):
+        dt = datetime(2017, 6, 1, 0, 0, 0, tzinfo=default_timezone())
+
+        self.assertEqual(extract_datetime('i have things to do within a second', dt)[0],
+                         dt + timedelta(seconds=1))
+        self.assertEqual(extract_datetime('i have things to do within a minute', dt)[0],
+                         dt + timedelta(minutes=1))
+        self.assertEqual(extract_datetime('i have things to do within an hour', dt)[0],
+                         dt + timedelta(hours=1))
+        self.assertEqual(extract_datetime('i have things to do within a day', dt)[0],
+                         dt + timedelta(days=1))
+        self.assertEqual(extract_datetime('i have things to do within a week', dt)[0],
+                         dt + timedelta(days=7))
+        self.assertEqual(extract_datetime('i have things to do within a month', dt)[0],
+                         dt + timedelta(days=30))
+        self.assertEqual(extract_datetime('i have things to do within a year', dt)[0],
+                         dt + timedelta(days=365))
+
+    @unittest.skip("currently can not disambiguate a/the because of normalization")
+    def test_extract_within_the_en(self):
+        # TODO we can not disambiguate a/the because of normalization
         #  "within a month" -> month is a timedelta of 30 days
         #  "with the month" -> before 1st day of next month
 
-        dt = datetime(2017, 6, 1, 0, 0, 0)
+        dt = datetime(2017, 6, 1, 12, 30, 30, tzinfo=default_timezone())  # thursday  - weekday 3
 
-        self.assertEqual(
-            extract_datetime('i have things to do in a second', dt)[0],
-            extract_datetime('i have things to do within a second', dt)[0])
-        self.assertEqual(
-            extract_datetime('i have things to do in a minute', dt)[0],
-            extract_datetime('i have things to do within a minute', dt)[0])
-        self.assertEqual(
-            extract_datetime('i have things to do in an hour', dt)[0],
-            extract_datetime('i have things to do within the hour', dt)[0])
-        self.assertEqual(
-            extract_datetime('i have things to do within a day', dt)[0],
-            extract_datetime('i have things to do in 24 hours', dt)[0])
-        self.assertEqual(
-            extract_datetime('i have things to do in a week', dt)[0],
-            extract_datetime('i have things to do within a week', dt)[0])
-        self.assertEqual(
-            extract_datetime('i have things to do in a month', dt)[0],
-            extract_datetime('i have things to do within the month', dt)[0])
-        self.assertEqual(
-            extract_datetime('i have things to do in a year', dt)[0],
-            extract_datetime('i have things to do within the year', dt)[0])
+        self.assertEqual(extract_datetime('i have things to do within the second', dt)[0],
+                         dt.replace(second=dt.second + 1))
+        self.assertEqual(extract_datetime('i have things to do within the second', dt)[0],
+                         extract_datetime('i have things to do before the next second', dt)[0])
+        self.assertEqual(extract_datetime('i have things to do within the minute', dt)[0],
+                         dt.replace(minute=dt.minute + 1, second=0))
+        self.assertEqual(extract_datetime('i have things to do within the minute', dt)[0],
+                         extract_datetime('i have things to do before the next minute', dt)[0])
+        self.assertEqual(extract_datetime('i have things to do within the hour', dt)[0],
+                         dt.replace(hour=dt.hour + 1, minute=0, second=0))
+        self.assertEqual(extract_datetime('i have things to do within the hour', dt)[0],
+                         extract_datetime('i have things to do before the next hour', dt)[0])
+        self.assertEqual(extract_datetime('i have things to do within the day', dt)[0],
+                         dt.replace(day=dt.day + 1, hour=0, minute=0, second=0))
+        self.assertEqual(extract_datetime('i have things to do within the day', dt)[0],
+                         extract_datetime('i have things to do before the next day', dt)[0])
+        self.assertEqual(extract_datetime('i have things to do within the month', dt)[0],
+                         dt.replace(day=1, month=dt.month + 1, hour=0, minute=0, second=0))
+        self.assertEqual(extract_datetime('i have things to do within the month', dt)[0],
+                         extract_datetime('i have things to do before the next month', dt)[0])
+
+        self.assertEqual(extract_datetime('i have things to do within the week', dt)[0],
+                         extract_datetime('i have things to do before next week', dt)[0])  # next monday
+        self.assertEqual(extract_datetime('i have things to do within the week', dt)[0],
+                         extract_datetime('i have things to do before next monday', dt)[0])
+        self.assertEqual(extract_datetime('i have things to do within the week', dt)[0],
+                         dt.replace(day=dt.day + 7 - dt.weekday(), hour=0, minute=0, second=0))
+        self.assertEqual(extract_datetime('i have things to do within the year', dt)[0],
+                         extract_datetime('i have things to do before next year', dt)[0])
+        self.assertEqual(extract_datetime('i have things to do within the year', dt)[0],
+                         dt.replace(day=1, month=1, year=dt.year + 1, hour=0, minute=0, second=0))
 
     def test_extract_last_past_en(self):
         dt = datetime(2017, 6, 1)
