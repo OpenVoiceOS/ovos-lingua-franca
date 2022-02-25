@@ -1,5 +1,5 @@
+recursive-include lingua_franca/ *
+recursive-include requirements/ *
+include CHANGELOG.md
 include LICENSE
 include readme.md
-include requirements.txt
-recursive-include test *.py
-recursive-include lingua_franca/res *
