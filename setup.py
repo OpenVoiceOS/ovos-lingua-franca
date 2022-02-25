@@ -73,7 +73,7 @@ setup(
     license='Apache2.0',
     package_data={'': extra_files},
     include_package_data=True,
-    install_requires=required('requirements.txt'),
+    install_requires=required('requirements/requirements.txt'),
     author='Mycroft AI / OVOS',
     author_email='jarbasai@mailfence.com',
     description='OpenVoiceOS\'s multilingual text parsing and formatting library',
