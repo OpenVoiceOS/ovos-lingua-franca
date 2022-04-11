@@ -25,7 +25,7 @@ from lingua_franca.parse import extract_duration
 from lingua_franca.parse import extract_number, extract_numbers
 from lingua_franca.parse import get_gender
 from lingua_franca.parse import normalize
-from lingua_franca.time import default_timezone
+from lingua_franca.time import default_timezone, to_local
 
 
 def setUpModule():
@@ -372,7 +372,7 @@ class TestNormalize(unittest.TestCase):
         for i in range(1, 500):
             testExtract(f"in {i} decades",
                         f"{2017 + 10 * i}-06-27 00:00:00", "")
-            for j in range(1, 9): # TODO fix higher numbers
+            for j in range(1, 9):  # TODO fix higher numbers
                 testExtract(f"in {i}.{j} decades",
                             f"{2017 + j + 10 * i}-06-27 00:00:00", "")
         for i in range(1, 50):
@@ -1027,6 +1027,7 @@ class TestNormalize(unittest.TestCase):
     @unittest.skip("currently can not disambiguate a/the because of normalization")
     def test_extract_within_the_en(self):
         # TODO we can not disambiguate a/the because of normalization
+        # this is not really a LF problem but a mycroft problem... will give it a think
         #  "within a month" -> month is a timedelta of 30 days
         #  "with the month" -> before 1st day of next month
 
@@ -1064,48 +1065,112 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_datetime('i have things to do within the year', dt)[0],
                          dt.replace(day=1, month=1, year=dt.year + 1, hour=0, minute=0, second=0))
 
-    @unittest.skip("TODO fix me")
-    def test_extract_last_int_X_en(self):
+    def test_extract_last_int_timeunit_en(self):
         dt = datetime(2017, 6, 1)
+        self.assertEqual(
+            extract_datetime('i wrote a lot of unittests in the past second', dt)[0],
+            datetime(2017, 5, 31, 23, 59, 59, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i wrote a lot of unittests in the past minute', dt)[0],
+            datetime(2017, 5, 31, 23, 59, 0, tzinfo=default_timezone()))
         self.assertEqual(
             extract_datetime('i wrote a lot of unittests in the past hour', dt)[0],
             datetime(2017, 5, 31, 23, 0, 0, tzinfo=default_timezone()))
 
         for i in range(1, 1500):
-            print(i, dt - timedelta(seconds=i))
+            expected = to_local(dt - timedelta(seconds=i))
             self.assertEqual(
                 extract_datetime(f'i wrote a lot of unittests in the past {i} seconds', dt)[0],
-                dt - timedelta(seconds=i))
+                expected)
             self.assertEqual(
                 extract_datetime(f'i wrote a lot of unittests in the last {i} seconds', dt)[0],
-                dt - timedelta(seconds=i))
+                expected)
 
         for i in range(1, 1500):
-            print(i, dt - timedelta(minutes=i))
+            expected = to_local(dt - timedelta(minutes=i))
             self.assertEqual(
                 extract_datetime(f'i wrote a lot of unittests in the past {i} minutes', dt)[0],
-                dt - timedelta(minutes=i))
+                expected)
             self.assertEqual(
                 extract_datetime(f'i wrote a lot of unittests in the last {i} minutes', dt)[0],
-                dt - timedelta(minutes=i))
+                expected)
 
+        # this is also testing conflicts with military time,
+        # the parser ignores 100 <= N <= 2400 unless there is a past_marker word
         for i in range(1, 1500):
-            print(i, dt - timedelta(hours=i))
+            expected = to_local(dt - timedelta(hours=i))
             self.assertEqual(
                 extract_datetime(f'i wrote a lot of unittests in the past {i} hours', dt)[0],
-                dt - timedelta(hours=i))
+                expected)
             self.assertEqual(
                 extract_datetime(f'i wrote a lot of unittests in the last {i} hours', dt)[0],
-                dt - timedelta(hours=i))
+                expected)
+
+    def test_extract_last_int_dateunit_en(self):
+        dt = datetime(2017, 6, 1)
 
         for i in range(1, 1500):
-            print(i, dt - timedelta(days=i))
+            expected = to_local(dt - timedelta(days=i))
             self.assertEqual(
                 extract_datetime(f'i wrote a lot of unittests in the past {i} days', dt)[0],
-                dt - timedelta(days=i))
+                expected)
             self.assertEqual(
                 extract_datetime(f'i wrote a lot of unittests in the last {i} days', dt)[0],
-                dt - timedelta(days=i))
+                expected)
+
+        for i in range(1, 1500):
+            expected = to_local(dt - timedelta(days=i * 7))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} weeks', dt)[0],
+                expected)
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} weeks', dt)[0],
+                expected)
+
+        for i in range(1, 150):
+            expected = to_local(dt - relativedelta(months=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} months', dt)[0],
+                expected)
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} months', dt)[0],
+                expected)
+
+        for i in range(1, 150):
+            expected = to_local(dt - relativedelta(years=i))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} years', dt)[0],
+                expected)
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} years', dt)[0],
+                expected)
+
+        for i in range(1, 150):
+            expected = to_local(dt - relativedelta(years=i * 10))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} decades', dt)[0],
+                expected)
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} decades', dt)[0],
+                expected)
+
+        for i in range(1, 15):
+            expected = to_local(dt - relativedelta(years=i * 100))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} centuries', dt)[0],
+                expected)
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} centuries', dt)[0],
+                expected)
+
+        for i in range(1, 2):
+            expected = to_local(dt - relativedelta(years=i * 1000))
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the past {i} millenniums', dt)[0],
+                expected)
+            self.assertEqual(
+                extract_datetime(f'i wrote a lot of unittests in the last {i} millenniums', dt)[0],
+                expected)
 
     def test_extract_last_X_en(self):
         dt = datetime(2017, 6, 1)
@@ -1151,6 +1216,24 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extract_datetime('i had things to do the past year', dt)[0],
             extract_datetime('i had things to do last year', dt)[0])
+        self.assertEqual(
+            extract_datetime('i had things to do last decade', dt)[0],
+            datetime(2007, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past decade', dt)[0],
+            extract_datetime('i had things to do last decade', dt)[0])
+        self.assertEqual(
+            extract_datetime('i had things to do last century', dt)[0],
+            datetime(1917, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past century', dt)[0],
+            extract_datetime('i had things to do last century', dt)[0])
+        self.assertEqual(
+            extract_datetime('i had things to do last millennium', dt)[0],
+            datetime(1017, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do the past millennium', dt)[0],
+            extract_datetime('i had things to do last millennium', dt)[0])
 
     def test_extract_ago_en(self):
         dt = datetime(2017, 6, 1, tzinfo=default_timezone())
@@ -1203,10 +1286,18 @@ class TestNormalize(unittest.TestCase):
 
     def test_extract_centuries_ago_en(self):
         dt = datetime(2017, 6, 1, tzinfo=default_timezone())
+
+        self.assertEqual(
+            extract_datetime('i had things to do a decade ago', dt)[0],
+            datetime(2007, 6, 1, tzinfo=default_timezone()))
+        self.assertEqual(
+            extract_datetime('i had things to do 2 decades ago', dt)[0],
+            datetime(1997, 6, 1, tzinfo=default_timezone()))
+
         for i in range(1, 9):
             self.assertEqual(
                 extract_datetime(f'i had things to do {i} decades ago', dt)[0],
-                dt - relativedelta(years=i*10))
+                dt - relativedelta(years=i * 10))
             self.assertEqual(
                 extract_datetime(f'i had things to do {i} decades earlier', dt)[0],
                 dt - relativedelta(years=i * 10))
@@ -1214,7 +1305,7 @@ class TestNormalize(unittest.TestCase):
         for i in range(1, 9):
             self.assertEqual(
                 extract_datetime(f'i had things to do {i} centuries ago', dt)[0],
-                dt - relativedelta(years=i*100))
+                dt - relativedelta(years=i * 100))
             self.assertEqual(
                 extract_datetime(f'i had things to do {i} centuries earlier', dt)[0],
                 dt - relativedelta(years=i * 100))
@@ -1222,7 +1313,7 @@ class TestNormalize(unittest.TestCase):
         for i in range(1, 2):
             self.assertEqual(
                 extract_datetime(f'i had things to do {i} millenniums ago', dt)[0],
-                dt - relativedelta(years=i*1000))
+                dt - relativedelta(years=i * 1000))
             self.assertEqual(
                 extract_datetime(f'i had things to do {i} millenniums earlier', dt)[0],
                 dt - relativedelta(years=i * 1000))

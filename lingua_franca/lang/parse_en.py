@@ -761,8 +761,15 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
 
             if wordNextNext in earlier_markers:
                 yearOffset = yearOffset * -1
+                used += 1
+            elif word in past_markers:
+                yearOffset = yearOffset * -1
+            elif wordPrev in past_markers:
+                yearOffset = yearOffset * -1
+                start -= 1
+                used += 1
 
-        elif word in year_markers and is_numeric(wordNext) and len(wordNext) == 4:
+        elif word in year_markers and wordNext.isdigit() and len(wordNext) == 4:
             yearOffset = int(wordNext) - int(currentYear)
             used += 2
             hasYear = True
@@ -821,6 +828,11 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset += int(wordPrev)
                 start -= 1
                 used = 2
+                if wordPrevPrev in past_markers:
+                    dayOffset = dayOffset * -1
+                    start -= 1
+                    used += 1
+
             # next day
             # normalize step makes "in a day" -> "in day"
             elif wordPrev and wordPrev in future_markers + future_1st_markers:
@@ -846,6 +858,10 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset += int(wordPrev) * 7
                 start -= 1
                 used = 2
+                if wordPrevPrev in past_markers:
+                    dayOffset = dayOffset * -1
+                    start -= 1
+                    used += 1
             # next week -> next monday
             elif wordPrev in future_1st_markers:
                 dayOffset = 7 - wkday
@@ -879,6 +895,10 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 dayOffset += n * 7
                 start -= 1
                 used = 2
+                if wordPrevPrev in past_markers:
+                    dayOffset = dayOffset * -1
+                    start -= 1
+                    used += 1
             # next weekend -> next saturday
             elif wordPrev in future_1st_markers:
                 if wkday < 5:
@@ -915,6 +935,10 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 monthOffset = int(wordPrev)
                 start -= 1
                 used = 2
+                if wordPrevPrev in past_markers:
+                    monthOffset = monthOffset * -1
+                    start -= 1
+                    used += 1
             # next month -> day 1
             elif wordPrev in future_1st_markers:
                 next_dt = (anchorDate.replace(day=1) + timedelta(days=32)).replace(day=1)
@@ -944,6 +968,10 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                 yearOffset = int(wordPrev)
                 start -= 1
                 used = 2
+                if wordPrevPrev in past_markers:
+                    yearOffset = yearOffset * -1
+                    start -= 1
+                    used += 1
             # next year -> day 1
             elif wordPrev in future_1st_markers:
                 next_dt = anchorDate.replace(day=1, month=1, year=anchorDate.year + 1)
@@ -967,6 +995,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
             else:
                 yearOffset -= 1
                 used = 2
+
         # parse Monday, Tuesday, etc., and next Monday,
         # last Tuesday, etc.
         elif word in days and not fromFlag:
@@ -1338,7 +1367,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                             (wordNext == "hours" or wordNext == "hour" or
                              remainder == "hours" or remainder == "hour") and
                             word[0] != '0' and
-                            (int(strNum) < 100 or int(strNum) > 2400)):
+                            (int(strNum) < 100 or int(strNum) > 2400 or wordPrev in past_markers)):
                         # ignores military time
                         # "in 3 hours"
                         hrOffset = int(strNum)
@@ -1346,6 +1375,11 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
+                        # in last N hours
+                        if wordPrev in past_markers:
+                            start -= 1
+                            used += 1
+                            hrOffset = hrOffset * -1
 
                     elif wordNext == "minutes" or wordNext == "minute" or \
                             remainder == "minutes" or remainder == "minute":
@@ -1355,6 +1389,11 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
+                        # in last N minutes
+                        if wordPrev in past_markers:
+                            start -= 1
+                            used += 1
+                            minOffset = minOffset * -1
                     elif wordNext == "seconds" or wordNext == "second" \
                             or remainder == "seconds" or remainder == "second":
                         # in 5 seconds
@@ -1363,6 +1402,11 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
+                        # in last N seconds
+                        if wordPrev in past_markers:
+                            start -= 1
+                            used += 1
+                            secOffset = secOffset * -1
                     elif int(strNum) > 100:
                         # military time, eg. "3300 hours"
                         strHH = str(int(strNum) // 100)
@@ -1422,6 +1466,7 @@ def extract_datetime_en(text, anchorDate=None, default_time=None):
                                 military = True
                     else:
                         isTime = False
+
             HH = int(strHH) if strHH else 0
             MM = int(strMM) if strMM else 0
             HH = HH + 12 if remainder == "pm" and HH < 12 else HH
