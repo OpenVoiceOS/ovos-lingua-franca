@@ -1,11 +1,7 @@
 from difflib import SequenceMatcher
 from enum import IntEnum, auto
-from ovos_utils.log import LOG
 
-try:
-    import rapidfuzz
-except ImportError:
-    rapidfuzz = None
+import rapidfuzz
 
 
 class MatchStrategy(IntEnum):
@@ -19,22 +15,12 @@ class MatchStrategy(IntEnum):
     PARTIAL_TOKEN_SET_RATIO = auto()
 
 
-def _validate_matching_strategy(strategy):
-    if rapidfuzz is None and strategy != MatchStrategy.SIMPLE_RATIO:
-        LOG.error("rapidfuzz is not installed, "
-                  "falling back to SequenceMatcher for all match strategies")
-        LOG.warning("pip install rapidfuzz")
-        return MatchStrategy.SIMPLE_RATIO
-    return strategy
-
-
 def fuzzy_match(x, against, strategy=MatchStrategy.SIMPLE_RATIO):
     """Perform a 'fuzzy' comparison between two strings.
     Returns:
         float: match percentage -- 1.0 for perfect match,
                down to 0.0 for no match at all.
     """
-    strategy = _validate_matching_strategy(strategy)
     if strategy == MatchStrategy.RATIO:
         score = rapidfuzz.fuzz.ratio(x, against) / 100
     elif strategy == MatchStrategy.PARTIAL_RATIO:
