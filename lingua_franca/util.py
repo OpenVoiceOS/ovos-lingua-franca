@@ -64,7 +64,6 @@ def match_all(query, choices, match_func=None, strategy=MatchStrategy.SIMPLE_RAT
 
         Returns: list of tuples (match, score)
     """
-    strategy = _validate_matching_strategy(strategy)
     match_func = match_func or fuzzy_match
     if isinstance(choices, dict):
         _choices = list(choices.keys())
