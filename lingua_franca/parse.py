@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 import json
-from lingua_franca.util import match_one, fuzzy_match
+from lingua_franca.util import match_one, fuzzy_match, MatchStrategy
 from difflib import SequenceMatcher
 from warnings import warn
 from lingua_franca.time import now_local
@@ -38,10 +38,11 @@ populate_localized_function_dict("parse", langs=get_active_langs())
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def extract_langcode(text, lang=""):
-    resource_file = resolve_resource_file(f"text/{lang}/langs.json") or resolve_resource_file("text/en-us/langs.json")
+    resource_file = resolve_resource_file(f"text/{lang}/langs.json") or \
+                    resolve_resource_file("text/en-us/langs.json")
     with open(resource_file) as f:
         LANGUAGES = {v: k for k, v in json.load(f).items()}
-    return match_one(text, LANGUAGES)
+    return match_one(text, LANGUAGES, strategy=MatchStrategy.TOKEN_SET_RATIO)
 
 
 @localized_function()
