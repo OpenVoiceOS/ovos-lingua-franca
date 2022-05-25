@@ -86,7 +86,7 @@ def extract_currency(text, lang=""):
 
             elif langcode == "en":
                 return "USD", conf - 0.3
-            elif langcode == "pt":
+            elif langcode in ["pt", "fr", "es"]:
                 return "EUR", conf - 0.3
 
     return code, conf

@@ -1711,6 +1711,8 @@ class TestCurrency(unittest.TestCase):
         # test lang_code mappings
         test_with_conf("What is the American currency", 'USD')
         test_with_conf("What is the Portuguese currency", 'EUR')
+        test_with_conf("What is the French currency", 'EUR')
+        test_with_conf("What is the Spanish currency", 'EUR')
 
 
 if __name__ == "__main__":
