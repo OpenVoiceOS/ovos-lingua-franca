@@ -21,10 +21,9 @@ from dateutil import tz
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.lang.parse_common import tokenize, Token
 from lingua_franca.parse import extract_datetime
-from lingua_franca.parse import fuzzy_match
-from lingua_franca.parse import match_one
-from lingua_franca.parse import extract_langcode
+from lingua_franca.parse import extract_langcode, extract_currency
 from lingua_franca.time import default_timezone, now_local, set_default_tz
+from lingua_franca.util import fuzzy_match, match_one
 
 
 def setUpModule():
@@ -122,7 +121,6 @@ class TestParseCommon(unittest.TestCase):
 
 class TestLangcode(unittest.TestCase):
     def test_parse_lang_code(self):
-
         def test_with_conf(text, expected_lang, min_conf=0.8):
             lang, conf = extract_langcode(text, lang="unk")
             self.assertEqual(lang, expected_lang)
@@ -133,6 +131,23 @@ class TestLangcode(unittest.TestCase):
         test_with_conf("Portuguese", 'pt', 1.0)
         test_with_conf("Português", 'pt', 0.8)
         test_with_conf("Inglês", 'en', 0.6)
+
+
+class TestCurrency(unittest.TestCase):
+
+    def test_parse_currency_code_garbage(self):
+        def test_with_conf(text, expected_lang, min_conf=0.7):
+            lang, conf = extract_currency(text)
+            self.assertEqual(lang, expected_lang)
+            self.assertGreaterEqual(conf, min_conf)
+
+        # simple fuzzy match
+        test_with_conf("Brazilian Portuguese", 'BRL')
+        test_with_conf("Brazilian", 'BRL')
+
+        # euro special cases
+        test_with_conf("dglkm euro jbhjkbadksznlkjn,m", 'EUR')
+        test_with_conf("jhgkkjlmfauclh wçio kglbjkhad  ph €", 'EUR')
 
 
 if __name__ == "__main__":

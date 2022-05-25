@@ -14,14 +14,11 @@
 # limitations under the License.
 #
 import json
-from lingua_franca.util import match_one, fuzzy_match, MatchStrategy
-from difflib import SequenceMatcher
-from warnings import warn
-from lingua_franca.time import now_local
+
 from lingua_franca.internal import populate_localized_function_dict, \
-    get_active_langs, get_full_lang_code, get_primary_lang_code, \
-    get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
+    get_active_langs, localized_function, UnsupportedLanguageError, \
     resolve_resource_file, FunctionNotLocalizedError
+from lingua_franca.util import match_one, MatchStrategy
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_number",
@@ -31,9 +28,48 @@ _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "normalize",
                          "get_gender",
                          "is_fractional",
+                         "extract_currency",
                          "is_ordinal")
 
 populate_localized_function_dict("parse", langs=get_active_langs())
+
+
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
+def extract_currency(text, lang=""):
+    # this method tries to be lang agnostic and use mainly fuzzy matching
+    # it should be considered a fallback for unimplemented languages
+    # dedicated per language implementations wanted!
+
+    resource_file = resolve_resource_file(f"text/{lang}/currencies.json") or \
+                    resolve_resource_file("text/en-us/currencies.json")
+    with open(resource_file) as f:
+        codes2 = {v.lower(): k for k, v in json.load(f).items()}
+
+    query = text.lower()
+    code, conf = match_one(query, codes2)
+
+    # special corner cases
+    if conf < 0.65:
+        EURO_COUNTRIES = [
+            "Austria", "Belgium", "Cyprus", "Estonia", "Finland", "France", "Germany", "Greece", "Ireland", "Italy",
+            "Latvia", "Lithuania", "Luxembourg", "Malta", "the Netherlands", "Portugal", "Slovakia", "Slovenia",
+            "Spain"]
+        # TODO, once country PR is in just use it's json for translated country names
+        for c in EURO_COUNTRIES:
+            if c.lower() in query:
+                return "EUR", 0.75
+
+        # naive check, often currency names are {country_name} {currency}
+        for name in codes2:
+            c = " ".join(name.split(" ")[:-1])
+            if c and c in query.lower():
+                return codes2[name], 0.7
+
+        # european union
+        if "euro" in query or "€" in query:
+            return "EUR", 0.7
+
+    return code, conf
 
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])

@@ -26,7 +26,7 @@ from lingua_franca.parse import extract_number, extract_numbers
 from lingua_franca.parse import get_gender
 from lingua_franca.parse import normalize
 from lingua_franca.time import default_timezone, to_local
-from lingua_franca.parse import extract_langcode
+from lingua_franca.parse import extract_langcode, extract_currency
 
 
 def setUpModule():
@@ -1684,6 +1684,29 @@ class TestLangcode(unittest.TestCase):
 
         test_with_conf("Brazilian", 'pt-br')
         test_with_conf("American", 'en-us')
+
+
+class TestCurrency(unittest.TestCase):
+    def test_parse_currency_code_en(self):
+        def test_with_conf(text, expected_lang, min_conf=0.7):
+            lang, conf = extract_currency(text)
+            self.assertEqual(lang, expected_lang)
+            self.assertGreaterEqual(conf, min_conf)
+
+        # simple fuzzy match
+        test_with_conf("Brazilian Portuguese", 'BRL')
+        test_with_conf("Brazilian", 'BRL')
+
+        # euro special cases
+        test_with_conf("What is the currency in the European Union", 'EUR')
+        test_with_conf("What is the code for €", 'EUR')
+
+        # hardcoded (english) euro country list
+        test_with_conf("What is the currency in Portugal", 'EUR')
+
+        # country overlap in sentence and currency (english) name
+        test_with_conf("What is the currency in United States", 'USD')
+        test_with_conf("What is the currency in Somalia", 'SOS')
 
 
 if __name__ == "__main__":
