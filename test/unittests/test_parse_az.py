@@ -23,9 +23,8 @@ from lingua_franca.time import default_timezone
 from lingua_franca.parse import extract_datetime
 from lingua_franca.parse import extract_duration
 from lingua_franca.parse import extract_number, extract_numbers
-from lingua_franca.parse import fuzzy_match
+from lingua_franca.util import fuzzy_match, match_one
 from lingua_franca.parse import get_gender
-from lingua_franca.parse import match_one
 from lingua_franca.parse import normalize
 
 

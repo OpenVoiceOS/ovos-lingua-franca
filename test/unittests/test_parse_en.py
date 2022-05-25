@@ -1688,7 +1688,7 @@ class TestLangcode(unittest.TestCase):
 
 class TestCurrency(unittest.TestCase):
     def test_parse_currency_code_en(self):
-        def test_with_conf(text, expected_lang, min_conf=0.7):
+        def test_with_conf(text, expected_lang, min_conf=0.5):
             lang, conf = extract_currency(text)
             self.assertEqual(lang, expected_lang)
             self.assertGreaterEqual(conf, min_conf)
@@ -1707,6 +1707,10 @@ class TestCurrency(unittest.TestCase):
         # country overlap in sentence and currency (english) name
         test_with_conf("What is the currency in United States", 'USD')
         test_with_conf("What is the currency in Somalia", 'SOS')
+
+        # test lang_code mappings
+        test_with_conf("What is the American currency", 'USD')
+        test_with_conf("What is the Portuguese currency", 'EUR')
 
 
 if __name__ == "__main__":
