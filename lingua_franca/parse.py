@@ -54,6 +54,7 @@ def extract_currency(text, lang=""):
             "Austria", "Belgium", "Cyprus", "Estonia", "Finland", "France", "Germany", "Greece", "Ireland", "Italy",
             "Latvia", "Lithuania", "Luxembourg", "Malta", "the Netherlands", "Portugal", "Slovakia", "Slovenia",
             "Spain"]
+
         # TODO, once country PR is in just use it's json for translated country names
         for c in EURO_COUNTRIES:
             if c.lower() in query:
@@ -68,6 +69,25 @@ def extract_currency(text, lang=""):
         # european union
         if "euro" in query or "€" in query:
             return "EUR", 0.7
+
+        # lang2currency mappings
+        for word in text.split(" "):
+            langcode, conf = extract_langcode(word, lang)
+            if conf < 0.85:
+                continue
+
+            # TODO add more
+            if langcode == "en-us":
+                return "USD", conf
+            elif langcode in ["pt-pt", "es-es", "fr-fr"]:
+                return "EUR", conf
+            elif langcode == "pt-br":
+                return "BRL", conf
+
+            elif langcode == "en":
+                return "USD", conf - 0.3
+            elif langcode == "pt":
+                return "EUR", conf - 0.3
 
     return code, conf
 
