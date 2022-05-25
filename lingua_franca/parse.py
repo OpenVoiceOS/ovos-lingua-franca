@@ -18,7 +18,7 @@ import json
 from lingua_franca.internal import populate_localized_function_dict, \
     get_active_langs, localized_function, UnsupportedLanguageError, \
     resolve_resource_file, FunctionNotLocalizedError
-from lingua_franca.util import match_one, MatchStrategy
+from lingua_franca.util import match_one, MatchStrategy, fuzzy_match
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_number",
@@ -40,56 +40,49 @@ def extract_currency(text, lang=""):
     # it should be considered a fallback for unimplemented languages
     # dedicated per language implementations wanted!
 
-    resource_file = resolve_resource_file(f"text/{lang}/currencies.json") or \
-                    resolve_resource_file("text/en-us/currencies.json")
-    with open(resource_file) as f:
-        codes2 = {v.lower(): k for k, v in json.load(f).items()}
+    # match lang
+    l, s = extract_langcode(text, lang=lang)
 
-    query = text.lower()
-    code, conf = match_one(query, codes2)
+    # match country data
+    resource_file = resolve_resource_file("countries.json")
+    with open(resource_file) as f:
+        countries = json.load(f)
+        best_score = 0
+        best_currency = None
+
+        for c in countries:
+            if not c["ISO4217-currency_alphabetic_code"]:
+                continue
+            k = f"official_name_{lang.split('-')[0]}"
+            if k in c:
+                name = c[k]
+            else:
+                name = c["official_name_en"]
+
+            # match currency name + country name + country lang
+            currency_score = fuzzy_match(text, c["ISO4217-currency_name"], strategy=MatchStrategy.TOKEN_SET_RATIO)
+            country_score = fuzzy_match(text, name, strategy=MatchStrategy.TOKEN_SET_RATIO)
+            lang_score = 0
+            if l in c.get("Language", "").lower():
+                # bonus if language is spoken in this country
+                lang_score = s * 0.6
+                # bonus if country code is part of language code
+                if c['ISO3166-1-Alpha-2'].lower() in l:
+                    lang_score = s
+
+            score = max([currency_score, country_score]) * 0.8 + 0.2 * lang_score
+
+            if score > best_score:
+                best_score = score
+                best_currency = c["ISO4217-currency_alphabetic_code"]
 
     # special corner cases
-    if conf < 0.65:
-        EURO_COUNTRIES = [
-            "Austria", "Belgium", "Cyprus", "Estonia", "Finland", "France", "Germany", "Greece", "Ireland", "Italy",
-            "Latvia", "Lithuania", "Luxembourg", "Malta", "the Netherlands", "Portugal", "Slovakia", "Slovenia",
-            "Spain"]
-
-        # TODO, once country PR is in just use it's json for translated country names
-        for c in EURO_COUNTRIES:
-            if c.lower() in query:
-                return "EUR", 0.75
-
-        # naive check, often currency names are {country_name} {currency}
-        for name in codes2:
-            c = " ".join(name.split(" ")[:-1])
-            if c and c in query.lower():
-                return codes2[name], 0.7
-
+    if best_score < 0.55:
         # european union
-        if "euro" in query or "€" in query:
-            return "EUR", 0.7
+        if "euro" in text.lower() or "€" in text:
+            return "EUR", 0.5
 
-        # lang2currency mappings
-        for word in text.split(" "):
-            langcode, conf = extract_langcode(word, lang)
-            if conf < 0.7:
-                continue
-
-            # TODO add more
-            if langcode == "en-us":
-                return "USD", conf
-            elif langcode in ["pt-pt", "es-es", "fr-fr"]:
-                return "EUR", conf
-            elif langcode == "pt-br":
-                return "BRL", conf
-
-            elif langcode == "en":
-                return "USD", conf - 0.3
-            elif langcode in ["pt", "fr", "es"]:
-                return "EUR", conf - 0.3
-
-    return code, conf
+    return best_currency, best_score
 
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
@@ -98,7 +91,27 @@ def extract_langcode(text, lang=""):
                     resolve_resource_file("text/en-us/langs.json")
     with open(resource_file) as f:
         LANGUAGES = {v: k for k, v in json.load(f).items()}
-    return match_one(text, LANGUAGES, strategy=MatchStrategy.TOKEN_SET_RATIO)
+
+    best_lang, best_score = match_one(text, LANGUAGES, strategy=MatchStrategy.TOKEN_SET_RATIO)
+
+    # match country names
+    if best_score < 0.7:
+        resource_file = resolve_resource_file("countries.json")
+        with open(resource_file) as f:
+            countries = json.load(f)
+            for c in countries:
+                if "Language" not in c:
+                    continue
+                k = f"official_name_{lang.split('-')[0]}"
+                if k in c:
+                    name = c[k]
+                else:
+                    name = c["official_name_en"]
+                score = fuzzy_match(text, name, strategy=MatchStrategy.TOKEN_SET_RATIO)
+                if score >= best_score:
+                    best_lang, best_score = c["Language"].lower(), score
+
+    return best_lang, best_score
 
 
 @localized_function()

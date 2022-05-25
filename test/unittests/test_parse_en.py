@@ -1670,6 +1670,8 @@ class TestLangcode(unittest.TestCase):
 
         test_with_conf("English", 'en', 1.0)
         test_with_conf("Portuguese", 'pt', 1.0)
+        test_with_conf("Spanish", 'es', 1.0)
+        test_with_conf("French", 'fr', 1.0)
 
     def test_parse_lang2_code(self):
         def test_with_conf(text, expected_lang, min_conf=0.8):
@@ -1677,18 +1679,25 @@ class TestLangcode(unittest.TestCase):
             self.assertEqual(lang, expected_lang)
             self.assertGreaterEqual(conf, min_conf)
 
+        # country names
+        test_with_conf("Portugal", 'pt-pt', 1.0)
+        test_with_conf("Spain", 'es-es', 1.0)
+        test_with_conf("France", 'fr-fr', 1.0)
+        test_with_conf("Australia", 'en-au', 1.0)
+
+        # fuzzy matching
+        test_with_conf("Brazilian", 'pt-br')
+        test_with_conf("American", 'en-us')
+
         # TODO should be "pt-br", but let it pass for now
         test_with_conf("Brazilian Portuguese", 'pt')
         # TODO should be "en-us", but let it pass for now
         test_with_conf("American English", 'en')
 
-        test_with_conf("Brazilian", 'pt-br')
-        test_with_conf("American", 'en-us')
-
 
 class TestCurrency(unittest.TestCase):
     def test_parse_currency_code_en(self):
-        def test_with_conf(text, expected_lang, min_conf=0.5):
+        def test_with_conf(text, expected_lang, min_conf=0.4):
             lang, conf = extract_currency(text)
             self.assertEqual(lang, expected_lang)
             self.assertGreaterEqual(conf, min_conf)
