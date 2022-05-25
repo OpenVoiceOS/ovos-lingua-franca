@@ -137,7 +137,7 @@ class TestCurrency(unittest.TestCase):
 
     def test_parse_currency_code_garbage(self):
         def test_with_conf(text, expected_lang, min_conf=0.7):
-            lang, conf = extract_currency(text)
+            lang, conf = extract_currency(text, lang="unk")
             self.assertEqual(lang, expected_lang)
             self.assertGreaterEqual(conf, min_conf)
 
@@ -148,6 +148,9 @@ class TestCurrency(unittest.TestCase):
         # euro special cases
         test_with_conf("dglkm euro jbhjkbadksznlkjn,m", 'EUR')
         test_with_conf("jhgkkjlmfauclh wçio kglbjkhad  ph €", 'EUR')
+
+        # test lang_code mappings
+        test_with_conf("Português", 'EUR', min_conf=0.5)
 
 
 if __name__ == "__main__":

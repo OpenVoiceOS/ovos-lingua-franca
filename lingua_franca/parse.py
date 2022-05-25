@@ -73,7 +73,7 @@ def extract_currency(text, lang=""):
         # lang2currency mappings
         for word in text.split(" "):
             langcode, conf = extract_langcode(word, lang)
-            if conf < 0.85:
+            if conf < 0.7:
                 continue
 
             # TODO add more
