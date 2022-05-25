@@ -26,7 +26,7 @@ from lingua_franca.parse import extract_number, extract_numbers
 from lingua_franca.parse import get_gender
 from lingua_franca.parse import normalize
 from lingua_franca.time import default_timezone, to_local
-from lingua_franca.parse import extract_langcode, extract_currency
+from lingua_franca.parse import extract_langcode, extract_currencycode, extract_countrycode
 
 
 def setUpModule():
@@ -1694,11 +1694,24 @@ class TestLangcode(unittest.TestCase):
         # TODO should be "en-us", but let it pass for now
         test_with_conf("American English", 'en')
 
+    def test_parse_country_code(self):
+        def test_with_conf(text, expected_lang, min_conf=0.6):
+            lang, conf = extract_countrycode(text)
+            self.assertEqual(lang, expected_lang)
+            self.assertGreaterEqual(conf, min_conf)
 
-class TestCurrency(unittest.TestCase):
+        # match country names
+        test_with_conf("Portugal", 'PT')
+        test_with_conf("United States of America", 'US')
+        test_with_conf("Mexico", 'MX')
+
+        # match lang
+        test_with_conf("es-es", 'ES')
+        test_with_conf("Spanish", 'ES', min_conf=0.4)
+
     def test_parse_currency_code_en(self):
         def test_with_conf(text, expected_lang, min_conf=0.4):
-            lang, conf = extract_currency(text)
+            lang, conf = extract_currencycode(text)
             self.assertEqual(lang, expected_lang)
             self.assertGreaterEqual(conf, min_conf)
 

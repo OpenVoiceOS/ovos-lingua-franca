@@ -21,7 +21,7 @@ from dateutil import tz
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.lang.parse_common import tokenize, Token
 from lingua_franca.parse import extract_datetime
-from lingua_franca.parse import extract_langcode, extract_currency
+from lingua_franca.parse import extract_langcode, extract_currencycode, extract_countrycode
 from lingua_franca.time import default_timezone, now_local, set_default_tz
 from lingua_franca.util import fuzzy_match, match_one
 
@@ -132,12 +132,18 @@ class TestLangcode(unittest.TestCase):
         test_with_conf("Português", 'pt', 0.8)
         test_with_conf("Inglês", 'en', 0.6)
 
+    def test_parse_country_code(self):
+        def test_with_conf(text, expected_lang, min_conf=0.6):
+            lang, conf = extract_countrycode(text, lang="unk")
+            self.assertEqual(lang, expected_lang)
+            self.assertGreaterEqual(conf, min_conf)
 
-class TestCurrency(unittest.TestCase):
+        # test fallback to english and fuzzy match
+        test_with_conf("Português", 'PT')
 
     def test_parse_currency_code_garbage(self):
         def test_with_conf(text, expected_lang, min_conf=0.5):
-            lang, conf = extract_currency(text, lang="unk")
+            lang, conf = extract_currencycode(text, lang="unk")
             self.assertEqual(lang, expected_lang)
             self.assertGreaterEqual(conf, min_conf)
 

@@ -28,14 +28,15 @@ _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "normalize",
                          "get_gender",
                          "is_fractional",
-                         "extract_currency",
+                         "extract_currencycode",
+                         "extract_countrycode",
                          "is_ordinal")
 
 populate_localized_function_dict("parse", langs=get_active_langs())
 
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
-def extract_currency(text, lang=""):
+def extract_currencycode(text, lang=""):
     # this method tries to be lang agnostic and use mainly fuzzy matching
     # it should be considered a fallback for unimplemented languages
     # dedicated per language implementations wanted!
@@ -112,6 +113,52 @@ def extract_langcode(text, lang=""):
                     best_lang, best_score = c["Language"].lower(), score
 
     return best_lang, best_score
+
+
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
+def extract_countrycode(text, iso3=False, lang=""):
+
+    resource_file = resolve_resource_file("countries.json")
+    with open(resource_file) as f:
+        countries = json.load(f)
+        best_score = 0
+        best_country = None
+
+        for c in countries:
+            # if text is a langcode, return parent country
+            l = c.get("Language", "").lower()
+            if not l:
+                lang_score = 0
+            elif l == f'{c["ISO3166-1-Alpha-2"]}-{c["ISO3166-1-Alpha-2"]}'.lower() and l in text:
+                lang_score = 1.0
+            else:
+                lang_score = fuzzy_match(text, l, strategy=MatchStrategy.TOKEN_SET_RATIO) * 0.8
+                if c["ISO3166-1-Alpha-2"].lower() in l:
+                    lang_score += 0.05
+
+            # match country name to text
+            k = f"official_name_{lang.split('-')[0]}"
+            if k in c:
+                name = c[k]
+            else:
+                name = c["official_name_en"]
+
+            name_score = fuzzy_match(text, name, strategy=MatchStrategy.TOKEN_SET_RATIO)
+
+            if name_score < 0.7 <= lang_score:
+                score = lang_score
+            elif lang_score < 0.7 <= name_score:
+                score = name_score
+            else:
+                score = 0.5 * name_score + 0.5 * lang_score
+
+            if score >= best_score:
+                if iso3:
+                    best_country, best_score = c["ISO3166-1-Alpha-3"], score
+                else:
+                    best_country, best_score = c["ISO3166-1-Alpha-2"], score
+
+    return best_country, best_score
 
 
 @localized_function()
