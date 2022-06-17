@@ -327,10 +327,14 @@ def nice_time_eu(dt, speech=True, use_24hour=False, use_ampm=False):
     # hemen dago tranpa
     # return str(dt.hour) + ":" + str(dt.minute)
 
+
 def nice_relative_time_eu(when, relative_to=None, lang=None):
     """Create a relative phrase to roughly describe a datetime
 
     Examples are "25 seconds", "tomorrow", "7 days".
+
+    Note: The reported period is currently limited to a number of days. Longer
+          periods such as multiple weeks or months will be reported in days.
 
     Args:
         when (datetime): Local timezone
