@@ -1,2 +1,3 @@
 python-dateutil~=2.6
 rapidfuzz
+inflection

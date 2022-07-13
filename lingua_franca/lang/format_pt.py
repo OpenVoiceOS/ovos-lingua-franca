@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
-from lingua_franca.lang.format_common import convert_to_mixed_fraction
+from lingua_franca.lang.format_common import convert_to_mixed_fraction, PluralCategory, PluralAmount
 from lingua_franca.lang.common_data_pt import _FRACTION_STRING_PT, \
-    _NUM_STRING_PT
+    _NUM_STRING_PT, _VOWELS_PT, _PLURAL_EXCEPTIONS_PT, _SINGULAR_EXCEPTIONS_PT, _INVARIANTS_PT
 
 
 def nice_number_pt(number, speech, denominators=range(1, 21)):
@@ -221,3 +221,83 @@ def nice_time_pt(dt, speech=True, use_24hour=False, use_ampm=False):
             elif hour != 0 and hour != 12:
                 speak += " da noite"
     return speak
+
+
+def _singularize_pt(word):
+    if word in _INVARIANTS_PT:
+        return word
+    if word in _SINGULAR_EXCEPTIONS_PT:
+        return _SINGULAR_EXCEPTIONS_PT[word]
+    # TODO implement is_plural helper
+    # can not ensure word is in plural, assuming it is,
+    # if in singular form it might in some cases be wrongly mutated
+    # in general words that end with "s" in singular form should be added to exceptions dict
+    if word.endswith("is"):
+        return word.rstrip("is") + "il"
+    if word.endswith("ões"):
+        return word.replace("ões", "ão")
+    if word.endswith("ães"):
+        return word.replace("ães", "ão")
+    if word.endswith("es"):
+        return word.rstrip("es")
+    if word.endswith("s"):
+        return word.rstrip("s")
+    return word
+
+
+def _pluralize_pt(word):
+    if word in _INVARIANTS_PT:
+        return word
+    if word in _PLURAL_EXCEPTIONS_PT:
+        return _PLURAL_EXCEPTIONS_PT[word]
+    if word.endswith("x"):
+        return word
+    if word.endswith("s"):
+        # TODO - this will catch too many words, need a better check
+        #if word[-2] in _VOWELS_PT or word[-3] in _VOWELS_PT:
+            # if word is an oxytone, add "es", else word remains unchanged
+            # https://en.wikipedia.org/wiki/Oxytone
+        #    return word + "es"
+        return word
+    if word.endswith("ão"):
+        # crap, can either end with "ãos", "aẽs" or "ões", most times they are all valid
+        # the other times lets hope the word is in exceptions dict
+        # TODO check if numeric, then it's always "ões"
+        return word + "s"
+    if word[-1] in _VOWELS_PT:
+        # if word ends with a vowel add an "s"
+        return word + 's'
+    for ending in ["r", "z", "n"]:
+        if word.endswith(ending):
+            return word + "es"
+    for ending in ["al", "el", "ol", "ul"]:
+        if word.endswith(ending):
+            return word.rstrip("l") + "is"
+    if word.endswith("il"):
+        return word.rstrip("l") + "s"
+    if word.endswith("m"):
+        return word.rstrip("m") + "ns"
+    # foreign words that have been "unportuguesified" have an "s" added
+    # simple check is looking for endings that don't exist in portuguese
+    for ending in ["w", "y", "k", "t"]:
+        if word.endswith(ending):
+            return word + "s"
+    return word
+
+
+def get_plural_form_pt(word, amount, type=PluralCategory.CARDINAL):
+    """
+    Get plural form of the specified word for the specified amount.
+
+    Args:
+        word(str): Word to be pluralized.
+        amount(int or float or pair or list): The amount that is used to
+            determine the category. If type is range, it must contain
+            the start and end numbers.
+        type(str): Either cardinal (default), ordinal or range.
+    Returns:
+        (str): Pluralized word.
+    """
+    if amount == 1:
+        return _singularize_pt(word)
+    return _pluralize_pt(word)

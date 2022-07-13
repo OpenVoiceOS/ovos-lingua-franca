@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+import inflection
 from lingua_franca.lang.format_common import convert_to_mixed_fraction, PluralCategory, PluralAmount
 from lingua_franca.lang.common_data_en import _NUM_STRING_EN, \
     _FRACTION_STRING_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN, _SHORT_ORDINAL_EN, _LONG_ORDINAL_EN
@@ -411,3 +411,21 @@ def get_plural_category_en(amount, type=PluralCategory.CARDINAL):
 
     else:
         return ValueError("Argument \"type\" must be cardinal|ordinal|range")
+
+
+def get_plural_form_en(word, amount, type=PluralCategory.CARDINAL):
+    """
+    Get plural form of the specified word for the specified amount.
+
+    Args:
+        word(str): Word to be pluralized.
+        amount(int or float or pair or list): The amount that is used to
+            determine the category. If type is range, it must contain
+            the start and end numbers.
+        type(str): Either cardinal (default), ordinal or range.
+    Returns:
+        (str): Pluralized word.
+    """
+    if amount == 1:
+        return inflection.singularize(word)
+    return inflection.pluralize(word)

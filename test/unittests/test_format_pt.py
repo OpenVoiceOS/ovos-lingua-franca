@@ -20,6 +20,7 @@ import datetime
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.format import nice_time
 from lingua_franca.format import pronounce_number
+from lingua_franca.format import get_plural_form
 from lingua_franca.time import default_timezone
 
 
@@ -307,6 +308,36 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, lang="pt-pt", use_24hour=False,
                                    use_ampm=True),
                          "onze e um quarto da noite")
+
+
+class TestInflection(unittest.TestCase):
+    def test_singularize(self):
+        self.assertEqual(get_plural_form("homems", 1), "homem")
+        self.assertEqual(get_plural_form("cavalos", 1), "cavalo")
+        self.assertEqual(get_plural_form("ovelhas", 1), "ovelha")
+        # test already singular
+        self.assertEqual(get_plural_form("palavra", 1), "palavra")
+        # test garbage
+        self.assertEqual(get_plural_form("gerubicios", 1), "gerubicio")
+
+    def test_pluralize(self):
+        self.assertEqual(get_plural_form("poste", 2), "postes")
+        self.assertEqual(get_plural_form("polvo", 3), "polvos")
+        self.assertEqual(get_plural_form("ovelha", 4), "ovelhas")
+        # test already plural
+        self.assertEqual(get_plural_form("palavras", 5), "palavras")
+        self.assertEqual(get_plural_form("ovelhas", 3), "ovelhas")
+        # irregular/invariant verbs
+        self.assertEqual(get_plural_form("anão", 6), "anões")
+        self.assertEqual(get_plural_form("alemão", 2), "alemães")
+        self.assertEqual(get_plural_form("apêndix", 3), "apêndices")
+        self.assertEqual(get_plural_form('três', 4), 'três')
+        self.assertEqual(get_plural_form('seis', 2), 'seis')
+        self.assertEqual(get_plural_form('ontem', 3), 'ontem')
+        self.assertEqual(get_plural_form('depressa', 4), 'depressa')
+        self.assertEqual(get_plural_form('contra', 5), 'contra')
+        # test garbage
+        self.assertEqual(get_plural_form("gerubicio", 6), "gerubicios")
 
 
 if __name__ == "__main__":

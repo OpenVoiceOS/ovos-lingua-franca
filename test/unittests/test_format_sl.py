@@ -13,26 +13,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import json
-import datetime
 import ast
+import datetime
+import json
 import sys
 import unittest
 
-from lingua_franca import get_default_lang, set_default_lang
-from lingua_franca.format import nice_number
-from lingua_franca.format import nice_time
+from lingua_franca import get_default_lang, set_default_lang, load_language, unload_language
+from lingua_franca.format import date_time_format
+from lingua_franca.format import join_list
 from lingua_franca.format import nice_date
 from lingua_franca.format import nice_date_time
-from lingua_franca.format import nice_year
 from lingua_franca.format import nice_duration
 from lingua_franca.format import nice_number, get_plural_category
 from lingua_franca.format import nice_time
 from lingua_franca.format import nice_year
 from lingua_franca.format import pronounce_number
-from lingua_franca.format import date_time_format
-from lingua_franca.format import join_list
 from lingua_franca.time import default_timezone
+
+
+def setUpModule():
+    load_language("sl-si")
+    set_default_lang("sl")
+
+
+def tearDownModule():
+    unload_language("sl")
 
 
 NUMBERS_FIXTURE_SL = {

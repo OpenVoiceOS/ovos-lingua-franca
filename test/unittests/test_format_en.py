@@ -13,30 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import unittest
 import datetime
 import sys
+import unittest
+
 # TODO either write a getter for lingua_franca.internal._SUPPORTED_LANGUAGES,
 # or make it public somehow
-from lingua_franca import load_language, unload_language, set_default_lang, \
-    get_primary_lang_code, get_active_langs, get_supported_langs
-from lingua_franca.internal import UnsupportedLanguageError
+from lingua_franca import load_language, unload_language, set_default_lang
+from lingua_franca.format import get_plural_category
+from lingua_franca.format import join_list, get_plural_form
+from lingua_franca.format import nice_duration
 from lingua_franca.format import nice_number
 from lingua_franca.format import nice_time
-from lingua_franca.format import nice_date
-from lingua_franca.format import nice_date_time
-from lingua_franca.format import nice_duration
-from lingua_franca.format import nice_number, get_plural_category
-from lingua_franca.format import nice_time
-from lingua_franca.format import nice_year
-from lingua_franca.format import nice_duration
-from lingua_franca.format import pronounce_number
-from lingua_franca.format import date_time_format
-from lingua_franca.format import join_list
 from lingua_franca.format import pronounce_lang
-from lingua_franca.time import default_timezone, set_default_tz, now_local, \
-    to_local
-
+from lingua_franca.format import pronounce_number
+from lingua_franca.time import default_timezone
 
 
 def setUpModule():
@@ -80,7 +71,6 @@ NUMBERS_FIXTURE_EN = {
 
 
 class TestNiceNumberFormat(unittest.TestCase):
-
     tmp_var = None
 
     def set_tmp_var(self, val):
@@ -372,7 +362,7 @@ class TestPronounceNumber(unittest.TestCase):
 class TestNiceDateFormat(unittest.TestCase):
 
     def test_convert_times(self):
-        dt = datetime.datetime(2017, 1, 31, 
+        dt = datetime.datetime(2017, 1, 31,
                                13, 22, 3, tzinfo=default_timezone())
 
         # Verify defaults haven't changed
@@ -495,7 +485,6 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt),
                          "quarter to two")
 
-
     def test_nice_duration(self):
         self.assertEqual(nice_duration(1), "one second")
         self.assertEqual(nice_duration(3), "three seconds")
@@ -574,6 +563,35 @@ class TestPluralCategory(unittest.TestCase):
         self.assertEqual(get_plural_category((1, 2), type="range"), "other")
         self.assertEqual(get_plural_category((0, 1), type="range"), "other")
         self.assertEqual(get_plural_category((0, 2), type="range"), "other")
+
+
+class TestInflection(unittest.TestCase):
+    def test_singularize(self):
+        self.assertEqual(get_plural_form("posts", 1), "post")
+        self.assertEqual(get_plural_form("octopi", 1), "octopus")
+        self.assertEqual(get_plural_form("sheep", 1), "sheep")
+        # test already singular
+        self.assertEqual(get_plural_form("word", 1), "word")
+        # test garbage
+        self.assertEqual(get_plural_form("CamelOctopi", 1), "CamelOctopus")
+
+    def test_pluralize(self):
+        self.assertEqual(get_plural_form("post", 2), "posts")
+        self.assertEqual(get_plural_form("octopus", 3), "octopi")
+        self.assertEqual(get_plural_form("sheep", 4), "sheep")
+        # test already plural
+        self.assertEqual(get_plural_form("words", 5), "words")
+        # irregular verbs
+        self.assertEqual(get_plural_form("person", 6), "people")
+        self.assertEqual(get_plural_form("man", 2), "men")
+        self.assertEqual(get_plural_form("human", 3), "humans")
+        self.assertEqual(get_plural_form('child', 4), 'children')
+        self.assertEqual(get_plural_form('sex', 2), 'sexes')
+        self.assertEqual(get_plural_form('move', 3), 'moves')
+        self.assertEqual(get_plural_form('cow', 4), 'kine')
+        self.assertEqual(get_plural_form('zombie', 5), 'zombies')
+        # test garbage
+        self.assertEqual(get_plural_form("CamelOctopus", 6), "CamelOctopi")
 
 
 if __name__ == "__main__":

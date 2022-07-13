@@ -636,7 +636,7 @@ def get_plural_category(amount, type=PluralCategory.CARDINAL, lang=""):
         raise FunctionNotLocalizedError("This function has not been implemented in the specified language.")
 
 
-@localized_function()
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def get_plural_form(word, amount, type=PluralCategory.CARDINAL, lang=""):
     """
     Get plural form of the specified word for the specified amount.
@@ -651,3 +651,5 @@ def get_plural_form(word, amount, type=PluralCategory.CARDINAL, lang=""):
     Returns:
         (str): Pluralized word.
     """
+    warn(RuntimeWarning("Pluralization has not been implemented in the specified language. Word unchanged"))
+    return word
