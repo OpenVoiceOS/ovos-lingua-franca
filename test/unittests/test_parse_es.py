@@ -18,7 +18,7 @@ import unittest
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.parse import (normalize, extract_numbers, extract_number,
-                                 extract_datetime)
+                                 extract_datetime, yes_or_no)
 from lingua_franca.lang.parse_es import extract_datetime_es, is_fractional_es
 from lingua_franca.time import default_timezone
 
@@ -242,6 +242,21 @@ class TestDatetime_es(unittest.TestCase):
         self.assertEqual(extract_datetime(
             "hace tres noches", anchorDate=datetime(1998, 1, 1),
             lang='es')[0], datetime(1997, 12, 29, 21))
+
+
+class TestYesNo(unittest.TestCase):
+    def test_yesno(self):
+
+        def test_utt(text, expected):
+            res = yes_or_no(text, lang="es-es")
+            self.assertEqual(res, expected)
+
+        test_utt("por supuesto", True)
+        test_utt("no", False)
+        test_utt("sí", True)
+        test_utt("jajajaja", None)
+        test_utt("por favor", True)
+        test_utt("por favor no", False)
 
 
 if __name__ == "__main__":

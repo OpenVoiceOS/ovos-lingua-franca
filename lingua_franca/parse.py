@@ -45,16 +45,28 @@ def yes_or_no(text, lang=""):
     with open(resource_file) as f:
         words = json.load(f)
 
-    toks = normalize(text, lang=lang).split(" ")
+    text = normalize(text, lang=lang).lower()
 
-    # TODO - improve this, does not take into account multi word expressions in utterance
-    res = None
     # if user says yes but later says no, he changed his mind mid-sentence
-    for word in toks:
-        if word in words["no"]:
-            res = False
-        elif word in words["yes"]:
+    # the highest index is the last yesno word
+    res = None
+    best = -1
+    for w in words["yes"]:
+        w = w.lower()
+        if w not in text:
+            continue
+        idx = text.index(w)
+        if idx >= best:
+            best = idx
             res = True
+    for w in words["no"]:
+        w = w.lower()
+        if w not in text:
+            continue
+        idx = text.index(w)
+        if idx >= best:
+            best = idx
+            res = False
 
     # None - neutral
     # True - yes
