@@ -40,8 +40,10 @@ populate_localized_function_dict("parse", langs=get_active_langs())
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def yes_or_no(text, lang=""):
-    resource_file = resolve_resource_file(f"text/{lang}/yesno.json") or \
-                    resolve_resource_file("text/en-us/yesno.json")
+    resource_file = resolve_resource_file(f"text/{lang}/yesno.json")
+    if not resource_file:
+        raise FunctionNotLocalizedError(f"yesno.json missing for {lang}")
+
     with open(resource_file) as f:
         words = json.load(f)
 
