@@ -22,7 +22,7 @@
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from lingua_franca.lang.parse_common import is_numeric, look_for_fractions
+from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, match_yes_or_no
 from lingua_franca.lang.common_data_pt import _NUMBERS_PT, \
     _FEMALE_DETERMINANTS_PT, _FEMALE_ENDINGS_PT, \
     _MALE_DETERMINANTS_PT, _MALE_ENDINGS_PT, _GENDERS_PT
@@ -31,6 +31,16 @@ from lingua_franca.lang.parse_common import Normalizer
 from lingua_franca.time import now_local
 import json
 import re
+import unicodedata
+
+
+def yes_or_no_pt(text):
+    # normalization tricks so that "é" is removed and parser works with double negatives
+    # eg. "its not a lie", "não é mentira" -> "nao e mentira" -> "nao mentira"
+    text = unicodedata.normalize('NFD', text) \
+        .encode('ascii', 'ignore').decode("utf-8")
+    text = PortugueseNormalizer().normalize(text, remove_articles=True)
+    return match_yes_or_no(text, "pt-pt")
 
 
 def is_fractional_pt(input_str, short_scale=True):

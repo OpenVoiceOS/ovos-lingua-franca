@@ -15,6 +15,9 @@
 #
 from collections import namedtuple
 import re
+import json
+from lingua_franca.internal import  resolve_resource_file, FunctionNotLocalizedError
+import unicodedata
 
 
 class Normalizer:
@@ -187,6 +190,78 @@ class Normalizer:
         # remove extra spaces
         utterance = " ".join([w for w in utterance.split(" ") if w])
         return utterance
+
+
+def match_yes_or_no(text, lang):
+    resource_file = resolve_resource_file(f"text/{lang}/yesno.json")
+    if not resource_file:
+        raise FunctionNotLocalizedError(f"yesno.json missing for {lang}")
+
+    with open(resource_file) as f:
+        words = json.load(f)
+        words = {k: [_.lower() for _ in v] for k, v in words.items()}
+
+    text = unicodedata.normalize('NFD', text) \
+        .encode('ascii', 'ignore').decode("utf-8")
+    text = text.lower()
+
+    # if user says yes but later says no, he changed his mind mid-sentence
+    # the highest index is the last yesno word
+    res = None
+    best = -1
+    # check if user said yes
+    for w in words["yes"]:
+        if w not in text:
+            continue
+        idx = text.index(w)
+        if idx >= best:
+            best = idx
+            res = True
+
+    # check if user said no
+    for w in words["no"]:
+        if w not in text:
+            continue
+
+        idx = text.index(w)
+        if idx >= best:
+            best = idx
+
+            # handle double negatives, eg "its not a lie"
+            double_negs = [f"{w} {neg}" for neg in words.get("neutral_no", [])]
+            for n in double_negs:
+                if n in text and text.index(n) <= idx:
+                    res = True
+                    break
+            else:
+                res = False
+
+    # check if user said no, but only if there isn't a previous yes
+    # handles cases such as "yes/no, that's a lie" vs "it's a lie" -> no
+    if res is None:
+        for w in words.get("neutral_no", []):
+            if w not in text:
+                continue
+            idx = text.index(w)
+            if idx >= best:
+                best = idx
+                res = False
+
+    # check if user said yes, but only if there isn't a previous no
+    # handles cases such as "no! please! I beg you"
+    if res is None:
+        for w in words.get("neutral_yes", []):
+            if w not in text:
+                continue
+            idx = text.index(w)
+            if idx >= best:
+                best = idx
+                res = True
+
+    # None - neutral
+    # True - yes
+    # False - no
+    return res
 
 
 # Token is intended to be used in the number processing functions in
