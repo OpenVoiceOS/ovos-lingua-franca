@@ -27,6 +27,7 @@ from lingua_franca.parse import get_gender
 from lingua_franca.parse import normalize
 from lingua_franca.time import default_timezone, to_local
 from lingua_franca.parse import extract_langcode
+from lingua_franca.parse import yes_or_no
 
 
 def setUpModule():
@@ -1658,6 +1659,26 @@ class TestNormalize(unittest.TestCase):
     def test_gender(self):
         self.assertRaises((AttributeError, FunctionNotLocalizedError),
                           get_gender, "person", None)
+
+
+class TestYesNo(unittest.TestCase):
+    def test_yesno(self):
+
+        def test_utt(text, expected):
+            res = yes_or_no(text, "en-us")
+            self.assertEqual(res, expected)
+
+        test_utt("yes", True)
+        test_utt("no", False)
+        test_utt("don't think so", False)
+        test_utt("i think not", False)
+        test_utt("that's affirmative", True)
+        test_utt("beans", None)
+        test_utt("no, but actually, yes", True)
+        test_utt("yes, but actually, no", False)
+        test_utt("yes, yes, yes, but actually, no", False)
+        test_utt("please", True)
+        test_utt("please don't", False)
 
 
 class TestLangcode(unittest.TestCase):

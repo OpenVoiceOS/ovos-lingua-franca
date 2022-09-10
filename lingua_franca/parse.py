@@ -22,6 +22,8 @@ from lingua_franca.internal import populate_localized_function_dict, \
     get_active_langs, get_full_lang_code, get_primary_lang_code, \
     get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
     resolve_resource_file, FunctionNotLocalizedError
+from quebra_frases import word_tokenize
+
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_number",
@@ -30,10 +32,35 @@ _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_langcode",
                          "normalize",
                          "get_gender",
+                         "yes_or_no",
                          "is_fractional",
                          "is_ordinal")
 
 populate_localized_function_dict("parse", langs=get_active_langs())
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def yes_or_no(text, lang=""):
+    resource_file = resolve_resource_file(f"text/{lang}/yesno.json") or \
+                    resolve_resource_file("text/en-us/yesno.json")
+    with open(resource_file) as f:
+        words = json.load(f)
+
+    toks = word_tokenize(normalize(text, lang=lang))
+
+    # TODO - improve this, does not take into account multi word expressions in utterance
+    res = None
+    # if user says yes but later says no, he changed his mind mid-sentence
+    for word in toks:
+        if word in words["no"]:
+            res = False
+        elif word in words["yes"]:
+            res = True
+
+    # None - neutral
+    # True - yes
+    # False - no
+    return res
 
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
