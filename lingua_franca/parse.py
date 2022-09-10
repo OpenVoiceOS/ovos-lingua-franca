@@ -48,7 +48,7 @@ def yes_or_no(text, lang=""):
         words = json.load(f)
         words = {k: [_.lower() for _ in v] for k, v in words.items()}
 
-    text = normalize(text, lang=lang).lower()
+    text = normalize(text, lang=lang, remove_articles=False).lower()
 
     # if user says yes but later says no, he changed his mind mid-sentence
     # the highest index is the last yesno word

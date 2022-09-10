@@ -1686,6 +1686,7 @@ class TestYesNo(unittest.TestCase):
         test_utt("please! I beg you", True)
         test_utt("i want it for sure", True)
         test_utt("obviously", True)
+        test_utt("indeed", True)
         test_utt("no, I obviously hate it", False)
 
         # test "neutral_no" -> only count as no word if there isn't a "yes" in sentence

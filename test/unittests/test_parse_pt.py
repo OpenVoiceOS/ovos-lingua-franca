@@ -297,6 +297,11 @@ class TestYesNo(unittest.TestCase):
         test_utt("claro que não", False)
         test_utt("isso está claramente errado", False)
         test_utt("isso ẽ claramente verdade", True)
+        test_utt("efetivamente isso aconteceu", True)
+        test_utt("efetivamente isso não aconteceu", False)
+        test_utt("de facto isso aconteceu", True)
+        test_utt("de facto isso não é verdade", False)
+        test_utt("efetivamente isso não é verdade", False)
         test_utt("obviamente falso", False)
         test_utt("é obvio que não", False)
 

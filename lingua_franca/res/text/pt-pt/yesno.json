@@ -14,6 +14,20 @@
     "errado",
     "nah"
   ],
-  "neutral_yes": ["por favor", "claro", "claramente", "verdade", "obviamente", "obvio"],
-  "neutral_no": ["mentira", "falso"]
+  "neutral_yes": [
+    "por favor",
+    "claro",
+    "claramente",
+    "verdade",
+    "obviamente",
+    "obvio",
+    "facto",
+    "fato",
+    "efectivamente",
+    "efetivamente"
+  ],
+  "neutral_no": [
+    "mentira",
+    "falso"
+  ]
 }
