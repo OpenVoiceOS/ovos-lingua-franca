@@ -1698,9 +1698,9 @@ class TestYesNo(unittest.TestCase):
         test_utt("correct, he is lying", True)
         test_utt("it's a lie", False)
 
-        # failure cases - double negation
-        # test_utt("it's not a lie", True)
-        # test_utt("he is not lying", True)
+        # test double negation
+        test_utt("it's not a lie", True)
+        test_utt("he is not lying", True)
 
 
 class TestLangcode(unittest.TestCase):

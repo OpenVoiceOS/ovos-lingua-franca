@@ -307,7 +307,7 @@ class TestYesNo(unittest.TestCase):
 
         # failure cases
         # it's not a lie -> True
-        # test_utt("não é mentira", True)
+        test_utt("não é mentira", True)
 
 
 if __name__ == "__main__":

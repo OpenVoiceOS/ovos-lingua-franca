@@ -22,6 +22,7 @@ from lingua_franca.internal import populate_localized_function_dict, \
     get_active_langs, get_full_lang_code, get_primary_lang_code, \
     get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
     resolve_resource_file, FunctionNotLocalizedError
+import unicodedata
 
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
@@ -48,7 +49,9 @@ def yes_or_no(text, lang=""):
         words = json.load(f)
         words = {k: [_.lower() for _ in v] for k, v in words.items()}
 
-    text = normalize(text, lang=lang, remove_articles=False).lower()
+    text = unicodedata.normalize('NFD', text) \
+        .encode('ascii', 'ignore').decode("utf-8")
+    text = normalize(text, lang=lang, remove_articles=True).lower()
 
     # if user says yes but later says no, he changed his mind mid-sentence
     # the highest index is the last yesno word
@@ -67,10 +70,19 @@ def yes_or_no(text, lang=""):
     for w in words["no"]:
         if w not in text:
             continue
+
         idx = text.index(w)
         if idx >= best:
             best = idx
-            res = False
+
+            # handle double negatives, eg "its not a lie"
+            double_negs = [f"{w} {neg}" for neg in words.get("neutral_no", [])]
+            for n in double_negs:
+                if n in text and text.index(n) <= idx:
+                    res = True
+                    break
+            else:
+                res = False
 
     # check if user said no, but only if there isn't a previous yes
     # handles cases such as "yes/no, that's a lie" vs "it's a lie" -> no
