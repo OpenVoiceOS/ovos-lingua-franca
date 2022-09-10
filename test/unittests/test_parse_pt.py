@@ -305,7 +305,7 @@ class TestYesNo(unittest.TestCase):
         test_utt("obviamente falso", False)
         test_utt("é obvio que não", False)
 
-        # failure cases
+        # double negatives
         # it's not a lie -> True
         test_utt("não é mentira", True)
 
