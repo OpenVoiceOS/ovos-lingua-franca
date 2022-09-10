@@ -46,6 +46,7 @@ def yes_or_no(text, lang=""):
 
     with open(resource_file) as f:
         words = json.load(f)
+        words = {k: [_.lower() for _ in v] for k, v in words.items()}
 
     text = normalize(text, lang=lang).lower()
 
@@ -53,22 +54,45 @@ def yes_or_no(text, lang=""):
     # the highest index is the last yesno word
     res = None
     best = -1
+    # check if user said yes
     for w in words["yes"]:
-        w = w.lower()
         if w not in text:
             continue
         idx = text.index(w)
         if idx >= best:
             best = idx
             res = True
+
+    # check if user said no, but only if there isn't a previous yes
+    # handles cases such as "do I hate it when companies sell my data? yes, that's certainly undesirable"
+    if res is not True:
+        for w in words.get("neutral_no", []):
+            if w not in text:
+                continue
+            idx = text.index(w)
+            if idx >= best:
+                best = idx
+                res = False
+
+    # check if user said no
     for w in words["no"]:
-        w = w.lower()
         if w not in text:
             continue
         idx = text.index(w)
         if idx >= best:
             best = idx
             res = False
+
+    # check if user said yes, but only if there isn't a previous no
+    # handles cases such as "no! please! I beg you"
+    if res is not False:
+        for w in words.get("neutral_yes", []):
+            if w not in text:
+                continue
+            idx = text.index(w)
+            if idx >= best:
+                best = idx
+                res = True
 
     # None - neutral
     # True - yes

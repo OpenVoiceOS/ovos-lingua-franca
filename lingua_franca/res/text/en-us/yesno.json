@@ -1,9 +1,7 @@
 {
   "yes": [
-    "please",
     "yeah",
     "yep",
-    "sure",
     "confirm",
     "affirmative",
     "yes",
@@ -15,5 +13,19 @@
     "negative",
     "nope",
     "nah"
+  ],
+  "neutral_yes": [
+    "please",
+    "sure",
+    "surely",
+    "certainly",
+    "appropriate",
+    "appropriated"
+  ],
+  "neutral_no": [
+    "undesirable",
+    "unwanted",
+    "inappropriate",
+    "unappropriated"
   ]
 }

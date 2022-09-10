@@ -1680,6 +1680,16 @@ class TestYesNo(unittest.TestCase):
         test_utt("please", True)
         test_utt("please don't", False)
 
+        # test "neutral_yes" -> only count as yes word if there isn't a "no" in sentence
+        test_utt("no! please! I beg you", False)
+        test_utt("yes, i don't want it for sure", False)
+        test_utt("please! I beg you", True)
+        test_utt("i want it for sure", True)
+
+        # test "neutral_no" -> only count as no word if there isn't a "yes" in sentence
+        test_utt("do I hate it when companies sell my data? yes, that's certainly undesirable", True)
+        test_utt("that's certainly undesirable", False)
+
 
 class TestLangcode(unittest.TestCase):
     def test_parse_lang_code(self):
