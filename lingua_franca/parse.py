@@ -63,17 +63,6 @@ def yes_or_no(text, lang=""):
             best = idx
             res = True
 
-    # check if user said no, but only if there isn't a previous yes
-    # handles cases such as "do I hate it when companies sell my data? yes, that's certainly undesirable"
-    if res is not True:
-        for w in words.get("neutral_no", []):
-            if w not in text:
-                continue
-            idx = text.index(w)
-            if idx >= best:
-                best = idx
-                res = False
-
     # check if user said no
     for w in words["no"]:
         if w not in text:
@@ -83,9 +72,20 @@ def yes_or_no(text, lang=""):
             best = idx
             res = False
 
+    # check if user said no, but only if there isn't a previous yes
+    # handles cases such as "yes/no, that's a lie" vs "it's a lie" -> no
+    if res is None:
+        for w in words.get("neutral_no", []):
+            if w not in text:
+                continue
+            idx = text.index(w)
+            if idx >= best:
+                best = idx
+                res = False
+
     # check if user said yes, but only if there isn't a previous no
     # handles cases such as "no! please! I beg you"
-    if res is not False:
+    if res is None:
         for w in words.get("neutral_yes", []):
             if w not in text:
                 continue

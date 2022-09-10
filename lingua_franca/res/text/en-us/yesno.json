@@ -5,7 +5,8 @@
     "confirm",
     "affirmative",
     "yes",
-    "confirmed"
+    "confirmed",
+    "correct"
   ],
   "no": [
     "no",
@@ -20,12 +21,14 @@
     "surely",
     "certainly",
     "appropriate",
-    "appropriated"
+    "appropriated",
+    "obviously"
   ],
   "neutral_no": [
     "undesirable",
     "unwanted",
     "inappropriate",
-    "unappropriated"
+    "lie",
+    "lying"
   ]
 }
