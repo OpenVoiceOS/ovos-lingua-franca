@@ -22,7 +22,6 @@ from lingua_franca.internal import populate_localized_function_dict, \
     get_active_langs, get_full_lang_code, get_primary_lang_code, \
     get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
     resolve_resource_file, FunctionNotLocalizedError
-from quebra_frases import word_tokenize
 
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
@@ -46,7 +45,7 @@ def yes_or_no(text, lang=""):
     with open(resource_file) as f:
         words = json.load(f)
 
-    toks = word_tokenize(normalize(text, lang=lang))
+    toks = normalize(text, lang=lang).split(" ")
 
     # TODO - improve this, does not take into account multi word expressions in utterance
     res = None
