@@ -1697,10 +1697,15 @@ class TestYesNo(unittest.TestCase):
         test_utt("he is lying", False)
         test_utt("correct, he is lying", True)
         test_utt("it's a lie", False)
+        test_utt("you are mistaken", False)
+        test_utt("that's a mistake", False)
+        test_utt("wrong answer", False)
 
         # test double negation
         test_utt("it's not a lie", True)
         test_utt("he is not lying", True)
+        test_utt("you are not mistaken", True)
+        test_utt("tou are not wrong", True)
 
 
 class TestLangcode(unittest.TestCase):
