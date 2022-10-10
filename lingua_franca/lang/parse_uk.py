@@ -1,3 +1,6 @@
+#%%
+
+#%%
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -22,19 +25,18 @@ from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
 from lingua_franca.lang.common_data_uk import _NUM_STRING_UK, \
     _LONG_ORDINAL_UK, _LONG_SCALE_UK, _SHORT_SCALE_UK, _SHORT_ORDINAL_UK, \
     _FRACTION_STRING_UK, _MONTHS_CONVERSION, _MONTHS_UK, _TIME_UNITS_CONVERSION, \
-    _ORDINAL_BASE_UK
+    _ORDINAL_BASE_UK, _PLURALS_TO_TEN
 
 import re
 import json
 from lingua_franca import resolve_resource_file
 from lingua_franca.time import now_local
 
-""""
-TODO: what these suffixes are for?
-"""
+
 def generate_plurals_uk(originals):
     """
     Return a new set or dict containing the plural form of the original values,
+    Generate different cases of values
 
     In English this means all with 's' appended to them.
 
@@ -45,7 +47,10 @@ def generate_plurals_uk(originals):
         set(str) or dict(str, any)
 
     """
-    suffixes = ["а", "ах", "их", "ам", "ами", "ів", "ям", "ох", "ьом", "и", "на", "ни", "і"]
+    suffixes = ["а", "ах", "их", "ам", "ами", "ів",
+                "ям", "ох", "и", "на", "ни", "і", "ні",
+                "ий", "ний", 'ьох', 'ьома', 'ьом', 'ох',
+                'ум', 'ма', 'ом']
     if isinstance(originals, dict):
         return {key + suffix: value for key, value in originals.items() for suffix in suffixes}
     return {value + suffix for value in originals for suffix in suffixes}
@@ -80,6 +85,7 @@ _STRING_NUM_UK.update({
 })
 _STRING_NUM_UK.update(generate_plurals_uk(_STRING_NUM_UK))
 _STRING_NUM_UK.update({
+    "трильйон": 1e18,
     "чверті": 0.25,
     "чверті": 0.75,
     "четверта": 0.25,
@@ -99,6 +105,7 @@ _STRING_NUM_UK.update({
     "два": 2,
     "дві": 2,
     "двоє": 2,
+    "двох": 2,
     "пара": 2,
     "пару": 2,
     "сот": 100,
@@ -157,6 +164,7 @@ def _convert_words_to_numbers_uk(text, short_scale=True, ordinals=False):
 
     """
     text = text.lower()
+
     tokens = tokenize(text)
     numbers_to_replace = \
         _extract_numbers_with_text_uk(tokens, short_scale, ordinals)
@@ -271,7 +279,8 @@ def _extract_number_with_text_uk_helper(tokens,
             _extract_decimal_with_text_uk(tokens, short_scale, ordinals)
         if decimal:
             return decimal, decimal_text
-
+    # special_number = [word for word in tokens if word ]
+    short_scale == False
     return _extract_whole_number_with_text_uk(tokens, short_scale, ordinals)
 
 
@@ -382,9 +391,15 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
         The value parsed, and tokens that it corresponds to.
 
     """
+    number_token = None
+    number_token = [token for token in tokens if token.word.lower() in _MULTIPLIES_LONG_SCALE_UK]
+    print(number_token)
+    if number_token != []:
+        short_scale = False
+    print(short_scale)
     multiplies, string_num_ordinal, string_num_scale = \
         _initialize_number_data(short_scale)
-
+    print(multiplies)
     number_words = []  # type: [Token]
     val = False
     prev_val = None
@@ -404,7 +419,7 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
         prev_word = tokens[idx - 1].word if idx > 0 else ""
         next_word = tokens[idx + 1].word if idx + 1 < len(tokens) else ""
 
-        # In Ukrainian (?) we do no use suffix (1st,2nd,..) but use point instead (1.,2.,..)
+        # In Ukrainian (?) we do not use suffix (1st,2nd,..) but use point instead (1.,2.,..)
         if is_numeric(word[:-1]) and \
                 (word.endswith(".")):
             # explicit ordinals, 1st, 2nd, 3rd, 4th.... Nth
@@ -463,12 +478,10 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
         elif ordinals and word in string_num_ordinal:
             val = string_num_ordinal[word]
             current_val = val
-
         # is the prev word an ordinal number and current word is one?
         # second one, third one
         if ordinals and prev_word in string_num_ordinal and val == 1:
             val = prev_val
-
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
         if (prev_word in _SUMS and val and val < 10) \
@@ -705,7 +718,6 @@ def extract_duration_uk(text):
 
 
 def extract_datetime_uk(text, anchor_date=None, default_time=None):
-    print(text)
     """ Convert a human date reference into an exact datetime
 
     Convert things like
@@ -754,6 +766,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                 count_ordinals = 3
             elif word.endswith("ого"):
                 tmp = word[:-3]
+                print(tmp)
                 tmp += "ий"
                 for nr, name in _ORDINAL_BASE_UK.items():
                     if name == tmp:
@@ -1091,8 +1104,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
 
         if word in markers:
             preposition = word
-
-        word = _text_uk_inflection_normalize(word, 2)
+        word = _text_uk_inflection_normalize(word, 1)
         word_prev_prev = _text_uk_inflection_normalize(
             words[idx - 2], 2) if idx > 1 else ""
         word_prev = _text_uk_inflection_normalize(
@@ -1110,6 +1122,8 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
         elif word == "північ":
             hr_abs = 0
             used += 1
+        elif word in _STRING_NUM_UK:
+            val = _STRING_NUM_UK.get(word)
         elif word in _WORDS_MORNING_UK:
             if hr_abs is None:
                 hr_abs = 8
@@ -1136,7 +1150,6 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
             elif word_prev == "чверть":
                 min_offset = 15
             elif word_prev == "через":
-                print('hour next')
                 hr_offset = 1
             else:
                 hr_offset = 1
@@ -1318,11 +1331,11 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                         str_hh = str(int(str_num) // 100)
                         str_mm = str(int(str_num) % 100)
                         military = True
-                        if word_next == "час":
+                        if word_next == "година":
                             used += 1
                     elif (
-                            (word_next == "час" or
-                             remainder == "час") and
+                            (word_next == "година" or
+                             remainder == "година") and
                             word[0] != '0' and
                             # (wordPrev != "в" and wordPrev != "на")
                             word_prev == "через"
@@ -1338,8 +1351,8 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                         is_time = False
                         hr_abs = -1
                         min_abs = -1
-                    elif word_next == "минута" or \
-                            remainder == "минута":
+                    elif word_next == "хвилина" or \
+                            remainder == "хвилина":
                         # "in 10 minutes"
                         min_offset = int(str_num)
                         used = 2
@@ -1368,11 +1381,11 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                         str_mm = word_next
                         military = True
                         used += 1
-                        if (word_next_next == "час" or
+                        if (word_next_next == "година" or
                                 remainder == "час"):
                             used += 1
                     elif (
-                            word_next == "" or word_next == "час" or
+                            word_next == "" or word_next == "година" or
                             (
                                     (word_next == "в" or word_next == "на") and
                                     (
@@ -1577,36 +1590,15 @@ def is_fractional_uk(input_str, short_scale=True):
         (bool) or (float): False if not a fraction, otherwise the fraction
 
     """
-    if input_str[-2:] in ["ті", "мі", "ми", "их"]:  # leading number is bigger than one (две четвёртые, три пятых)
-        input_str = input_str[:-2] + "a"
-        print(input_str)
+    if input_str[-2:] in ["ті", "мі", "ми", "их"]:  # leading number is bigger than one (дві четверті,   пятих)
+        input_str = input_str[:-2] + "а"
 
     fractions = {"ціла": 1}  # first four numbers have little different format
     for num in _FRACTION_STRING_UK.keys():  # Numbers from 2 to 1 hundred, more is not usually used in common speech
         if num > 1:
             fractions[str(_FRACTION_STRING_UK[num])] = num
-    print('fractions from dict')
-    print(fractions)
-    new_list = ["ціла", "половина", "третина", "чверть", "п'ята", "шоста", "сьома", "восьма", "дев'ята", "десята",
-                "одинадцята", "дванадцята", "тринадцята", "чотирнадцята", "п'ятнадцята", "шістнадцята", "сімнадцята",
-                "вісімнадцята", "дев'ятнадцята", "двадцята", "тридцята", "сорокова", "п'ятьдесята", "шістьдесята",
-                "сімдесята", "вісімдесята", "дев'яноста", "сота", "тисячна", "мільйонна", "мільярдна"]
-    print('manually created fractions')
-    print(new_list)
-    if str(input_str) in new_list:
-        print('here')
-        print(input_str)
-
     if input_str.lower() in fractions.keys():
         return 1.0 / fractions[input_str.lower()]
-
-
-    # if new_str in fractions.keys():
-    #     print('here more ')
-    #     print(str(input_str.lower().strip()))
-        # print(fractions[input_str.lower()])
-        # print(1.0 / fractions[input_str.lower()])
-        # return 1.0 / fractions[input_str.lower()]
     return False
 
 
@@ -1656,6 +1648,10 @@ def _text_uk_inflection_normalize(word, arg):
     """
     if word in ["тисяч", "тисячі", "тисячу"]:
         return "тисяча"
+    for key, value in _PLURALS_TO_TEN.items():
+        if word == key:
+            print(_NUM_STRING_UK[value])
+            return _NUM_STRING_UK[value]
 
     if arg == 1:  # _extract_whole_number_with_text_uk
         if word in ["одна", "одним", "одно", "одною", "одного", "одної", "одному", "одній", "одного", "одну"]:
@@ -1665,13 +1661,12 @@ def _text_uk_inflection_normalize(word, arg):
         if word == "пара":
             return "два"
         if word == "пару":
-            return "пара"
+            return "два"
 
     elif arg == 2:  # extract_datetime_uk
         if word in ["година", "години", "годин", "годину", "годин", "годинами"]:
             return "година"
         if word in ["хвилина", "хвилини", "хвилину", "хвилин", "хвилька"]:
-            print('here', word)
             return "хвилина"
         if word in ["секунд", "секунди", "секундами", "секунду", "секунд", "сек"]:
             return "секунда"
@@ -1713,9 +1708,9 @@ def _text_uk_inflection_normalize(word, arg):
             return "неділя"
 
         # Months
-        if word in ["лютому", "лютого"]:
+        if word in ["лютому", "лютого", "лютим"]:
             return "лютий"
-        if word in ["листопада", "листопаді"]:
+        if word in ["листопада", "листопаді", "листопадом"]:
             return "листопад"
         tmp = ''
         if word[-3:] in ["ого", "ому"]:
@@ -1729,5 +1724,3 @@ def _text_uk_inflection_normalize(word, arg):
     return word
 
 
-
-#%%

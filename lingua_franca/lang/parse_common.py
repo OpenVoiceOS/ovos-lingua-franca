@@ -357,6 +357,8 @@ def extract_numbers_generic(text, pronounce_handler, extract_handler,
     numbers = []
     normalized = text
     extract = extract_handler(normalized, short_scale, ordinals)
+    print('extract_numbers_generic')
+    print(extract)
     to_parse = normalized
     while extract:
         numbers.append(extract)
