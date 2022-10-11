@@ -61,6 +61,7 @@ class TestNormalize(unittest.TestCase):
     def test_extract_number(self):
         load_language("uk-uk")
         set_default_lang("uk")
+        #self.assertEqual(extract_number("одної третьої чашки"), 1.0 / 3.0)
         self.assertEqual(extract_number("це перший тест",
                                         ordinals=True), 1)
         self.assertEqual(extract_number("це 2 тест"), 2)
@@ -194,7 +195,9 @@ class TestNormalize(unittest.TestCase):
     def test_extract_duration_uk(self):
         load_language("uk-uk")
         set_default_lang("uk")
-
+        print(extract_duration("25 днів"))
+        # self.assertEqual(extract_duration("25 днів"),
+        #                  (timedelta(days=25.0), ""))
         self.assertEqual(extract_duration("10 секунд"),
                          (timedelta(seconds=10.0), ""))
         self.assertEqual(extract_duration("5 хвилин"),
@@ -509,10 +512,10 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-28 08:00:00", "ми зустрінемось")
         testExtract("ми зустрінемось о 8 вечора",
                     "2017-06-27 20:00:00", "ми зустрінемось")
-        testExtract("нагадати мне встати о 8 am",
-                    "2017-06-28 08:00:00", "нагадати мне встати")
-        testExtract("нагадати мне встати о 8 ранку",
-                    "2017-06-28 08:00:00", "нагадати мне встати")
+        testExtract("нагадати мені прокинутись о 8 am",
+                    "2017-06-28 08:00:00", "нагадати мені прокинутись")
+        testExtract("нагадати мені прокинутись о 8 ранку",
+                    "2017-06-28 08:00:00", "нагадати мені прокинутись")
         testExtract("яка погода у вівторок",
                     "2017-06-27 00:00:00", "яка погода")
         testExtract("яка погода у понеділок",
@@ -738,54 +741,65 @@ class TestNormalize(unittest.TestCase):
     def test_multiple_numbers(self):
         load_language("uk-uk")
         set_default_lang("uk")
-        extract_numbers("немає трьох ведмідів")
-        self.assertEqual(extract_numbers("немає трьох ведмідів"),
-                         [3.0])
-        self.assertEqual(extract_numbers("два пива для двох ведмідів"),
-                         [2.0, 2.0])
-        self.assertEqual(extract_numbers("ось це один два три тест"),
-                         [1.0, 2.0, 3.0])
-        self.assertEqual(extract_numbers("ось це чотири п'ять шість тест"),
-                         [4.0, 5.0, 6.0])
-        self.assertEqual(extract_numbers("ось це десять одинадцять дванадцять тест"),
-                         [10.0, 11.0, 12.0])
-        self.assertEqual(extract_numbers("ось це один двадцять один тест"),
-                         [1.0, 21.0])
-        self.assertEqual(extract_numbers("1 собака, сім свиней, у макдональда "
-                                         "була ферма ферма, 3 рази по 5 макарен"),
-                         [1, 7, 3, 5])
-        self.assertEqual(extract_numbers("два пива для двох ведмідів"),
-                         [2.0, 2.0])
-        self.assertEqual(extract_numbers("двадцять 20 двадцять"),
-                         [20, 20, 20])
-        self.assertEqual(extract_numbers("двадцять 20 22"),
-                         [20.0, 20.0, 22.0])
-        self.assertEqual(extract_numbers("двадцять двадцять два двадцять"),
-                         [20, 22, 20])
-        self.assertEqual(extract_numbers("двадцять 2"),
-                         [22.0])
-        self.assertEqual(extract_numbers("двадцять 20 двадцять 2"),
-                         [20, 20, 22])
-        self.assertEqual(extract_numbers("третина один"),
-                         [1 / 3, 1])
-        self.assertEqual(extract_numbers("третій", ordinals=True), [3])
-
-        #To do: long scale and short scale are same
-        self.assertEqual(extract_numbers("шість трильйонів", short_scale=True),
-                         [6e18])
-        print(extract_numbers("шість трильйонів", short_scale=False))
-        self.assertEqual(extract_numbers("шість трильйонів", short_scale=False),
-                         [6e18])
-        self.assertEqual(extract_numbers("два порося і шість трильйонів бактерій",
-                                         short_scale=True), [2, 6e+18])
-
-        self.assertEqual(extract_numbers("два порося і шість трильйонів бактерій",
-                                         short_scale=False), [2, 6e+18])
-        self.assertEqual(extract_numbers("тридцять другий або перший",
-                                         ordinals=True), [32, 1])
-        self.assertEqual(extract_numbers("ось це сім вісім дев'ять і"
-                                         " половина тест"),
-                         [7.0, 8.0, 9.5])
+        self.assertEqual(extract_number("шістсот шістдесят шість"), 666)
+        self.assertEqual(extract_number("чотириста тридцять шість"), 436)
+        self.assertEqual([400.0], extract_numbers("немає чотириста ведмідів"))
+        self.assertEqual([436.0], extract_numbers("немає чотириста тридцять шість ведмідів"))
+        # self.assertEqual(extract_numbers("немає шістдесятьох ведмідів"),
+        #                  [60.0])
+        # self.assertEqual(extract_numbers("немає двадцяти ведмідів"),
+        #                  [20.0])
+        # self.assertEqual(extract_numbers("немає дев'ятнадцяти ведмідів"),
+        #                  [19.0])
+        # self.assertEqual(extract_numbers("немає одинадцяти ведмідів"),
+        #                  [11.0])
+        # self.assertEqual(extract_numbers("немає трьох ведмідів"),
+        #                  [3.0])
+        # self.assertEqual(extract_numbers("два пива для двох ведмідів"),
+        #                  [2.0, 2.0])
+        # self.assertEqual(extract_numbers("ось це один два три тест"),
+        #                  [1.0, 2.0, 3.0])
+        # self.assertEqual(extract_numbers("ось це чотири п'ять шість тест"),
+        #                  [4.0, 5.0, 6.0])
+        # self.assertEqual(extract_numbers("ось це десять одинадцять дванадцять тест"),
+        #                  [10.0, 11.0, 12.0])
+        # self.assertEqual(extract_numbers("ось це один двадцять один тест"),
+        #                  [1.0, 21.0])
+        # self.assertEqual(extract_numbers("1 собака, сім свиней, у макдональда "
+        #                                  "була ферма ферма, 3 рази по 5 макарен"),
+        #                  [1, 7, 3, 5])
+        # self.assertEqual(extract_numbers("два пива для двох ведмідів"),
+        #                  [2.0, 2.0])
+        # self.assertEqual(extract_numbers("двадцять 20 двадцять"),
+        #                  [20, 20, 20])
+        # self.assertEqual(extract_numbers("двадцять 20 22"),
+        #                  [20.0, 20.0, 22.0])
+        # self.assertEqual(extract_numbers("двадцять двадцять два двадцять"),
+        #                  [20, 22, 20])
+        # self.assertEqual(extract_numbers("двадцять 2"),
+        #                  [22.0])
+        # self.assertEqual(extract_numbers("двадцять 20 двадцять 2"),
+        #                  [20, 20, 22])
+        # self.assertEqual(extract_numbers("третина один"),
+        #                  [1 / 3, 1])
+        # self.assertEqual(extract_numbers("третій", ordinals=True), [3])
+        #
+        # #To do: long scale and short scale are same
+        # self.assertEqual(extract_numbers("шість трильйонів", short_scale=True),
+        #                  [6e18])
+        # print(extract_numbers("шість трильйонів", short_scale=False))
+        # self.assertEqual(extract_numbers("шість трильйонів", short_scale=False),
+        #                  [6e18])
+        # self.assertEqual(extract_numbers("два порося і шість трильйонів бактерій",
+        #                                  short_scale=True), [2, 6e+18])
+        #
+        # self.assertEqual(extract_numbers("два порося і шість трильйонів бактерій",
+        #                                  short_scale=False), [2, 6e+18])
+        # self.assertEqual(extract_numbers("тридцять другий або перший",
+        #                                  ordinals=True), [32, 1])
+        # self.assertEqual(extract_numbers("ось це сім вісім дев'ять і"
+        #                                  " половина тест"),
+        #                  [7.0, 8.0, 9.5])
 
 
 
