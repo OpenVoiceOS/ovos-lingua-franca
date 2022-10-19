@@ -52,7 +52,15 @@ def generate_plurals_uk(originals):
                 "ий", "ний", 'ьох', 'ьома', 'ьом', 'ох',
                 'ум', 'ма', 'ом']
     if isinstance(originals, dict):
-        return {key + suffix: value for key, value in originals.items() for suffix in suffixes}
+        thousand = {"тисяч": 1000, "тисячі": 1000, "тисячу": 1000, "тисячах": 1000}
+        hundred = {"сотня": 100, "сотні": 100, "сотень": 100}
+        result_dict = {key + suffix: value for key, value in originals.items() for suffix in suffixes}
+        result_dict.update(thousand)
+        result_dict.update(hundred)
+        return result_dict
+    thousand = ["тисяч", "тисячі", "тисячу", "тисячах"]
+    result_dict = {value + suffix for value in originals for suffix in suffixes}
+    result_dict.update(thousand)
     return {value + suffix for value in originals for suffix in suffixes}
 
 
@@ -84,23 +92,9 @@ _STRING_NUM_UK = invert_dict(_NUM_STRING_UK)
 _STRING_NUM_UK.update(generate_plurals_uk(_STRING_NUM_UK))
 _STRING_NUM_UK.update(_PLURALS)
 _STRING_NUM_UK.update({
-    "тисяч": 1e3,
     "трильйон": 1e18,
-    "чверті": 0.25,
-    "чверті": 0.75,
-    "четверта": 0.25,
-    "четвертих": 0.25,
-    "шостих": 6,
-    "третина": 1/3,
-    "треті": 1/3,
-    "третя": 1/3,
-    "друга": 0.5,
-    "друге": 0.5,
-    "других": 0.5,
-    "половина": 0.5,
-    "половиною": 0.5,
-    "пів": 0.5,
-    "одна": 1
+    "половина": 0.5, "половиною": 0.5, "половини": 0.5, "половин": 0.5, "половинами": 0.5, "пів": 0.5,
+    "одна": 1, "одної": 1, "одній": 1, "одну": 1
 })
 
 _WORDS_NEXT_UK = [
@@ -235,7 +229,6 @@ def _extract_number_with_text_uk(tokens, short_scale=True,
     number, tokens = \
         _extract_number_with_text_uk_helper(tokens, short_scale,
                                             ordinals, fractional_numbers)
-    print(number, tokens)
     return ReplaceableNumber(number, tokens)
 
 
@@ -403,7 +396,12 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
             continue
 
         prev_word = tokens[idx - 1].word if idx > 0 else ""
+        prev_word = _text_uk_inflection_normalize(prev_word, 1)
+        print(f'word {word}')
+        print(f'prev_word {prev_word}')
         next_word = tokens[idx + 1].word if idx + 1 < len(tokens) else ""
+        next_word = _text_uk_inflection_normalize(next_word, 1)
+        print(f'next_word {next_word}')
 
         # In Ukrainian (?) we do not use suffix (1st,2nd,..) but use point instead (1.,2.,..)
         if is_numeric(word[:-1]) and \
@@ -414,14 +412,16 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
         # Normalize Ukrainian inflection of numbers (один, одна, одно,...)
         if not ordinals:
             if word not in _STRING_NUM_UK:
+                print(f'word not in _STRING_NUM_UK {word}')
                 word = _text_uk_inflection_normalize(word, 1)
+
         if word not in string_num_scale and \
                 word not in _STRING_NUM_UK and \
                 word not in _SUMS and \
                 word not in multiplies and \
                 not (ordinals and word in string_num_ordinal) and \
                 not is_numeric(word) and \
-                not is_fractional_uk(word, short_scale=short_scale) and \
+                not is_fractional_uk(word, word, short_scale=short_scale) and \
                 not look_for_fractions(word.split('/')):
             words_only = [token.word for token in number_words]
             if number_words and not all([w in _NEGATIVES for w in words_only]):
@@ -434,8 +434,9 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
                 and prev_word not in _SUMS \
                 and not (ordinals and prev_word in string_num_ordinal) \
                 and prev_word not in _NEGATIVES:
+
             number_words = [token]
-        elif prev_word in _SUMS and word in _SUMS:
+        elif prev_word in _SUMS and word in _SUMS :
             number_words = [token]
         else:
             number_words.append(token)
@@ -470,26 +471,42 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
             val = prev_val + val
 
         # is the prev word a number and should we multiply it?
+        multiplies.update({"тисячa", "тисячі", "тисячу", "тисячах", "тисячaми", "тисячею", "тисяч"})
         if word in multiplies:
             if not prev_val:
                 prev_val = 1
             val = prev_val * val
 
+        # пара сотень, три пари пива
+        if prev_word in ['пара', 'пари', 'парою', 'парами'] and current_val != 1000.0:
+            val = val * 2
+        if prev_val in _STRING_NUM_UK.values() and current_val == 100:
+            val = prev_val * current_val
+
+
+
         # is this a spoken fraction?
+
+        print(f'current_val {current_val} val {val} prev_val {prev_val}, word {word}')
         # half cup
         if val is False:
-            val = is_fractional_uk(word, short_scale=short_scale)
+            val = is_fractional_uk(word, word, short_scale=short_scale)
             current_val = val
 
         # 2 fifths
         if not ordinals:
-            next_val = is_fractional_uk(next_word, short_scale=short_scale)
+            next_val = is_fractional_uk(next_word, word, short_scale=short_scale)
             if next_val:
                 if not val:
                     val = 1
                 val = val * next_val
                 number_words.append(tokens[idx + 1])
-
+        print(f'current_val {current_val} val {val} prev_val {prev_val}, word {word}')
+        if word in ['пара', 'пари', 'парою', 'парами']:
+            if prev_val:
+                val = val * prev_val
+            else:
+                val = 2
         # is this a negative number?
         if val and prev_word and prev_word in _NEGATIVES:
             val = 0 - val
@@ -586,8 +603,7 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
 
     if val is not None and to_sum:
         val += sum(to_sum)
-    print(val, number_words)
-
+    print(f'val, number_words {val, number_words}')
     return val, number_words
 
 
@@ -779,7 +795,6 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
             ##########
             # Remove inflection from Ukrainian months
             word_list[idx] = word
-
         return word_list
 
     def date_found():
@@ -809,7 +824,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
     time_qualifier = ""
 
     time_qualifiers_am = _WORDS_MORNING_UK
-    time_qualifiers_pm = ['дня', 'вечера']
+    time_qualifiers_pm = ['дня', 'вечора']
     time_qualifiers_pm.extend(_WORDS_DAY_UK)
     time_qualifiers_pm.extend(_WORDS_EVENING_UK)
     time_qualifiers_pm.extend(_WORDS_NIGHT_UK)
@@ -1571,7 +1586,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
     return [extracted_date, result_str]
 
 # change logic here
-def is_fractional_uk(input_str, short_scale=True):
+def is_fractional_uk(input_str, word, short_scale=True):
     """
     This function takes the given text and checks if it is a fraction.
 
@@ -1582,15 +1597,28 @@ def is_fractional_uk(input_str, short_scale=True):
         (bool) or (float): False if not a fraction, otherwise the fraction
 
     """
-    if input_str[-2:] in ["ті", "мі", "ми", "их"]:  # leading number is bigger than one (дві четверті, пятих)
-        input_str = input_str[:-2] + "а"
-
-    fractions = {"ціла": 1}  # first four numbers have little different format
+    fractions = {"ціла": 1}
+    # endings for creation different cases and plurals in different cases
+    ending = ['ої', 'е', 'их', 'ою', 'і', 'ими', 'ій']
     for num in _FRACTION_STRING_UK.keys():  # Numbers from 2 to 1 hundred, more is not usually used in common speech
         if num > 1:
             fractions[str(_FRACTION_STRING_UK[num])] = num
+            for end in ending:
+                new_fraction_number = _FRACTION_STRING_UK[num][:-1]+end
+                fractions[new_fraction_number] = num
+    fractions.update({
+        "половина": 2, "половиною": 2, "половини": 2, "половин": 2, "половинами": 2, "пів": 2,
+        "шоста": 6,
+        "третина": 1 / 3, "треть": 1 / 3, "треті": 3, "третьої": 3,
+        "чверті": 4, "чверть": 0.25, "чвертю": 0.25
+    })
     if input_str.lower() in fractions.keys():
-        return 1.0 / fractions[input_str.lower()]
+        if word == input_str:
+            return fractions[input_str.lower()]
+        elif word not in _STRING_NUM_UK:
+            return fractions[input_str.lower()]
+        else:
+            return 1.0 / fractions[input_str.lower()]
     return False
 
 
@@ -1610,7 +1638,8 @@ def extract_numbers_uk(text, short_scale=True, ordinals=False):
     """
     results = _extract_numbers_with_text_uk(tokenize(text),
                                             short_scale, ordinals)
-    print([float(result.value) for result in results])
+    print(f'extract_numbers_uk {[float(result.value) for result in results]}')
+    #numbers_sum = sum([float(result.value) for result in results])
     return [float(result.value) for result in results]
 
 
@@ -1654,6 +1683,7 @@ def _text_uk_inflection_normalize(word, arg):
         if word in ["секунд", "секунди", "секундами", "секунду", "секунд", "сек"]:
             return "секунда"
         if word in ["днів", "дні", "днями", "дню", "днем", "днями"]:
+            print("день")
             return "день"
         if word in ["тижні", "тижнів", "тижнями", "тиждень", "тижня"]:
             return "тиждень"
@@ -1703,7 +1733,6 @@ def _text_uk_inflection_normalize(word, arg):
         for name in _MONTHS_UK:
             if name == tmp:
                 return name
-
     return word
 
 def _plurals_normalizer(word):
@@ -1743,6 +1772,7 @@ def _plurals_normalizer(word):
         plural_case = ''.join([case for case in case_endings if case in word])
         if plural_case:
             word = word.replace(plural_case, '')+'дцять'
+            print(f'flexions deeted {word}')
             return word
 
         # checking for plurals 50, 60, 70, 80
@@ -1761,7 +1791,6 @@ def _plurals_normalizer(word):
             word = word.replace(plural_case, '')
             for key, value in _PLURALS.items():
                 if word == key:
-                    print(f'found value {value}')
                     firs_part = _NUM_STRING_UK[value]
                     if value in [3, 4]:
                         word = firs_part+'ста'
@@ -1771,7 +1800,6 @@ def _plurals_normalizer(word):
                         word = firs_part+'сот'
                     return word
             return word
-
-        return word
+    return word
 
 

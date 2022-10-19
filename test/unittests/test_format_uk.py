@@ -76,6 +76,10 @@ NUMBERS_FIXTURE_UK = {
 
 
 class TestNiceNumberFormat(unittest.TestCase):
+    def setUpModule():
+        load_language("uk-uk")
+        set_default_lang("uk")
+
 
     def test_convert_float_to_nice_number(self):
         for number, number_str in NUMBERS_FIXTURE_UK.items():
@@ -575,3 +579,5 @@ class TestNiceDateFormat(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+#%%
