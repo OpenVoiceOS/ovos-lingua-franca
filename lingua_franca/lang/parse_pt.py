@@ -28,7 +28,7 @@ from lingua_franca.lang.common_data_pt import _NUMBERS_PT, \
     _MALE_DETERMINANTS_PT, _MALE_ENDINGS_PT, _GENDERS_PT
 from lingua_franca.internal import resolve_resource_file
 from lingua_franca.lang.parse_common import Normalizer
-from lingua_franca.time import now_local
+from lingua_franca.time import now_local, DAYS_IN_1_MONTH, DAYS_IN_1_YEAR
 import json
 import re
 import unicodedata
@@ -1132,11 +1132,18 @@ def extract_duration_pt(text):
         'days': 'dias',
         'weeks': 'semanas'
     }
+    non_std_un = {
+        "months": "meses",
+        "years": "anos",
+        'decades': "decadas",
+        'centurys': "seculos",
+        'millenniums': "milenios"
+    }
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}[s]?"
 
-    # TODO words to number normalize
-    #text = _convert_words_to_numbers_de(text)
+    text = text.replace("mês", "meses").replace("é", "e")
+    text = PortugueseNormalizer().numbers_to_digits(text)
 
     for (unit_en, unit_pt) in time_units.items():
         unit_pattern = pattern.format(
@@ -1146,7 +1153,29 @@ def extract_duration_pt(text):
         def repl(match):
             time_units[unit_en] += float(match.group(1))
             return ''
+
         text = re.sub(unit_pattern, repl, text)
+
+    for (unit_en, unit_pt) in non_std_un.items():
+        unit_pattern = pattern.format(
+            unit=unit_pt[:-1])  # remove 's' from unit
+
+        def repl_non_std(match):
+            val = float(match.group(1))
+            if unit_en == "months":
+                val = DAYS_IN_1_MONTH * val
+            if unit_en == "years":
+                val = DAYS_IN_1_YEAR * val
+            if unit_en == "decades":
+                val = 10 * DAYS_IN_1_YEAR * val
+            if unit_en == "centurys":
+                val = 100 * DAYS_IN_1_YEAR * val
+            if unit_en == "millenniums":
+                val = 1000 * DAYS_IN_1_YEAR * val
+            time_units["days"] += val
+            return ''
+
+        text = re.sub(unit_pattern, repl_non_std, text)
 
     text = text.strip()
     duration = timedelta(**time_units) if any(time_units.values()) else None

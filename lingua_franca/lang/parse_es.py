@@ -16,7 +16,7 @@
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-from lingua_franca.time import now_local
+from lingua_franca.time import now_local, DAYS_IN_1_MONTH, DAYS_IN_1_YEAR
 from lingua_franca.lang.format_es import pronounce_number_es
 from lingua_franca.lang.parse_common import *
 from lingua_franca.lang.common_data_es import _ARTICLES_ES, _STRING_NUM_ES
@@ -1106,21 +1106,49 @@ def extract_duration_es(text):
         'days': 'dias',
         'weeks': 'semanas'
     }
+    non_std_un = {
+        "months": "meses",
+        "years": "anos",
+        'decades': "decadas",
+        'centurys': "siglos",
+        'millenniums': "milenios"
+    }
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}[s]?"
 
-    # TODO words to number normalize
-    #text = _convert_words_to_numbers_de(text)
+    text = SpanishNormalizer().numbers_to_digits(text)
 
-    for (unit_en, unit_pt) in time_units.items():
+    for (unit_en, unit_es) in time_units.items():
         unit_pattern = pattern.format(
-            unit=unit_pt[:-1])  # remove 's' from unit
+            unit=unit_es[:-1])  # remove 's' from unit
         time_units[unit_en] = 0
 
         def repl(match):
             time_units[unit_en] += float(match.group(1))
             return ''
+
         text = re.sub(unit_pattern, repl, text)
+
+    for (unit_en, unit_es) in non_std_un.items():
+        unit_pattern = pattern.format(
+            unit=unit_es[:-1])  # remove 's' from unit
+
+        def repl_non_std(match):
+            val = float(match.group(1))
+            if unit_en == "months":
+                val = DAYS_IN_1_MONTH * val
+            if unit_en == "years":
+                val = DAYS_IN_1_YEAR * val
+            if unit_en == "decades":
+                val = 10 * DAYS_IN_1_YEAR * val
+            if unit_en == "centurys":
+                val = 100 * DAYS_IN_1_YEAR * val
+            if unit_en == "millenniums":
+                val = 1000 * DAYS_IN_1_YEAR * val
+            time_units["days"] += val
+            return ''
+
+        text = re.sub(unit_pattern, repl_non_std, text)
 
     text = text.strip()
     duration = timedelta(**time_units) if any(time_units.values()) else None
