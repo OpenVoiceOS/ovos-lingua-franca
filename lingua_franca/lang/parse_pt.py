@@ -1143,7 +1143,9 @@ def extract_duration_pt(text):
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}[s]?"
 
     text = text.replace("mês", "meses").replace("é", "e")
+    text = text.replace("segundo", "_s_")  # HACK - segundo (second) will be replaced with 2
     text = PortugueseNormalizer().numbers_to_digits(text)
+    text = text.replace("_s_", "segundo")  # undo HACK
 
     for (unit_en, unit_pt) in time_units.items():
         unit_pattern = pattern.format(
