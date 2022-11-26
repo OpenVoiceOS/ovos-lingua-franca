@@ -20,7 +20,7 @@
     TODO: date time pt
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, match_yes_or_no
 from lingua_franca.lang.common_data_pt import _NUMBERS_PT, \
@@ -1097,3 +1097,58 @@ def get_gender_pt(word, context=""):
         if word.endswith(end_str):
             return "m"
     return None
+
+
+def extract_duration_pt(text):
+    """
+    Convert an portuguese phrase into a number of seconds
+    Convert things like:
+        "10 Minutos"
+        "3 dias 8 horas 10 Minutos e 49 Segundos"
+    into an int, representing the total number of seconds.
+    The words used in the duration will be consumed, and
+    the remainder returned.
+    As an example, "set a timer for 5 minutes" would return
+    (300, "set a timer for").
+    Args:
+        text (str): string containing a duration
+    Returns:
+        (timedelta, str):
+                    A tuple containing the duration and the remaining text
+                    not consumed in the parsing. The first value will
+                    be None if no duration is found. The text returned
+                    will have whitespace stripped from the ends.
+    """
+    if not text:
+        return None
+
+    text = text.lower()
+    time_units = {
+        'microseconds': 'microsegundos',
+        'milliseconds': 'milisegundos',
+        'seconds': 'segundos',
+        'minutes': 'minutos',
+        'hours': 'horas',
+        'days': 'dias',
+        'weeks': 'semanas'
+    }
+
+    pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}[s]?"
+
+    # TODO words to number normalize
+    #text = _convert_words_to_numbers_de(text)
+
+    for (unit_en, unit_pt) in time_units.items():
+        unit_pattern = pattern.format(
+            unit=unit_pt[:-1])  # remove 's' from unit
+        time_units[unit_en] = 0
+
+        def repl(match):
+            time_units[unit_en] += float(match.group(1))
+            return ''
+        text = re.sub(unit_pattern, repl, text)
+
+    text = text.strip()
+    duration = timedelta(**time_units) if any(time_units.values()) else None
+
+    return (duration, text)

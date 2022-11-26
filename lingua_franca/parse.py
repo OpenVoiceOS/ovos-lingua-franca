@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import datetime
 import json
+from dateutil.relativedelta import relativedelta
 from lingua_franca.util import match_one, fuzzy_match, MatchStrategy
 from lingua_franca.lang.parse_common import match_yes_or_no
 from difflib import SequenceMatcher
@@ -24,7 +26,7 @@ from lingua_franca.internal import populate_localized_function_dict, \
     get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
     resolve_resource_file, FunctionNotLocalizedError
 import unicodedata
-from lingua_franca.time import TimespanUnit
+from lingua_franca.time import TimespanUnit, DAYS_IN_1_MONTH, DAYS_IN_1_YEAR
 
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
@@ -159,8 +161,45 @@ def extract_timespan(text,
                     be None if no duration is found. The text returned
                     will have whitespace stripped from the ends.
     """
-    if time_unit == TimespanUnit.TIMEDELTA and replace_token == "":
-        return extract_duration(text, lang)
+    # TODO - remainder is imperfect and ignores replace_token
+    delta, remainder = extract_duration(text, lang)
+    if time_unit == TimespanUnit.TIMEDELTA:
+        return delta, remainder
+    seconds = delta.total_seconds()
+    if time_unit in [TimespanUnit.RELATIVEDELTA,
+                     TimespanUnit.RELATIVEDELTA_FALLBACK,
+                     TimespanUnit.RELATIVEDELTA_APPROXIMATE,
+                     TimespanUnit.RELATIVEDELTA_STRICT]:
+        return relativedelta(seconds=seconds), remainder
+    if time_unit == TimespanUnit.TOTAL_SECONDS:
+        return seconds, remainder
+    if time_unit == TimespanUnit.TOTAL_MILLISECONDS:
+        return seconds * 1000, remainder
+    if time_unit == TimespanUnit.TOTAL_MICROSECONDS:
+        return seconds * 1000000, remainder
+    minutes = seconds / 60
+    if time_unit == TimespanUnit.TOTAL_MINUTES:
+        return minutes, remainder
+    hours = minutes / 60
+    if time_unit == TimespanUnit.TOTAL_HOURS:
+        return hours, remainder
+    days = hours / 24
+    if time_unit == TimespanUnit.TOTAL_DAYS:
+        return days, remainder
+    if time_unit == TimespanUnit.TOTAL_WEEKS:
+        return days / 7, remainder
+    months = days / DAYS_IN_1_MONTH
+    if time_unit == TimespanUnit.TOTAL_MONTHS:
+        return months, remainder
+    years = days / DAYS_IN_1_YEAR
+    if time_unit == TimespanUnit.TOTAL_YEARS:
+        return years, remainder
+    if time_unit == TimespanUnit.TOTAL_DECADES:
+        return years / 10, remainder
+    if time_unit == TimespanUnit.TOTAL_CENTURIES:
+        return years / 100, remainder
+    if time_unit == TimespanUnit.TOTAL_MILLENNIUMS:
+        return years / 1000, remainder
     raise FunctionNotLocalizedError(f"extract_timespan not implemented for {lang}")
 
 
