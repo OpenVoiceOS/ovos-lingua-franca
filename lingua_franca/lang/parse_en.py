@@ -1687,7 +1687,7 @@ def normalize_en(text, remove_articles=True):
     return EnglishNormalizer().normalize(text, remove_articles)
 
 
-def extract_timespan_en(text, resolution=TimespanUnit.TIMEDELTA, replace_token=""):
+def extract_timespan_en(text, time_unit=TimespanUnit.TIMEDELTA, replace_token=""):
     """
     Convert an english phrase into a number of seconds
     Convert things like:
@@ -1701,7 +1701,7 @@ def extract_timespan_en(text, resolution=TimespanUnit.TIMEDELTA, replace_token="
     (300, "set a timer for").
     Args:
         text (str): string containing a duration
-        resolution (TimespanUnit): format to return extracted duration on
+        time_unit (TimespanUnit): format to return extracted duration on
         replace_token (str): string to replace consumed words with
     Returns:
         (timedelta, str):
@@ -1723,14 +1723,14 @@ def extract_timespan_en(text, resolution=TimespanUnit.TIMEDELTA, replace_token="
         .replace("a decade", "1 decade").replace("a century", "1 century") \
         .replace("a millennium", "1 millennium")
 
-    # NOTE this is really a hack, _convert_words_to_numbers normalized the
-    # string so we can do this, but this is essentially incorrect since each
-    # replaced number word should be replaced with a replace_token
     # we are always replacing 2 words, {N} {unit}
     _replace_token = (replace_token + " " + replace_token) \
         if replace_token else ""
+    # NOTE: above is a nasty hack, _convert_words_to_numbers normalized the
+    # string so we can do this, but this is essentially incorrect since each
+    # replaced number word should be replaced with a single replace_token
 
-    if resolution == TimespanUnit.TIMEDELTA:
+    if time_unit == TimespanUnit.TIMEDELTA:
         si_units = {
             'microseconds': None,
             'milliseconds': None,
@@ -1777,10 +1777,10 @@ def extract_timespan_en(text, resolution=TimespanUnit.TIMEDELTA, replace_token="
             else:
                 si_units[unit] = value
         duration = timedelta(**si_units) if any(si_units.values()) else None
-    elif resolution in [TimespanUnit.RELATIVEDELTA,
-                        TimespanUnit.RELATIVEDELTA_APPROXIMATE,
-                        TimespanUnit.RELATIVEDELTA_FALLBACK,
-                        TimespanUnit.RELATIVEDELTA_STRICT]:
+    elif time_unit in [TimespanUnit.RELATIVEDELTA,
+                       TimespanUnit.RELATIVEDELTA_APPROXIMATE,
+                       TimespanUnit.RELATIVEDELTA_FALLBACK,
+                       TimespanUnit.RELATIVEDELTA_STRICT]:
         relative_units = {
             'microseconds': None,
             'seconds': None,
@@ -1831,7 +1831,7 @@ def extract_timespan_en(text, resolution=TimespanUnit.TIMEDELTA, replace_token="
 
         # microsecond, month, year must be ints
         relative_units["microseconds"] = int(relative_units["microseconds"])
-        if resolution == TimespanUnit.RELATIVEDELTA_FALLBACK:
+        if time_unit == TimespanUnit.RELATIVEDELTA_FALLBACK:
             for unit in ["months", "years"]:
                 value = relative_units[unit]
                 _leftover, _ = math.modf(value)
@@ -1843,7 +1843,7 @@ def extract_timespan_en(text, resolution=TimespanUnit.TIMEDELTA, replace_token="
                                                TimespanUnit.TIMEDELTA,
                                                replace_token)
                 relative_units[unit] = int(value)
-        elif resolution == TimespanUnit.RELATIVEDELTA_APPROXIMATE:
+        elif time_unit == TimespanUnit.RELATIVEDELTA_APPROXIMATE:
             _leftover, year = math.modf(relative_units["years"])
             relative_units["months"] += 12 * _leftover
             relative_units["years"] = int(year)
@@ -1902,33 +1902,33 @@ def extract_timespan_en(text, resolution=TimespanUnit.TIMEDELTA, replace_token="
                 microseconds += value * 1000 * 1000 * 60 * 60 * 24 * \
                                 DAYS_IN_1_YEAR * 1000
 
-        if resolution == TimespanUnit.TOTAL_MICROSECONDS:
+        if time_unit == TimespanUnit.TOTAL_MICROSECONDS:
             duration = microseconds
-        elif resolution == TimespanUnit.TOTAL_MILLISECONDS:
+        elif time_unit == TimespanUnit.TOTAL_MILLISECONDS:
             duration = microseconds / 1000
-        elif resolution == TimespanUnit.TOTAL_SECONDS:
+        elif time_unit == TimespanUnit.TOTAL_SECONDS:
             duration = microseconds / (1000 * 1000)
-        elif resolution == TimespanUnit.TOTAL_MINUTES:
+        elif time_unit == TimespanUnit.TOTAL_MINUTES:
             duration = microseconds / (1000 * 1000 * 60)
-        elif resolution == TimespanUnit.TOTAL_HOURS:
+        elif time_unit == TimespanUnit.TOTAL_HOURS:
             duration = microseconds / (1000 * 1000 * 60 * 60)
-        elif resolution == TimespanUnit.TOTAL_DAYS:
+        elif time_unit == TimespanUnit.TOTAL_DAYS:
             duration = microseconds / (1000 * 1000 * 60 * 60 * 24)
-        elif resolution == TimespanUnit.TOTAL_WEEKS:
+        elif time_unit == TimespanUnit.TOTAL_WEEKS:
             duration = microseconds / (1000 * 1000 * 60 * 60 * 24 * 7)
-        elif resolution == TimespanUnit.TOTAL_MONTHS:
+        elif time_unit == TimespanUnit.TOTAL_MONTHS:
             duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
                                        DAYS_IN_1_MONTH)
-        elif resolution == TimespanUnit.TOTAL_YEARS:
+        elif time_unit == TimespanUnit.TOTAL_YEARS:
             duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
                                        DAYS_IN_1_YEAR)
-        elif resolution == TimespanUnit.TOTAL_DECADES:
+        elif time_unit == TimespanUnit.TOTAL_DECADES:
             duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
                                        DAYS_IN_1_YEAR * 10)
-        elif resolution == TimespanUnit.TOTAL_CENTURIES:
+        elif time_unit == TimespanUnit.TOTAL_CENTURIES:
             duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
                                        DAYS_IN_1_YEAR * 100)
-        elif resolution == TimespanUnit.TOTAL_MILLENNIUMS:
+        elif time_unit == TimespanUnit.TOTAL_MILLENNIUMS:
             duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
                                        DAYS_IN_1_YEAR * 1000)
         else:

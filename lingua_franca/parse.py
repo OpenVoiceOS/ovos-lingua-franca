@@ -129,7 +129,7 @@ def extract_duration(text, lang=''):
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def extract_timespan(text,
-                     resolution=TimespanUnit.TIMEDELTA,
+                     time_unit=TimespanUnit.TIMEDELTA,
                      replace_token="", lang=''):
     """ Convert an english phrase into a number of seconds
 
@@ -159,7 +159,7 @@ def extract_timespan(text,
                     be None if no duration is found. The text returned
                     will have whitespace stripped from the ends.
     """
-    if resolution == TimespanUnit.TIMEDELTA and replace_token == "":
+    if time_unit == TimespanUnit.TIMEDELTA and replace_token == "":
         return extract_duration(text, lang)
     raise FunctionNotLocalizedError(f"extract_timespan not implemented for {lang}")
 

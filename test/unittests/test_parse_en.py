@@ -1684,7 +1684,7 @@ class TestExtractTimeSpan(unittest.TestCase):
                           resolution=TimespanUnit.RELATIVEDELTA_STRICT)
         self.assertEqual(
             extract_timespan("1.3 months",
-                             resolution=TimespanUnit.RELATIVEDELTA_FALLBACK),
+                             time_unit=TimespanUnit.RELATIVEDELTA_FALLBACK),
             (timedelta(days=1.3 * DAYS_IN_1_MONTH), ""))
 
 
@@ -1699,11 +1699,11 @@ class TestExtractTimeSpan(unittest.TestCase):
 
         self.assertEqual(
             extract_timespan("1.3 months",
-                             resolution=TimespanUnit.RELATIVEDELTA_APPROXIMATE
+                             time_unit=TimespanUnit.RELATIVEDELTA_APPROXIMATE
                              )[0].months, 1)
         self.assertAlmostEquals(
             extract_timespan("1.3 months",
-                             resolution=TimespanUnit.RELATIVEDELTA_APPROXIMATE
+                             time_unit=TimespanUnit.RELATIVEDELTA_APPROXIMATE
                              )[0].days, 0.3 * DAYS_IN_1_MONTH)
 
     def test_extract_timespan_en(self):
@@ -1749,7 +1749,7 @@ class TestExtractTimeSpan(unittest.TestCase):
                          (timedelta(days=DAYS_IN_1_MONTH), ""))
         self.assertEqual(
             extract_timespan("1 month",
-                             resolution=TimespanUnit.TIMEDELTA),
+                             time_unit=TimespanUnit.TIMEDELTA),
             (timedelta(days=DAYS_IN_1_MONTH), ""))
 
         self.assertEqual(extract_timespan("3 months"),
@@ -1780,129 +1780,129 @@ class TestExtractTimeSpan(unittest.TestCase):
     def test_extract_timespan_delta_en(self):
         self.assertEqual(
             extract_timespan("10 seconds",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(seconds=10.0), ""))
         self.assertEqual(
 
             extract_timespan("5 minutes",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(minutes=5), ""))
         self.assertEqual(
             extract_timespan("2 hours",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(hours=2), ""))
         self.assertEqual(
             extract_timespan("3 days",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(days=3), ""))
         self.assertEqual(
             extract_timespan("25 weeks",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(weeks=25), ""))
         self.assertEqual(
             extract_timespan("seven hours",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(hours=7), ""))
         self.assertEqual(
             extract_timespan("7.5 seconds",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(seconds=7.5), ""))
         self.assertEqual(
             extract_timespan("eight and a half days thirty nine seconds",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(days=8.5, seconds=39), ""))
         self.assertEqual(
             extract_timespan("Set a timer for 30 minutes",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(minutes=30), "Set a timer for"))
         self.assertEqual(
             extract_timespan("Four and a half minutes until sunset",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(minutes=4.5), "until sunset"))
         self.assertEqual(
             extract_timespan("Nineteen minutes past the hour",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(minutes=19), "past the hour"))
         self.assertEqual(
             extract_timespan("wake me up in three weeks, four hundred "
                              "ninety seven days, and three hundred 91.6 "
                              "seconds",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(weeks=3, days=497, seconds=391.6),
              "wake me up in , , and"))
         self.assertEqual(
             extract_timespan("The movie is one hour, fifty seven"
                              " and a half minutes long",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(hours=1, minutes=57.5),
              "The movie is ,  long"))
         self.assertEqual(
             extract_timespan("10-seconds",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(seconds=10.0), ""))
         self.assertEqual(
             extract_timespan("5-minutes",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(minutes=5), ""))
 
         self.assertEqual(
             extract_timespan("1 month",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(months=1), ""))
         self.assertEqual(
             extract_timespan("3 months",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(months=3), ""))
         self.assertEqual(
             extract_timespan("a year",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=1), ""))
         self.assertEqual(
             extract_timespan("1 year",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=1), ""))
         self.assertEqual(
             extract_timespan("5 years",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=5), ""))
         self.assertEqual(
             extract_timespan("a decade",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=10), ""))
         self.assertEqual(
             extract_timespan("1 decade",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=10), ""))
         self.assertEqual(
             extract_timespan("5 decades",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=10 * 5), ""))
         self.assertEqual(
             extract_timespan("1 century",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=100), ""))
         self.assertEqual(
             extract_timespan("a century",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=100), ""))
         self.assertEqual(
             extract_timespan("5 centuries",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=500), ""))
         self.assertEqual(
             extract_timespan("1 millennium",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=1000), ""))
         self.assertEqual(
             extract_timespan("5 millenniums",
-                             resolution=TimespanUnit.RELATIVEDELTA),
+                             time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(years=1000 * 5), ""))
 
     def test_extract_timespan_microseconds_en(self):
         def test_milliseconds(duration_str, expected_duration,
                               expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_MICROSECONDS)
+                duration_str, time_unit=TimespanUnit.TOTAL_MICROSECONDS)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -1946,7 +1946,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_milliseconds(duration_str, expected_duration,
                               expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_MILLISECONDS)
+                duration_str, time_unit=TimespanUnit.TOTAL_MILLISECONDS)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2014,7 +2014,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_seconds(duration_str, expected_duration,
                          expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_SECONDS)
+                duration_str, time_unit=TimespanUnit.TOTAL_SECONDS)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2066,7 +2066,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_minutes(duration_str, expected_duration,
                          expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_MINUTES)
+                duration_str, time_unit=TimespanUnit.TOTAL_MINUTES)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2114,7 +2114,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_hours(duration_str, expected_duration,
                        expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_HOURS)
+                duration_str, time_unit=TimespanUnit.TOTAL_HOURS)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2163,7 +2163,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_days(duration_str, expected_duration,
                       expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_DAYS)
+                duration_str, time_unit=TimespanUnit.TOTAL_DAYS)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2211,7 +2211,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_weeks(duration_str, expected_duration,
                        expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_WEEKS)
+                duration_str, time_unit=TimespanUnit.TOTAL_WEEKS)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2257,7 +2257,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_months(duration_str, expected_duration,
                         expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_MONTHS)
+                duration_str, time_unit=TimespanUnit.TOTAL_MONTHS)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2308,7 +2308,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_years(duration_str, expected_duration,
                        expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_YEARS)
+                duration_str, time_unit=TimespanUnit.TOTAL_YEARS)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2355,7 +2355,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_decades(duration_str, expected_duration,
                          expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_DECADES)
+                duration_str, time_unit=TimespanUnit.TOTAL_DECADES)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2398,7 +2398,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_centuries(duration_str, expected_duration,
                            expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_CENTURIES)
+                duration_str, time_unit=TimespanUnit.TOTAL_CENTURIES)
 
             self.assertEqual(remainder, expected_remainder)
 
@@ -2442,7 +2442,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         def test_millennium(duration_str, expected_duration,
                             expected_remainder):
             duration, remainder = extract_timespan(
-                duration_str, resolution=TimespanUnit.TOTAL_MILLENNIUMS)
+                duration_str, time_unit=TimespanUnit.TOTAL_MILLENNIUMS)
 
             self.assertEqual(remainder, expected_remainder)
 
