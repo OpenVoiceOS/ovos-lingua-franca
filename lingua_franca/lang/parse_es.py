@@ -1116,6 +1116,7 @@ def extract_duration_es(text):
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}[s]?"
 
+    text = text.replace("í", "i")
     text = SpanishNormalizer().numbers_to_digits(text)
 
     for (unit_en, unit_es) in time_units.items():
