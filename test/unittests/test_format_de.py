@@ -223,98 +223,98 @@ class TestNiceDateFormat_de(unittest.TestCase):
                                13, 22, 3, tzinfo=default_timezone())
 
         self.assertEqual(nice_time(dt),
-                         "ein Uhr zweiundzwanzig")
+                         "ein uhr zweiundzwanzig")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "ein Uhr zweiundzwanzig nachmittags")
+                         "ein uhr zweiundzwanzig nachmittags")
         self.assertEqual(nice_time(dt, speech=False),
-                         "1:22")
+                         "01:22 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
-                         "1:22 PM")
+                         "01:22 uhr nachmittags")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
-                         "13:22")
+                         "13:22 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
-                         "13:22")
+                         "13:22 uhr nachmittags")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
-                         "dreizehn Uhr zweiundzwanzig")
+                         "dreizehn uhr zweiundzwanzig nachmittags")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
-                         "dreizehn Uhr zweiundzwanzig")
+                         "dreizehn uhr zweiundzwanzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                13, 0, 3, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt),
-                         "ein Uhr")
+                         "ein uhr")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "ein Uhr nachmittags")
+                         "ein uhr nachmittags")
         self.assertEqual(nice_time(dt, speech=False),
-                         "1:00")
+                         "01:00 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
-                         "1:00 PM")
+                         "01:00 uhr nachmittags")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
-                         "13:00")
+                         "13:00 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
-                         "13:00")
+                         "13:00 uhr nachmittags")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
-                         "dreizehn Uhr")
+                         "dreizehn uhr nachmittags")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
-                         "dreizehn Uhr")
+                         "dreizehn uhr")
 
         dt = datetime.datetime(2017, 1, 31,
                                13, 2, 3, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt),
-                         "ein Uhr zwei")
+                         "ein uhr zwei")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "ein Uhr zwei nachmittags")
+                         "ein uhr zwei nachmittags")
         self.assertEqual(nice_time(dt, speech=False),
-                         "1:02")
+                         "01:02 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
-                         "1:02 PM")
+                         "01:02 uhr nachmittags")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
-                         "13:02")
+                         "13:02 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
-                         "13:02")
+                         "13:02 uhr nachmittags")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
-                         "dreizehn Uhr zwei")
+                         "dreizehn uhr zwei nachmittags")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
-                         "dreizehn Uhr zwei")
+                         "dreizehn uhr zwei")
 
         dt = datetime.datetime(2017, 1, 31,
                                0, 2, 3, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt),
-                         "zwölf Uhr zwei")
+                         "null uhr zwei")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "zwölf Uhr zwei nachts")
+                         "null uhr zwei nachts")
         self.assertEqual(nice_time(dt, speech=False),
-                         "12:02")
+                         "12:02 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
-                         "12:02 AM")
+                         "12:02 uhr nachts")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
-                         "00:02")
+                         "00:02 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
-                         "00:02")
+                         "00:02 uhr nachts")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
-                         "null Uhr zwei")
+                         "null uhr zwei nachts")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
-                         "null Uhr zwei")
+                         "null uhr zwei")
 
         dt = datetime.datetime(2017, 1, 31,
                                12, 15, 9, tzinfo=default_timezone())
@@ -323,56 +323,56 @@ class TestNiceDateFormat_de(unittest.TestCase):
         self.assertEqual(nice_time(dt, use_ampm=True),
                          "viertel eins nachmittags")
         self.assertEqual(nice_time(dt, speech=False),
-                         "12:15")
+                         "12:15 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
-                         "12:15 PM")
+                         "12:15 uhr nachmittags")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
-                         "12:15")
+                         "12:15 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
-                         "12:15")
+                         "12:15 uhr nachmittags")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
-                         "zwölf Uhr fünfzehn")
+                         "zwölf uhr fünfzehn nachmittags")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
-                         "zwölf Uhr fünfzehn")
+                         "zwölf uhr fünfzehn")
 
         dt = datetime.datetime(2017, 1, 31,
                                19, 40, 49, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt),
-                         "sieben Uhr vierzig")
+                         "sieben uhr vierzig")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "sieben Uhr vierzig abends")
+                         "sieben uhr vierzig abends")
         self.assertEqual(nice_time(dt, speech=False),
-                         "7:40")
+                         "07:40 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
-                         "7:40 PM")
+                         "07:40 uhr abends")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
-                         "19:40")
+                         "19:40 uhr")
         self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
-                         "19:40")
+                         "19:40 uhr abends")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
-                         "neunzehn Uhr vierzig")
+                         "neunzehn uhr vierzig abends")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
-                         "neunzehn Uhr vierzig")
+                         "neunzehn uhr vierzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 15, 00, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt, use_24hour=True),
-                         "ein Uhr fünfzehn")
+                         "ein uhr fünfzehn")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 35, 00, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt),
-                         "ein Uhr fünfunddreißig")
+                         "ein uhr fünfunddreißig")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 45, 00, tzinfo=default_timezone())
@@ -382,12 +382,12 @@ class TestNiceDateFormat_de(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                4, 50, 00, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt),
-                         "vier Uhr fünfzig")
+                         "vier uhr fünfzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 55, 00, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt),
-                         "fünf Uhr fünfundfünfzig")
+                         "fünf uhr fünfundfünfzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 30, 00, tzinfo=default_timezone())

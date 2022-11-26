@@ -210,7 +210,7 @@ def pronounce_ordinal_de(number):
 def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
     """
     Format a time to a comfortable human format
-    For example, generate 'five thirty' for speech or '5:30' for
+    For example, generate 'ein uhr eins' for speech or '01:01 Uhr' for
     text display.
     Args:
         dt (datetime): date to format (assumes already in local timezone)
@@ -220,71 +220,56 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
     Returns:
         (str): The formatted time string
     """
+    string = ""
     if not speech:
         if use_24hour:
-            # e.g. "03:01" or "14:22"
-            string = dt.strftime("%H:%M")
+            string = f"{dt.strftime('%H:%M')} uhr"
         else:
-            if use_ampm:
-                # e.g. "3:01 AM" or "2:22 PM"
-                string = dt.strftime("%I:%M %p")
-            else:
-                # e.g. "3:01" or "2:22"
-                string = dt.strftime("%I:%M")
-            if string[0] == '0':
-                string = string[1:]  # strip leading zeros
-        return string
+            string = f"{dt.strftime('%I:%M')} uhr"
 
-    # Generate a speakable version of the time
-    speak = ""
-    if use_24hour:
+    # Generate a speakable version of the time"
+    elif use_24hour:
         if dt.hour == 1:
-            speak += "ein"  # 01:00 is "ein Uhr" not "eins Uhr"
+            string += "ein"  # 01:00 is "ein Uhr" not "eins Uhr"
         else:
-            speak += pronounce_number_de(dt.hour)
-        speak += " Uhr"
-        if not dt.minute == 0:  # zero minutes are not pronounced, 13:00 is
-            # "13 Uhr" not "13 hundred hours"
-            speak += " " + pronounce_number_de(dt.minute)
-
-        return speak  # ampm is ignored when use_24hour is true
+            string += pronounce_number_de(dt.hour)
+        string += " uhr"
+        if not dt.minute == 0:  # zero minutes are not pronounced
+            string += " " + pronounce_number_de(dt.minute)
     else:
+        next_hour = (dt.hour + 1) % 12 or 12
         if dt.hour == 0 and dt.minute == 0:
-            return "Mitternacht"
+            return "mitternacht"
         elif dt.hour == 12 and dt.minute == 0:
-            return "Mittag"
+            return "mittag"
         elif dt.minute == 15:
-            # sentence relative to next hour and 0 spoken as 12
-            next_hour = (dt.hour + 1) % 12 or 12
-            speak = "viertel " + pronounce_number_de(next_hour)
+            string = "viertel " + pronounce_number_de(next_hour)
         elif dt.minute == 30:
-            next_hour = (dt.hour + 1) % 12 or 12
-            speak = "halb " + pronounce_number_de(next_hour)
+            string = "halb " + pronounce_number_de(next_hour)
         elif dt.minute == 45:
-            next_hour = (dt.hour + 1) % 12 or 12
-            speak = "dreiviertel " + pronounce_number_de(next_hour)
+            string = "dreiviertel " + pronounce_number_de(next_hour)
         else:
-            hour = dt.hour % 12 or 12  # 12 hour clock and 0 is spoken as 12
+            hour = dt.hour % 12
             if hour == 1:  # 01:00 and 13:00 is "ein Uhr" not "eins Uhr"
-                speak += 'ein'
+                string += 'ein'
             else:
-                speak += pronounce_number_de(hour)
-            speak += " Uhr"
+                string += pronounce_number_de(hour)
+            string += " uhr"
 
             if not dt.minute == 0:
-                speak += " " + pronounce_number_de(dt.minute)
+                string += " " + pronounce_number_de(dt.minute)
 
-        if use_ampm:
-            if 3 <= dt.hour < 12:
-                speak += " morgens"  # 03:00 - 11:59 morgens/in the morning
-            elif 12 <= dt.hour < 18:
-                speak += " nachmittags"  # 12:01 - 17:59 nachmittags/afternoon
-            elif 18 <= dt.hour < 22:
-                speak += " abends"  # 18:00 - 21:59 abends/evening
-            else:
-                speak += " nachts"  # 22:00 - 02:59 nachts/at night
+    if use_ampm:
+        if 3 <= dt.hour < 12:
+            string += " morgens"  # 03:00 - 11:59 morgens/in the morning
+        elif 12 <= dt.hour < 18:
+            string += " nachmittags"  # 12:01 - 17:59 nachmittags/afternoon
+        elif 18 <= dt.hour < 22:
+            string += " abends"  # 18:00 - 21:59 abends/evening
+        else:
+            string += " nachts"  # 22:00 - 02:59 nachts/at night
 
-        return speak
+    return string
 
 
 def nice_response_de(text):
