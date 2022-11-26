@@ -332,7 +332,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         self.assertEqual(extract_timespan("5-minutos"),
                          (timedelta(minutes=5), ""))
 
-    def test_extract_timespan_delta_en(self):
+    def test_extract_timespan_delta(self):
         self.assertEqual(
             extract_timespan("10 segundos",
                              time_unit=TimespanUnit.RELATIVEDELTA),
@@ -371,7 +371,7 @@ class TestExtractTimeSpan(unittest.TestCase):
                              time_unit=TimespanUnit.RELATIVEDELTA),
             (relativedelta(minutes=5), ""))
 
-    def test_extract_timespan_microsegundos_en(self):
+    def test_extract_timespan_microsegundos(self):
         def test_microsegundos(duration_str, expected_duration,
                               expected_remainder):
             duration, remainder = extract_timespan(
@@ -400,7 +400,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_microsegundos("10-segundos", 10 * 1000 * 1000, "")
         test_microsegundos("5-minutos", 5 * 60 * 1000 * 1000, "")
 
-    def test_extract_timespan_milisegundos_en(self):
+    def test_extract_timespan_milisegundos(self):
         def test_milisegundos(duration_str, expected_duration,
                               expected_remainder):
             duration, remainder = extract_timespan(
@@ -429,7 +429,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_milisegundos("10-segundos", 10 * 1000, "")
         test_milisegundos("5-minutos", 5 * 60 * 1000, "")
 
-    def test_extract_timespan_segundos_en(self):
+    def test_extract_timespan_segundos(self):
         def test_segundos(duration_str, expected_duration,
                          expected_remainder):
             duration, remainder = extract_timespan(
@@ -454,7 +454,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_segundos("10-segundos", 10, "")
         test_segundos("5-minutos", 5 * 60, "")
 
-    def test_extract_timespan_minutos_en(self):
+    def test_extract_timespan_minutos(self):
         def test_minutos(duration_str, expected_duration,
                          expected_remainder):
             duration, remainder = extract_timespan(
@@ -475,7 +475,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_minutos("10-segundos", 10 / 60, "")
         test_minutos("5-minutos", 5, "")
 
-    def test_extract_timespan_horas_en(self):
+    def test_extract_timespan_horas(self):
         def test_horas(duration_str, expected_duration,
                        expected_remainder):
             duration, remainder = extract_timespan(
@@ -497,7 +497,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_horas("10-segundos", 0, "")
         test_horas("5-minutos", 5 / 60, "")
 
-    def test_extract_timespan_dias_en(self):
+    def test_extract_timespan_dias(self):
         def test_dias(duration_str, expected_duration,
                       expected_remainder):
             duration, remainder = extract_timespan(
@@ -520,7 +520,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_dias("10-segundos", 0, "")
         test_dias("5-minutos", 0, "")
 
-    def test_extract_timespan_semanas_en(self):
+    def test_extract_timespan_semanas(self):
         def test_semanas(duration_str, expected_duration,
                        expected_remainder):
             duration, remainder = extract_timespan(
@@ -542,7 +542,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_semanas("10-segundos", 0, "")
         test_semanas("5-minutos", 0, "")
 
-    def test_extract_timespan_months_en(self):
+    def test_extract_timespan_months(self):
         def test_months(duration_str, expected_duration,
                         expected_remainder):
             duration, remainder = extract_timespan(
@@ -565,7 +565,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_months("10-segundos", 0, "")
         test_months("5-minutos", 0, "")
 
-    def test_extract_timespan_years_en(self):
+    def test_extract_timespan_years(self):
         def test_years(duration_str, expected_duration,
                        expected_remainder):
             duration, remainder = extract_timespan(
@@ -587,7 +587,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_years("10-segundos", 0, "")
         test_years("5-minutos", 0, "")
 
-    def test_extract_timespan_decades_en(self):
+    def test_extract_timespan_decades(self):
         def test_decades(duration_str, expected_duration,
                          expected_remainder):
             duration, remainder = extract_timespan(
@@ -608,7 +608,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_decades("10-segundos", 0, "")
         test_decades("5-minutos", 0, "")
 
-    def test_extract_timespan_centuries_en(self):
+    def test_extract_timespan_centuries(self):
         def test_centuries(duration_str, expected_duration,
                            expected_remainder):
             duration, remainder = extract_timespan(
@@ -629,7 +629,7 @@ class TestExtractTimeSpan(unittest.TestCase):
         test_centuries("10-segundos", 0, "")
         test_centuries("5-minutos", 0, "")
 
-    def test_extract_timespan_millennia_en(self):
+    def test_extract_timespan_millennia(self):
         def test_millennium(duration_str, expected_duration,
                             expected_remainder):
             duration, remainder = extract_timespan(

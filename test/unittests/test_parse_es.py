@@ -13,14 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datetime import datetime
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 import unittest
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.parse import (normalize, extract_numbers, extract_number,
                                  extract_datetime, yes_or_no)
 from lingua_franca.lang.parse_es import extract_datetime_es, is_fractional_es
-from lingua_franca.time import default_timezone
+from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no, extract_timespan
+from lingua_franca.time import default_timezone, to_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH, TimespanUnit
 
 
 def setUpModule():
@@ -257,6 +259,346 @@ class TestYesNo(unittest.TestCase):
         test_utt("jajajaja", None)
         test_utt("por favor", True)
         test_utt("por favor no", False)
+
+
+class TestExtractTimeSpan(unittest.TestCase):
+    def test_extract_timespan(self):
+        self.assertEqual(extract_timespan("10 segundos"),
+                         (timedelta(seconds=10.0), ""))
+        self.assertEqual(extract_timespan("5 minutos"),
+                         (timedelta(minutes=5), ""))
+        self.assertEqual(extract_timespan("2 horas"),
+                         (timedelta(hours=2), ""))
+        self.assertEqual(extract_timespan("3 dias"),
+                         (timedelta(days=3), ""))
+        self.assertEqual(extract_timespan("25 semanas"),
+                         (timedelta(weeks=25), ""))
+        self.assertEqual(extract_timespan("7.5 segundos"),
+                         (timedelta(seconds=7.5), ""))
+        self.assertEqual(extract_timespan(" 30 minutos"),
+                         (timedelta(minutes=30), ""))
+        self.assertEqual(extract_timespan("10-segundos"),
+                         (timedelta(seconds=10.0), ""))
+        self.assertEqual(extract_timespan("5-minutos"),
+                         (timedelta(minutes=5), ""))
+
+    def test_extract_timespan_delta(self):
+        self.assertEqual(
+            extract_timespan("10 segundos",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(seconds=10.0), ""))
+        self.assertEqual(
+
+            extract_timespan("5 minutos",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(minutes=5), ""))
+        self.assertEqual(
+            extract_timespan("2 horas",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(hours=2), ""))
+        self.assertEqual(
+            extract_timespan("3 dias",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(days=3), ""))
+        self.assertEqual(
+            extract_timespan("25 semanas",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(weeks=25), ""))
+        self.assertEqual(
+            extract_timespan("7.5 segundos",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(seconds=7.5), ""))
+        self.assertEqual(
+            extract_timespan(" 30 minutos",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(minutes=30), ""))
+        self.assertEqual(
+            extract_timespan("10-segundos",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(seconds=10.0), ""))
+        self.assertEqual(
+            extract_timespan("5-minutos",
+                             time_unit=TimespanUnit.RELATIVEDELTA),
+            (relativedelta(minutes=5), ""))
+
+    def test_extract_timespan_microsegundos(self):
+        def test_microsegundos(duration_str, expected_duration,
+                              expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_MICROSECONDS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_microsegundos("0.01 microsegundos", 0, "")
+        test_microsegundos("1 microsegundo", 1, "")
+        test_microsegundos("5 microsegundos", 5, "")
+        test_microsegundos("1 milisegundo", 1 * 1000, "")
+        test_microsegundos("5 milisegundos", 5 * 1000, "")
+        test_microsegundos("100 milisegundos", 100 * 1000, "")
+        test_microsegundos("1 segundo", 1000 * 1000, "")
+        test_microsegundos("10 segundos", 10 * 1000 * 1000, "")
+        test_microsegundos("5 minutos", 5 * 60 * 1000 * 1000, "")
+        test_microsegundos("2 horas", 2 * 60 * 60 * 1000 * 1000, "")
+        test_microsegundos("3 dias", 3 * 24 * 60 * 60 * 1000 * 1000, "")
+        test_microsegundos("25 semanas", 25 * 7 * 24 * 60 * 60 * 1000 * 1000, "")
+        test_microsegundos("7.5 segundos", 7.5 * 1000 * 1000, "")
+        test_microsegundos(" 30 minutos", 30 * 60 * 1000 * 1000,
+                          "")
+        test_microsegundos("10-segundos", 10 * 1000 * 1000, "")
+        test_microsegundos("5-minutos", 5 * 60 * 1000 * 1000, "")
+
+    def test_extract_timespan_milisegundos(self):
+        def test_milisegundos(duration_str, expected_duration,
+                              expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_MILLISECONDS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_milisegundos("1 microsegundo", 0.001, "")
+        test_milisegundos("4.9 microsegundos", 0.005, "")
+        test_milisegundos("5 microsegundos", 0.005, "")
+        test_milisegundos("1 milisegundo", 1, "")
+        test_milisegundos("5 milisegundos", 5, "")
+        test_milisegundos("100 milisegundos", 100, "")
+        test_milisegundos("1 segundo", 1000, "")
+        test_milisegundos("10 segundos", 10 * 1000, "")
+        test_milisegundos("5 minutos", 5 * 60 * 1000, "")
+        test_milisegundos("2 horas", 2 * 60 * 60 * 1000, "")
+        test_milisegundos("3 dias", 3 * 24 * 60 * 60 * 1000, "")
+        test_milisegundos("25 semanas", 25 * 7 * 24 * 60 * 60 * 1000, "")
+        test_milisegundos("7.5 segundos", 7.5 * 1000, "")
+        test_milisegundos(" 30 minutos", 30 * 60 * 1000,
+                          "")
+        test_milisegundos("10-segundos", 10 * 1000, "")
+        test_milisegundos("5-minutos", 5 * 60 * 1000, "")
+
+    def test_extract_timespan_segundos(self):
+        def test_segundos(duration_str, expected_duration,
+                         expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_SECONDS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_segundos("1 milisegundo", 0, "")
+        test_segundos("4 milisegundos", 0, "")
+        test_segundos("5 milisegundos", 0.005, "")
+        test_segundos("100 milisegundos", 0.1, "")
+        test_segundos("10 segundos", 10, "")
+        test_segundos("5 minutos", 5 * 60, "")
+        test_segundos("2 horas", 2 * 60 * 60, "")
+        test_segundos("3 dias", 3 * 24 * 60 * 60, "")
+        test_segundos("25 semanas", 25 * 7 * 24 * 60 * 60, "")
+        test_segundos("7.5 segundos", 7.5, "")
+        test_segundos(" 30 minutos", 30 * 60, "")
+        test_segundos("10-segundos", 10, "")
+        test_segundos("5-minutos", 5 * 60, "")
+
+    def test_extract_timespan_minutos(self):
+        def test_minutos(duration_str, expected_duration,
+                         expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_MINUTES)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_minutos("10 segundos", 10 / 60, "")
+        test_minutos("5 minutos", 5, "")
+        test_minutos("2 horas", 2 * 60, "")
+        test_minutos("3 dias", 3 * 24 * 60, "")
+        test_minutos("25 semanas", 25 * 7 * 24 * 60, "")
+        test_minutos("7.5 segundos", 7.5 / 60, "")
+        test_minutos(" 30 minutos", 30, "")
+        test_minutos("10-segundos", 10 / 60, "")
+        test_minutos("5-minutos", 5, "")
+
+    def test_extract_timespan_horas(self):
+        def test_horas(duration_str, expected_duration,
+                       expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_HOURS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_horas("10 segundos", 0, "")
+        test_horas("17.9 segundos", 0, "")
+        test_horas("5 minutos", 5 / 60, "")
+        test_horas("2 horas", 2, "")
+        test_horas("3 dias", 3 * 24, "")
+        test_horas("25 semanas", 25 * 7 * 24, "")
+        test_horas("7.5 segundos", 0, "")
+        test_horas(" 30 minutos", 30 / 60, "")
+        test_horas("10-segundos", 0, "")
+        test_horas("5-minutos", 5 / 60, "")
+
+    def test_extract_timespan_dias(self):
+        def test_dias(duration_str, expected_duration,
+                      expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_DAYS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_dias("10 segundos", 0, "")
+        test_dias("5 minutos", 0, "")
+        test_dias("7.1 minutos", 0, "")
+        test_dias("2 horas", 2 / 24, "")
+        test_dias("3 dias", 3, "")
+        test_dias("25 semanas", 25 * 7, "")
+        test_dias("7.5 segundos", 0, "")
+        test_dias(" 30 minutos", 30 / 60 / 24,
+                  "")
+        test_dias("10-segundos", 0, "")
+        test_dias("5-minutos", 0, "")
+
+    def test_extract_timespan_semanas(self):
+        def test_semanas(duration_str, expected_duration,
+                       expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_WEEKS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_semanas("10 segundos", 0, "")
+        test_semanas("5 minutos", 0, "")
+        test_semanas("50 minutos", 0, "")
+        test_semanas("2 horas", 2 / 24 / 7, "")
+        test_semanas("3 dias", 3 / 7, "")
+        test_semanas("25 semanas", 25, "")
+        test_semanas("7.5 segundos", 7.5 / 60 / 60 / 24 / 7, "")
+        test_semanas(" 30 minutos", 0, "")
+        test_semanas("10-segundos", 0, "")
+        test_semanas("5-minutos", 0, "")
+
+    def test_extract_timespan_months(self):
+        def test_months(duration_str, expected_duration,
+                        expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_MONTHS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_months("10 segundos", 0, "")
+        test_months("5 minutos", 0, "")
+        test_months("2 horas", 0, "")
+        test_months("3 dias",
+                    3 / DAYS_IN_1_MONTH, "")
+        test_months("25 semanas",
+                    25 * 7 / DAYS_IN_1_MONTH, "")
+        test_months("7.5 segundos", 0, "")
+        test_months(" 30 minutos", 0, "")
+        test_months("10-segundos", 0, "")
+        test_months("5-minutos", 0, "")
+
+    def test_extract_timespan_years(self):
+        def test_years(duration_str, expected_duration,
+                       expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_YEARS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_years("10 segundos", 0, "")
+        test_years("5 minutos", 0, "")
+        test_years("2 horas", 0, "")
+        test_years("1.5 dias", 0, "")
+        test_years("3 dias", 3 / DAYS_IN_1_YEAR, "")
+        test_years("25 semanas", 25 * 7 / DAYS_IN_1_YEAR, "")
+        test_years("7.5 segundos", 0, "")
+        test_years(" 30 minutos", 0, "")
+        test_years("10-segundos", 0, "")
+        test_years("5-minutos", 0, "")
+
+    def test_extract_timespan_decades(self):
+        def test_decades(duration_str, expected_duration,
+                         expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_DECADES)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_decades("10 segundos", 0, "")
+        test_decades("5 minutos", 0, "")
+        test_decades("2 horas", 0, "")
+        test_decades("3 dias", 0, "")
+        test_decades("25 semanas", 25 * 7 / DAYS_IN_1_YEAR / 10, "")
+        test_decades("7.5 segundos", 0, "")
+        test_decades(" 30 minutos", 0, "")
+        test_decades("10-segundos", 0, "")
+        test_decades("5-minutos", 0, "")
+
+    def test_extract_timespan_centuries(self):
+        def test_centuries(duration_str, expected_duration,
+                           expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_CENTURIES)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_centuries("10 segundos", 0, "")
+        test_centuries("5 minutos", 0, "")
+        test_centuries("2 horas", 0, "")
+        test_centuries("3 dias", 0, "")
+        test_centuries("25 semanas", 0, "")
+        test_centuries("7.5 segundos", 0, "")
+        test_centuries(" 30 minutos", 0, "")
+        test_centuries("10-segundos", 0, "")
+        test_centuries("5-minutos", 0, "")
+
+    def test_extract_timespan_millennia(self):
+        def test_millennium(duration_str, expected_duration,
+                            expected_remainder):
+            duration, remainder = extract_timespan(
+                duration_str, time_unit=TimespanUnit.TOTAL_MILLENNIUMS)
+
+            self.assertEqual(remainder, expected_remainder)
+
+            # allow small floating point errors
+            self.assertAlmostEqual(expected_duration, duration, places=2)
+
+        test_millennium("10 segundos", 0, "")
+        test_millennium("5 minutos", 0, "")
+        test_millennium("2 horas", 0, "")
+        test_millennium("3 dias", 0, "")
+        test_millennium("25 semanas", 0, "")
+        test_millennium("7.5 segundos", 0, "")
+        test_millennium(" 30 minutos", 0, "")
+        test_millennium("10-segundos", 0, "")
+        test_millennium("5-minutos", 0, "")
 
 
 if __name__ == "__main__":
