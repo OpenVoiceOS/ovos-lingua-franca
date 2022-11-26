@@ -587,18 +587,43 @@ def extract_duration_en(text):
         'days': 0,
         'weeks': 0
     }
+    units = ['months', 'years', 'decades', 'centurys', 'millenniums'] + \
+            list(time_units.keys())
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}s?"
     text = _convert_words_to_numbers_en(text)
+    text = text.replace("centuries", "century").replace("millenia",
+                                                        "millennium")
+    text = text.replace("a day", "1 day").replace("a year", "1 year") \
+        .replace("a decade", "1 decade").replace("a century", "1 century") \
+        .replace("a millennium", "1 millennium")
 
-    for unit_en in time_units:
+    for unit_en in units:
         unit_pattern = pattern.format(unit=unit_en[:-1])  # remove 's' from unit
 
         def repl(match):
             time_units[unit_en] += float(match.group(1))
             return ''
 
-        text = re.sub(unit_pattern, repl, text)
+        def repl_non_std(match):
+            val = float(match.group(1))
+            if unit_en == "months":
+                val = DAYS_IN_1_MONTH * val
+            if unit_en == "years":
+                val = DAYS_IN_1_YEAR * val
+            if unit_en == "decades":
+                val = 10 * DAYS_IN_1_YEAR * val
+            if unit_en == "centurys":
+                val = 100 * DAYS_IN_1_YEAR * val
+            if unit_en == "millenniums":
+                val = 1000 * DAYS_IN_1_YEAR * val
+            time_units["days"] += val
+            return ''
+
+        if unit_en not in time_units:
+            text = re.sub(unit_pattern, repl_non_std, text)
+        else:
+            text = re.sub(unit_pattern, repl, text)
 
     text = text.strip()
     duration = timedelta(**time_units) if any(time_units.values()) else None
@@ -1747,6 +1772,8 @@ def extract_timespan_en(text, time_unit=TimespanUnit.TIMEDELTA, replace_token=""
         for unit in units:
             unit_pattern = pattern.format(
                 unit=unit[:-1])  # remove 's' from unit
+
+
             matches = re.findall(unit_pattern, text)
             value = sum(map(float, matches))
             text = re.sub(unit_pattern, _replace_token, text)
