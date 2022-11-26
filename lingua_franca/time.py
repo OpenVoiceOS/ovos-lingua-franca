@@ -15,7 +15,32 @@
 #
 from datetime import datetime
 from dateutil.tz import gettz, tzlocal
+import enum
 
+
+class TimespanUnit(enum.Enum):
+    TIMEDELTA = enum.auto()
+    RELATIVEDELTA = enum.auto()
+    RELATIVEDELTA_STRICT = RELATIVEDELTA  # syntactic sugar
+    RELATIVEDELTA_FALLBACK = enum.auto()
+    RELATIVEDELTA_APPROXIMATE = enum.auto()
+    TOTAL_SECONDS = enum.auto()
+    TOTAL_MICROSECONDS = enum.auto()
+    TOTAL_MILLISECONDS = enum.auto()
+    TOTAL_MINUTES = enum.auto()
+    TOTAL_HOURS = enum.auto()
+    TOTAL_DAYS = enum.auto()
+    TOTAL_WEEKS = enum.auto()
+    TOTAL_MONTHS = enum.auto()
+    TOTAL_YEARS = enum.auto()
+    TOTAL_DECADES = enum.auto()
+    TOTAL_CENTURIES = enum.auto()
+    TOTAL_MILLENNIUMS = enum.auto()
+
+
+# used to calculate timespans
+DAYS_IN_1_YEAR = 365.2425
+DAYS_IN_1_MONTH = 30.42
 
 __default_tz = None
 

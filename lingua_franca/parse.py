@@ -24,11 +24,13 @@ from lingua_franca.internal import populate_localized_function_dict, \
     get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
     resolve_resource_file, FunctionNotLocalizedError
 import unicodedata
+from lingua_franca.time import TimespanUnit
 
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_number",
                          "extract_duration",
+                         "extract_timespan",
                          "extract_datetime",
                          "extract_langcode",
                          "normalize",
@@ -123,6 +125,43 @@ def extract_duration(text, lang=''):
                     be None if no duration is found. The text returned
                     will have whitespace stripped from the ends.
     """
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def extract_timespan(text,
+                     resolution=TimespanUnit.TIMEDELTA,
+                     replace_token="", lang=''):
+    """ Convert an english phrase into a number of seconds
+
+    Convert things like:
+
+    * "10 minute"
+    * "2 and a half hours"
+    * "3 days 8 hours 10 minutes and 49 seconds"
+
+    into an int, representing the total number of seconds.
+
+    The words used in the duration will be consumed, and
+    the remainder returned.
+
+    As an example, "set a timer for 5 minutes" would return
+    ``(300, "set a timer for")``.
+
+    Args:
+        text (str): string containing a duration
+        lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+
+    Returns:
+        (timedelta, str):
+                    A tuple containing the duration and the remaining text
+                    not consumed in the parsing. The first value will
+                    be None if no duration is found. The text returned
+                    will have whitespace stripped from the ends.
+    """
+    if resolution == TimespanUnit.TIMEDELTA and replace_token == "":
+        return extract_duration(text, lang)
+    raise FunctionNotLocalizedError(f"extract_timespan not implemented for {lang}")
 
 
 @localized_function()

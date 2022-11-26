@@ -15,8 +15,8 @@
 #
 import json
 import re
+import math
 from datetime import datetime, timedelta, time
-
 from dateutil.relativedelta import relativedelta
 
 from lingua_franca.internal import resolve_resource_file
@@ -28,7 +28,7 @@ from lingua_franca.lang.common_data_en import _ARTICLES_EN, _LONG_ORDINAL_EN, _L
     _generate_plurals_en, _SPOKEN_EXTRA_NUM_EN
 from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
     invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer
-from lingua_franca.time import now_local
+from lingua_franca.time import now_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH, TimespanUnit
 
 
 def _convert_words_to_numbers_en(text, short_scale=True, ordinals=False):
@@ -1685,3 +1685,254 @@ class EnglishNormalizer(Normalizer):
 def normalize_en(text, remove_articles=True):
     """ English string normalization """
     return EnglishNormalizer().normalize(text, remove_articles)
+
+
+def extract_timespan_en(text, resolution=TimespanUnit.TIMEDELTA, replace_token=""):
+    """
+    Convert an english phrase into a number of seconds
+    Convert things like:
+        "10 minute"
+        "2 and a half hours"
+        "3 days 8 hours 10 minutes and 49 seconds"
+    into an int, representing the total number of seconds.
+    The words used in the duration will be consumed, and
+    the remainder returned.
+    As an example, "set a timer for 5 minutes" would return
+    (300, "set a timer for").
+    Args:
+        text (str): string containing a duration
+        resolution (TimespanUnit): format to return extracted duration on
+        replace_token (str): string to replace consumed words with
+    Returns:
+        (timedelta, str):
+                    A tuple containing the duration and the remaining text
+                    not consumed in the parsing. The first value will
+                    be None if no duration is found. The text returned
+                    will have whitespace stripped from the ends.
+    """
+    if not text:
+        return None
+
+    pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}s?"
+    # text normalization
+    original_text = text
+    text = _convert_words_to_numbers_en(text)
+    text = text.replace("centuries", "century").replace("millenia",
+                                                        "millennium")
+    text = text.replace("a day", "1 day").replace("a year", "1 year") \
+        .replace("a decade", "1 decade").replace("a century", "1 century") \
+        .replace("a millennium", "1 millennium")
+
+    # NOTE this is really a hack, _convert_words_to_numbers normalized the
+    # string so we can do this, but this is essentially incorrect since each
+    # replaced number word should be replaced with a replace_token
+    # we are always replacing 2 words, {N} {unit}
+    _replace_token = (replace_token + " " + replace_token) \
+        if replace_token else ""
+
+    if resolution == TimespanUnit.TIMEDELTA:
+        si_units = {
+            'microseconds': None,
+            'milliseconds': None,
+            'seconds': None,
+            'minutes': None,
+            'hours': None,
+            'days': None,
+            'weeks': None
+        }
+
+        units = ['months', 'years', 'decades', 'centurys', 'millenniums'] + \
+                list(si_units.keys())
+
+        for unit in units:
+            unit_pattern = pattern.format(
+                unit=unit[:-1])  # remove 's' from unit
+            matches = re.findall(unit_pattern, text)
+            value = sum(map(float, matches))
+            text = re.sub(unit_pattern, _replace_token, text)
+            if unit == "days":
+                if si_units["days"] is None:
+                    si_units["days"] = 0
+                si_units["days"] += value
+            elif unit == "months":
+                if si_units["days"] is None:
+                    si_units["days"] = 0
+                si_units["days"] += DAYS_IN_1_MONTH * value
+            elif unit == "years":
+                if si_units["days"] is None:
+                    si_units["days"] = 0
+                si_units["days"] += DAYS_IN_1_YEAR * value
+            elif unit == "decades":
+                if si_units["days"] is None:
+                    si_units["days"] = 0
+                si_units["days"] += 10 * DAYS_IN_1_YEAR * value
+            elif unit == "centurys":
+                if si_units["days"] is None:
+                    si_units["days"] = 0
+                si_units["days"] += 100 * DAYS_IN_1_YEAR * value
+            elif unit == "millenniums":
+                if si_units["days"] is None:
+                    si_units["days"] = 0
+                si_units["days"] += 1000 * DAYS_IN_1_YEAR * value
+            else:
+                si_units[unit] = value
+        duration = timedelta(**si_units) if any(si_units.values()) else None
+    elif resolution in [TimespanUnit.RELATIVEDELTA,
+                        TimespanUnit.RELATIVEDELTA_APPROXIMATE,
+                        TimespanUnit.RELATIVEDELTA_FALLBACK,
+                        TimespanUnit.RELATIVEDELTA_STRICT]:
+        relative_units = {
+            'microseconds': None,
+            'seconds': None,
+            'minutes': None,
+            'hours': None,
+            'days': None,
+            'weeks': None,
+            'months': None,
+            'years': None
+        }
+
+        units = ['decades', 'centurys', 'millenniums', 'milliseconds'] + \
+                list(relative_units.keys())
+        for unit in units:
+            unit_pattern = pattern.format(
+                unit=unit[:-1])  # remove 's' from unit
+            matches = re.findall(unit_pattern, text)
+            value = sum(map(float, matches))
+            text = re.sub(unit_pattern, _replace_token, text)
+            # relativedelta does not support milliseconds
+            if unit == "milliseconds":
+                if relative_units["microseconds"] is None:
+                    relative_units["microseconds"] = 0
+                relative_units["microseconds"] += value * 1000
+            elif unit == "microseconds":
+                if relative_units["microseconds"] is None:
+                    relative_units["microseconds"] = 0
+                relative_units["microseconds"] += value
+            # relativedelta does not support decades, centuries or millennia
+            elif unit == "years":
+                if relative_units["years"] is None:
+                    relative_units["years"] = 0
+                relative_units["years"] += value
+            elif unit == "decades":
+                if relative_units["years"] is None:
+                    relative_units["years"] = 0
+                relative_units["years"] += value * 10
+            elif unit == "centurys":
+                if relative_units["years"] is None:
+                    relative_units["years"] = 0
+                relative_units["years"] += value * 100
+            elif unit == "millenniums":
+                if relative_units["years"] is None:
+                    relative_units["years"] = 0
+                relative_units["years"] += value * 1000
+            else:
+                relative_units[unit] = value
+
+        # microsecond, month, year must be ints
+        relative_units["microseconds"] = int(relative_units["microseconds"])
+        if resolution == TimespanUnit.RELATIVEDELTA_FALLBACK:
+            for unit in ["months", "years"]:
+                value = relative_units[unit]
+                _leftover, _ = math.modf(value)
+                if _leftover != 0:
+                    print("[WARNING] relativedelta requires {unit} to be an "
+                          "integer".format(unit=unit))
+                    # fallback to timedelta resolution
+                    return extract_timespan_en(original_text,
+                                               TimespanUnit.TIMEDELTA,
+                                               replace_token)
+                relative_units[unit] = int(value)
+        elif resolution == TimespanUnit.RELATIVEDELTA_APPROXIMATE:
+            _leftover, year = math.modf(relative_units["years"])
+            relative_units["months"] += 12 * _leftover
+            relative_units["years"] = int(year)
+            _leftover, month = math.modf(relative_units["months"])
+            relative_units["days"] += DAYS_IN_1_MONTH * _leftover
+            relative_units["months"] = int(month)
+        else:
+            for unit in ["months", "years"]:
+                value = relative_units[unit]
+                _leftover, _ = math.modf(value)
+                if _leftover != 0:
+                    raise ValueError("relativedelta requires {unit} to be an "
+                                     "integer".format(unit=unit))
+                relative_units[unit] = int(value)
+        duration = relativedelta(**relative_units) if \
+            any(relative_units.values()) else None
+    else:
+        microseconds = 0
+        units = ['months', 'years', 'decades', 'centurys', 'millenniums',
+                 "microseconds", "milliseconds", "seconds", "minutes",
+                 "hours", "days", "weeks"]
+
+        for unit in units:
+            unit_pattern = pattern.format(
+                unit=unit[:-1])  # remove 's' from unit
+            matches = re.findall(unit_pattern, text)
+            value = sum(map(float, matches))
+            text = re.sub(unit_pattern, _replace_token, text)
+            if unit == "microseconds":
+                microseconds += value
+            elif unit == "milliseconds":
+                microseconds += value * 1000
+            elif unit == "seconds":
+                microseconds += value * 1000 * 1000
+            elif unit == "minutes":
+                microseconds += value * 1000 * 1000 * 60
+            elif unit == "hours":
+                microseconds += value * 1000 * 1000 * 60 * 60
+            elif unit == "days":
+                microseconds += value * 1000 * 1000 * 60 * 60 * 24
+            elif unit == "weeks":
+                microseconds += value * 1000 * 1000 * 60 * 60 * 24 * 7
+            elif unit == "months":
+                microseconds += value * 1000 * 1000 * 60 * 60 * 24 * \
+                                DAYS_IN_1_MONTH
+            elif unit == "years":
+                microseconds += value * 1000 * 1000 * 60 * 60 * 24 * \
+                                DAYS_IN_1_YEAR
+            elif unit == "decades":
+                microseconds += value * 1000 * 1000 * 60 * 60 * 24 * \
+                                DAYS_IN_1_YEAR * 10
+            elif unit == "centurys":
+                microseconds += value * 1000 * 1000 * 60 * 60 * 24 * \
+                                DAYS_IN_1_YEAR * 100
+            elif unit == "millenniums":
+                microseconds += value * 1000 * 1000 * 60 * 60 * 24 * \
+                                DAYS_IN_1_YEAR * 1000
+
+        if resolution == TimespanUnit.TOTAL_MICROSECONDS:
+            duration = microseconds
+        elif resolution == TimespanUnit.TOTAL_MILLISECONDS:
+            duration = microseconds / 1000
+        elif resolution == TimespanUnit.TOTAL_SECONDS:
+            duration = microseconds / (1000 * 1000)
+        elif resolution == TimespanUnit.TOTAL_MINUTES:
+            duration = microseconds / (1000 * 1000 * 60)
+        elif resolution == TimespanUnit.TOTAL_HOURS:
+            duration = microseconds / (1000 * 1000 * 60 * 60)
+        elif resolution == TimespanUnit.TOTAL_DAYS:
+            duration = microseconds / (1000 * 1000 * 60 * 60 * 24)
+        elif resolution == TimespanUnit.TOTAL_WEEKS:
+            duration = microseconds / (1000 * 1000 * 60 * 60 * 24 * 7)
+        elif resolution == TimespanUnit.TOTAL_MONTHS:
+            duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
+                                       DAYS_IN_1_MONTH)
+        elif resolution == TimespanUnit.TOTAL_YEARS:
+            duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
+                                       DAYS_IN_1_YEAR)
+        elif resolution == TimespanUnit.TOTAL_DECADES:
+            duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
+                                       DAYS_IN_1_YEAR * 10)
+        elif resolution == TimespanUnit.TOTAL_CENTURIES:
+            duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
+                                       DAYS_IN_1_YEAR * 100)
+        elif resolution == TimespanUnit.TOTAL_MILLENNIUMS:
+            duration = microseconds / (1000 * 1000 * 60 * 60 * 24 *
+                                       DAYS_IN_1_YEAR * 1000)
+        else:
+            raise ValueError
+    if not replace_token:
+        text = text.strip()
+    return duration, text
