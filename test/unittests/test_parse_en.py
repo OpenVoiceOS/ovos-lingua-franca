@@ -1679,9 +1679,9 @@ class TestExtractTimeSpan(unittest.TestCase):
 
     def test_extract_timespan_ambiguous(self):
         self.assertRaises(ValueError, extract_timespan, "1.3 months",
-                          resolution=TimespanUnit.RELATIVEDELTA)
+                          time_unit=TimespanUnit.RELATIVEDELTA)
         self.assertRaises(ValueError, extract_timespan, "1.3 months",
-                          resolution=TimespanUnit.RELATIVEDELTA_STRICT)
+                          time_unit=TimespanUnit.RELATIVEDELTA_STRICT)
         self.assertEqual(
             extract_timespan("1.3 months",
                              time_unit=TimespanUnit.RELATIVEDELTA_FALLBACK),
