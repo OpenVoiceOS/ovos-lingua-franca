@@ -1107,7 +1107,7 @@ def extract_duration_es(text):
         'weeks': 'semanas'
     }
     non_std_un = {
-        "months": "meses",
+        "months": "mes",
         "years": "anos",
         'decades': "decadas",
         'centurys': "siglos",
@@ -1116,7 +1116,7 @@ def extract_duration_es(text):
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}[s]?"
 
-    text = text.replace("í", "i")
+    text = text.replace("í", "i").replace("é", "e").replace("ñ", "n").replace("meses", "mes")
     text = SpanishNormalizer().numbers_to_digits(text)
 
     for (unit_en, unit_es) in time_units.items():
