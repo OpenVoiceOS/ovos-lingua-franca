@@ -36,10 +36,9 @@ from lingua_franca.format import nice_duration
 from lingua_franca.format import pronounce_number
 from lingua_franca.format import date_time_format
 from lingua_franca.format import join_list
-from lingua_franca.format import pronounce_lang
+from lingua_franca.format import pronounce_lang, pronounce_digits
 from lingua_franca.time import default_timezone, set_default_tz, now_local, \
     to_local
-
 
 
 def setUpModule():
@@ -117,6 +116,55 @@ class TestNiceNumberFormat(unittest.TestCase):
 
 
 class TestPronounceNumber(unittest.TestCase):
+    def test_pronounce_digits_float(self):
+        self.assertEqual(pronounce_digits(0.5), "zero point five")
+        self.assertEqual(pronounce_digits(1.1235), "one point one two")
+        self.assertEqual(pronounce_digits(10.999999), "ten point nine nine")
+        self.assertEqual(pronounce_digits(10.999999, places=0), "ten")
+        self.assertEqual(pronounce_digits(15.0), "fifteen point zero")
+        self.assertEqual(pronounce_digits(20.0001, places=99),
+                         "twenty point zero zero zero one")
+        self.assertEqual(pronounce_digits(27.23467875, places=4),
+                         "twenty seven point two three four six")
+        self.assertEqual(pronounce_digits(0.5, all_digits=True),
+                         "zero point five")
+        self.assertEqual(pronounce_digits(012345.5, all_digits=True),
+                         "one two three four five point five")
+        self.assertEqual(pronounce_digits(27.23467875, all_digits=True),
+                         "two seven point two three")
+        self.assertEqual(pronounce_digits(199.9990, places=5),
+                         "one hundred and ninety nine point nine nine nine")
+        self.assertEqual(pronounce_digits(199.9990, places=5, all_digits=True),
+                         "one nine nine point nine nine nine")
+
+    def test_pronounce_digits_int(self):
+        self.assertEqual(pronounce_digits(0), "zero")
+        self.assertEqual(pronounce_digits(1), "one")
+        self.assertEqual(pronounce_digits(199999, all_digits=True),
+                         "one nine nine nine nine nine")
+        self.assertEqual(pronounce_digits(10999999, all_digits=True),
+                         "one zero nine nine nine nine nine nine")
+        self.assertEqual(pronounce_digits(150, all_digits=True),
+                         "one five zero")
+        self.assertEqual(pronounce_digits(200001, all_digits=True),
+                         "two zero zero zero zero one")
+
+    def test_pronounce_digits_str(self):
+        self.assertEqual(pronounce_digits("0"), "zero")
+        self.assertEqual(pronounce_digits("01"), "one")
+        self.assertEqual(pronounce_digits("01", all_digits=True),
+                         "zero one")
+        self.assertEqual(pronounce_digits("199999", all_digits=True),
+                         "one nine nine nine nine nine")
+        self.assertEqual(pronounce_digits("199.999", all_digits=True),
+                         "one nine nine point nine nine")
+        self.assertEqual(pronounce_digits("199.999", places=5,
+                                          all_digits=True),
+                         "one nine nine point nine nine nine")
+        self.assertEqual(pronounce_digits("199.9990", places=5,
+                                          all_digits=True),
+                         "one nine nine point nine nine nine zero")
+
     def test_convert_int(self):
         self.assertEqual(pronounce_number(0), "zero")
         self.assertEqual(pronounce_number(1), "one")
