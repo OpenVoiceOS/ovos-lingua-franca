@@ -531,28 +531,28 @@ def _initialize_number_data_en(short_scale, speech=True):
     return multiplies, string_num_ordinal_en, string_num_scale_en
 
 
-def extract_number_spans_en(utterance, short_scale=True, ordinals=False,
-                            fractional_numbers=True, decimal="."):
+def extract_number_spans_en(text, short_scale=True, ordinals=False,
+                            decimal=".", fractional_numbers=True):
     """
         This function tags numbers in an utterance.
 
         Args:
-            utterance (str): the string to normalize
+            text (str): the string to normalize
             short_scale (bool): use short scale if True, long scale if False
             ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+            decimal (str): decimal marker
             fractional_numbers (bool): True if we should look for fractions and
                                        decimals.
-            decimal (str): decimal marker
         Returns:
             (list): list of tuples with detected number and span of the
                     number in parent utterance [(number, (start_idx, end_idx))]
 
         """
     number_spans = []
-    if isinstance(utterance, str):
-        spans = span_indexed_word_tokenize(utterance)
+    if isinstance(text, str):
+        spans = span_indexed_word_tokenize(text)
     else:
-        spans = utterance
+        spans = text
 
     # load language number data
     multiplies, string_num_ordinal, string_num_scale = \
@@ -748,14 +748,15 @@ def extract_number_spans_en(utterance, short_scale=True, ordinals=False,
     return number_spans
 
 
-def extract_number_en_v2(*args, **kwargs):
-    spans = extract_number_spans_en(*args, **kwargs)
+def extract_number_en_v2(text, short_scale=True, ordinals=False, decimal='.', fractional_numbers=True):
+    spans = extract_number_spans_en(text, short_scale=short_scale, ordinals=ordinals,
+                                    decimal=decimal, fractional_numbers=fractional_numbers)
     if not spans:
         return False
-    return extract_number_spans_en(*args, **kwargs)[0][0]
+    return spans[0][0]
 
 
-def extract_number_en(text, short_scale=True, ordinals=False, decimal='.'):
+def extract_number_en(text, short_scale=True, ordinals=False, decimal='.', fractional_numbers=True):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale

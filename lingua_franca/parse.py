@@ -46,13 +46,13 @@ populate_localized_function_dict("parse", langs=get_active_langs())
 
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
-def extract_number_spans(utterance, short_scale=True, ordinals=False,
-                         fractional_numbers=True, decimal=".", lang=''):
+def extract_number_spans(text, short_scale=True, ordinals=False,
+                        decimal=".", fractional_numbers=True, lang=''):
     """
         This function tags numbers in an utterance.
 
         Args:
-            utterance (str): the string to normalize
+            text (str): the string to normalize
             short_scale (bool): use short scale if True, long scale if False
             ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
             fractional_numbers (bool): True if we should look for fractions and
@@ -66,7 +66,7 @@ def extract_number_spans(utterance, short_scale=True, ordinals=False,
 
         """
     number_spans = []
-    spans = span_indexed_word_tokenize(utterance)
+    spans = span_indexed_word_tokenize(text)
     for idx, (start, end, word) in enumerate(spans):
         next_span = spans[idx + 1] if idx + 1 < len(spans) else ()
         next_next_span = spans[idx + 2] if idx + 2 < len(spans) else ()
@@ -114,6 +114,8 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang='',
         lang (str, optional): an optional BCP-47 language code, if omitted
                               the default language will be used.
         decimal (str): character to use as decimal point. defaults to '.'
+        fractional_numbers (bool): True if we should look for fractions and
+                                   decimals.
     Returns:
         list: list of extracted numbers as floats, or empty list if none found
     Note:
@@ -151,6 +153,8 @@ def extract_first_number(text, short_scale=True, ordinals=False, lang='',
             lang (str, optional): an optional BCP-47 language code, if omitted
                                   the default language will be used.
             decimal (str): character to use as decimal point. defaults to '.'
+            fractional_numbers (bool): True if we should look for fractions and
+                                       decimals.
         Returns:
             (int, float or False): The number extracted or False if the input
                                    text contains no numbers
@@ -179,6 +183,8 @@ def extract_last_number(text, short_scale=True, ordinals=False, lang='',
             lang (str, optional): an optional BCP-47 language code, if omitted
                                   the default language will be used.
             decimal (str): character to use as decimal point. defaults to '.'
+            fractional_numbers (bool): True if we should look for fractions and
+                                       decimals.
         Returns:
             (int, float or False): The number extracted or False if the input
                                    text contains no numbers

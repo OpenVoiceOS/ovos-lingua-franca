@@ -1936,7 +1936,7 @@ class TestExtractNumberV2(unittest.TestCase):
                                               short_scale=False), 1e-12)
 
     def test_extract_number_ambiguous_fraction_ordinal(self):
-        # confirm these are not cumulative, prev version would multiple them
+        # confirm these are not cumulative, prev version would multiply them
         self.assertEqual(extract_number_en_v2("sixth third", ordinals=False),
                          1 / 6)
 
