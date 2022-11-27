@@ -319,6 +319,7 @@ def pronounce_number(number, lang='', places=2, short_scale=True,
     """
 
 
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def nice_date(dt, lang='', now=None):
     """
     Format a datetime to a pronounceable date
@@ -343,6 +344,7 @@ def nice_date(dt, lang='', now=None):
     return date_time_format.date_format(dt, full_code, now)
 
 
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def nice_date_time(dt, lang='', now=None, use_24hour=False,
                    use_ampm=False):
     """
@@ -372,6 +374,7 @@ def nice_date_time(dt, lang='', now=None, use_24hour=False,
                                              use_ampm)
 
 
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def nice_day(dt, date_format='MDY', include_month=True, lang=""):
     if include_month:
         month = nice_month(dt, date_format, lang)
@@ -382,6 +385,7 @@ def nice_day(dt, date_format='MDY', include_month=True, lang=""):
     return dt.strftime("%d")
 
 
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def nice_weekday(dt, lang=""):
     if lang in date_time_format.lang_config.keys():
         localized_day_names = list(
@@ -392,6 +396,7 @@ def nice_weekday(dt, lang=""):
     return weekday.capitalize()
 
 
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def nice_month(dt, date_format='MDY', lang=""):
     if lang in date_time_format.lang_config.keys():
         localized_month_names = date_time_format.lang_config[lang]['month']
@@ -401,6 +406,7 @@ def nice_month(dt, date_format='MDY', lang=""):
     return month.capitalize()
 
 
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def nice_year(dt, lang='', bc=False):
     """
         Format a datetime to a pronounceable year
@@ -423,6 +429,7 @@ def nice_year(dt, lang='', bc=False):
     return date_time_format.year_format(dt, full_code, bc)
 
 
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def get_date_strings(dt=None, date_format='MDY', time_format="full", lang=""):
     lang = get_primary_lang_code(lang)
     dt = dt or now_local()
