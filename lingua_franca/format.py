@@ -440,23 +440,21 @@ def get_date_strings(dt=None, date_format='MDY', time_format="full", lang=""):
     yearstr = dt.strftime("%Y")
     daystr = nice_day(dt, date_format, include_month=False, lang=lang)
     if date_format == 'MDY':
-        return {
-            "date_string": dt.strftime("%-m/%-d/%Y"),
-            "time_string": timestr,
-            "month_string": monthstr,
-            "day_string": daystr,
-            'year_string': yearstr,
-            "weekday_string": weekdaystr
-        }
+        dtstr = dt.strftime("%-m/%-d/%Y")
+    elif date_format == 'DMY':
+        dtstr = dt.strftime("%d/%-m/%-Y")
+    elif date_format == 'YMD':
+        dtstr = dt.strftime("%Y/%-m/%-d")
     else:
-        return {
-            "date_string": dt.strftime("%Y/%-d/%-m"),
-            "time_string": timestr,
-            "month_string": monthstr,
-            "day_string": daystr,
-            'year_string': yearstr,
-            "weekday_string": weekdaystr
-        }
+        raise ValueError("invalid date_format")
+    return {
+        "date_string": dtstr,
+        "time_string": timestr,
+        "month_string": monthstr,
+        "day_string": daystr,
+        'year_string': yearstr,
+        "weekday_string": weekdaystr
+    }
 
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
