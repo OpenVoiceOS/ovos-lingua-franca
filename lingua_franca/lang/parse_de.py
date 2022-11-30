@@ -14,13 +14,18 @@
 # limitations under the License.
 #
 import re
+import json
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+import math
+
 from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
-    extract_numbers_generic, Normalizer
+    extract_numbers_generic, Normalizer, invert_dict
 from lingua_franca.lang.common_data_de import _DE_NUMBERS
 from lingua_franca.lang.format_de import pronounce_number_de
-from lingua_franca.time import now_local
+from lingua_franca.time import now_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH, TimespanUnit
+from lingua_franca.internal import resolve_resource_file
+
 
 
 de_numbers = {
@@ -109,7 +114,7 @@ def extract_duration_de(text):
     if not text:
         return None
 
-    text = text.lower()
+    text = GermanNormalizer().numbers_to_digits(text.lower())
     # die time_unit values werden für timedelta() mit dem jeweiligen Wert überschrieben
     time_units = {
         'microseconds': 'mikrosekunden',
@@ -122,7 +127,7 @@ def extract_duration_de(text):
     }
 
     # Einzahl und Mehrzahl
-    pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}[ne]?"
+    pattern = r"(?P<value>\d+(?:[.,]?\d+)?|\bein[e]?[nsm]?\b)(?:\s+|\-)(?P<unit>{unit}[nes]?[sn]?\b)"
 
     # TODO Einstiegspunkt für Text-zu-Zahlen Konversion
     #text = _convert_words_to_numbers_de(text)
@@ -133,7 +138,10 @@ def extract_duration_de(text):
         time_units[unit_en] = 0
 
         def repl(match):
-            time_units[unit_en] += float(match.group(1))
+            value = match.group(1).replace(",",".").replace("einem", "1") \
+                          .replace("eines", "1").replace("einen", "1") \
+                          .replace("eine", "1").replace("ein", "1")
+            time_units[unit_en] += float(value)
             return ''
         text = re.sub(unit_pattern, repl, text)
 
@@ -141,6 +149,236 @@ def extract_duration_de(text):
     duration = timedelta(**time_units) if any(time_units.values()) else None
 
     return (duration, text)
+
+
+def extract_timespan_de(text, time_unit=TimespanUnit.TIMEDELTA):
+    """
+    Convert an german phrase into an object (default = timedelta)
+    depending on time_unit passed
+
+    Convert things like:
+        "10 Minuten"
+        "3 Tage 8 Stunden 10 Minuten und 49 Sekunden"
+    Args:
+        input (str): string containing a duration
+        time_unit (enum) : the timespan unit requested
+            TimespanUnit.TIMEDELTA
+            TimespanUnit.RELATIVEDELTA
+            TimespanUnit.RELATIVEDELTA_FALLBACK
+            TimespanUnit.RELATIVEDELTA_APPROXIMATE
+            TimespanUnit.TOTAL_SECONDS
+            TimespanUnit.TOTAL_MICROSECONDS
+            TimespanUnit.TOTAL_MILLISECONDS
+            TimespanUnit.TOTAL_MINUTES
+            TimespanUnit.TOTAL_HOURS
+            TimespanUnit.TOTAL_DAYS
+            TimespanUnit.TOTAL_WEEKS
+            TimespanUnit.TOTAL_MONTHS
+            TimespanUnit.TOTAL_YEARS
+            TimespanUnit.TOTAL_DECADES
+            TimespanUnit.TOTAL_CENTURIES
+            TimespanUnit.TOTAL_MILLENNIUMS 
+    Returns:
+        (Union[timedelta, relativedelta], str):
+            A tuple containing the duration and the remaining input
+            not consumed in the parsing. The first value will
+            be None if no duration is found. The input returned
+            will have whitespace stripped from the ends.
+    """
+    if not text:
+        return None
+
+    indices = []
+
+    # TODO German version of _convert_words_to_numbers is missing completely
+    # Have to port my implementation, up until then -> Normalizer + replace
+    text = GermanNormalizer().numbers_to_digits(text.lower())
+
+    # Addition [..s]?[sn]?\b: "innerhalb eines tages/tags" word boundary!
+    pattern = r"(?P<value>\d+(?:[.,]?\d+)?|\bein[e]?[nsm]?\b)(?:\s+|\-)(?P<unit>{unit}[nes]?[sn]?\b)"
+
+    si_units = {
+        'microseconds': 'mikrosekunden',
+        'milliseconds': 'millisekunden',
+        'seconds': 'sekunden',
+        'minutes': 'minuten',
+        'hours': 'stunden',
+        'days': 'tage',
+        'weeks': 'wochen'
+        }
+
+    if time_unit == TimespanUnit.TIMEDELTA:
+
+        all_units = invert_dict(si_units)
+        # value: (the unit converted in, factor)
+        all_units.update({'monate': ('days', DAYS_IN_1_MONTH),
+                          'jahre': ('days', DAYS_IN_1_YEAR),
+                          'jahrzehnte': ('days', 10*DAYS_IN_1_YEAR),
+                          'jahrhunderte': ('days', 100*DAYS_IN_1_YEAR),
+                          'jahrtausende': ('days', 1000*DAYS_IN_1_YEAR),
+                          })
+
+        for (unit_de, unit_en) in all_units.items():
+            if isinstance(unit_en, tuple):
+                factor = unit_en[1]
+                unit_en = unit_en[0]
+            else:
+                factor = 1
+
+            unit_pattern = pattern.format(
+                unit=unit_de[:-1])  # remove 'n'/'e' from unit
+            if isinstance(si_units[unit_en], str):
+                si_units[unit_en] = 0
+
+            values = []
+            for match in re.finditer(unit_pattern, text):
+                value = match.group(1).replace(",",".").replace("einem", "1") \
+                          .replace("eines", "1").replace("einen", "1") \
+                          .replace("eine", "1").replace("ein", "1")
+                values.append(value)
+                # 2 groups: value/unit
+                for group in range(1, 3):
+                    indices.append(match.span(group))
+
+            value = sum(map(float, values))
+            si_units[unit_en] += float(value*factor)
+
+        duration = timedelta(**si_units) if any(si_units.values()) else None
+
+    elif time_unit in [TimespanUnit.RELATIVEDELTA,
+                        TimespanUnit.RELATIVEDELTA_APPROXIMATE,
+                        TimespanUnit.RELATIVEDELTA_FALLBACK,
+                        TimespanUnit.RELATIVEDELTA_STRICT]:
+
+        si_units.pop('milliseconds')
+        si_units.update({'months': 'monate',
+                         'years': 'jahre'
+                         })
+        all_units = invert_dict(si_units)
+        all_units.update({'millisekunden': ('microseconds', 1000),
+                          'jahrzehnte': ('years', 10),
+                          'jahrhunderte': ('years', 100),
+                          'jahrtausende': ('years', 1000),
+                          })
+
+        for (unit_de, unit_en) in all_units.items():
+            if isinstance(unit_en, tuple):
+                factor = unit_en[1]
+                unit_en = unit_en[0]
+            else:
+                factor = 1
+
+            unit_pattern = pattern.format(
+                unit=unit_de[:-1])  # remove 'n'/'e' from unit
+            if isinstance(si_units[unit_en], str):
+                si_units[unit_en] = 0
+            values = []
+            for match in re.finditer(unit_pattern, text):
+                value = match.group(1).replace(",",".").replace("einem", "1") \
+                          .replace("eines", "1").replace("einen", "1") \
+                          .replace("eine", "1").replace("ein", "1")
+                values.append(value)
+                # 2 groups: value/unit
+                for group in range(1, 3):
+                    indices.append(match.span(group))
+
+            value = sum(map(float, values))
+            si_units[unit_en] += float(value*factor)
+
+        # microsecond, month, year must be ints
+        si_units["microseconds"] = int(si_units["microseconds"])
+        if time_unit == TimespanUnit.RELATIVEDELTA_FALLBACK:
+            for unit in ["months", "years"]:
+                value = si_units[unit]
+                _leftover, _ = math.modf(value)
+                if _leftover != 0:
+                    print("[WARNING] relativedelta requires {unit} to be an "
+                          "integer".format(unit=unit))
+                    # fallback to timedelta resolution / raw tokens text with no flags
+                    return extract_timespan_de(text, TimespanUnit.TIMEDELTA)
+                si_units[unit] = int(value)
+        elif time_unit == TimespanUnit.RELATIVEDELTA_APPROXIMATE:
+            _leftover, year = math.modf(si_units["years"])
+            si_units["months"] += 12 * _leftover
+            si_units["years"] = int(year)
+            _leftover, month = math.modf(si_units["months"])
+            si_units["days"] += DAYS_IN_1_MONTH * _leftover
+            si_units["months"] = int(month)
+        else:
+            for unit in ["months", "years"]:
+                value = si_units[unit]
+                _leftover, _ = math.modf(value)
+                if _leftover != 0:
+                    raise ValueError("relativedelta requires {unit} to be an "
+                                     "integer".format(unit=unit))
+                si_units[unit] = int(value)
+        duration = relativedelta(**si_units) if any(si_units.values()) else None
+
+    else:
+        # recalculate time in microseconds
+        microseconds = 0
+        factors = {"mikrosekunden": 1,
+                   'millisekunden': 1000,
+                   'sekunden': 1000*1000,
+                   'minuten': 1000*1000*60,
+                   'stunden': 1000*1000*60*60,
+                   'tage': 1000*1000*60*60*24,
+                   'wochen': 1000*1000*60*60*24*7,
+                   'monate': 1000*1000*60*60*24*DAYS_IN_1_MONTH,
+                   'jahre': 1000*1000*60*60*24*DAYS_IN_1_YEAR,
+                   'jahrzehnte': 1000*1000*60*60*24*DAYS_IN_1_YEAR*10,
+                   'jahrhunderte': 1000*1000*60*60*24*DAYS_IN_1_YEAR*100,
+                   'jahrtausende': 1000*1000*60*60*24*DAYS_IN_1_YEAR*1000
+                   }
+
+        for (unit_de, factor) in factors.items():
+
+            unit_pattern = pattern.format(
+                unit=unit_de[:-1])  # remove 'n'/'e' from unit
+            values = []
+            for match in re.finditer(unit_pattern, text):
+                value = match.group(1).replace(",",".").replace("einem", "1") \
+                          .replace("eines", "1").replace("einen", "1") \
+                          .replace("eine", "1").replace("ein", "1")
+                values.append(value)
+                # 2 groups: value/unit
+                for group in range(1, 3):
+                    indices.append(match.span(group))
+
+            value = sum(map(float, values))
+            microseconds += value*factor
+
+        if time_unit == TimespanUnit.TOTAL_MICROSECONDS:
+            duration = microseconds
+        elif time_unit == TimespanUnit.TOTAL_MILLISECONDS:
+            duration = microseconds / factors['millisekunden']
+        elif time_unit == TimespanUnit.TOTAL_SECONDS:
+            duration = microseconds / factors['sekunden']
+        elif time_unit == TimespanUnit.TOTAL_MINUTES:
+            duration = microseconds / factors['minuten']
+        elif time_unit == TimespanUnit.TOTAL_HOURS:
+            duration = microseconds / factors['stunden']
+        elif time_unit == TimespanUnit.TOTAL_DAYS:
+            duration = microseconds / factors['tage']
+        elif time_unit == TimespanUnit.TOTAL_WEEKS:
+            duration = microseconds / factors['wochen']
+        elif time_unit == TimespanUnit.TOTAL_MONTHS:
+            duration = microseconds / factors['monate']
+        elif time_unit == TimespanUnit.TOTAL_YEARS:
+            duration = microseconds / factors['jahre']
+        elif time_unit == TimespanUnit.TOTAL_DECADES:
+            duration = microseconds / factors['jahrzehnte']
+        elif time_unit == TimespanUnit.TOTAL_CENTURIES:
+            duration = microseconds / factors['jahrhunderte']
+        elif time_unit == TimespanUnit.TOTAL_MILLENNIUMS:
+            duration = microseconds / factors['jahrtausende']
+        else:
+            raise ValueError
+
+    remainder = "".join([text[i] for i in range(0, len(text)) 
+                         if not any([i in range(tup[0], tup[1]+1) for tup in indices])])
+
+    return (duration, remainder.strip())
 
 
 def extract_number_de(text, short_scale=True, ordinals=False):
@@ -1022,4 +1260,9 @@ def extract_numbers_de(text, short_scale=True, ordinals=False):
 
 
 class GermanNormalizer(Normalizer):
-    """ TODO implement language specific normalizer"""
+    with open(resolve_resource_file("text/de-de/normalize.json")) as f:
+        _default_config = json.load(f)
+
+
+def normalize_de(text, remove_articles=True):
+    return GermanNormalizer().normalize(text, remove_articles)
