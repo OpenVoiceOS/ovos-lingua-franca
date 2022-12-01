@@ -27,7 +27,8 @@ from lingua_franca.lang.common_data_en import _ARTICLES_EN, _LONG_ORDINAL_EN, _L
     _STRING_NUM_EN, _STRING_SHORT_ORDINAL_EN, _STRING_LONG_ORDINAL_EN, \
     _generate_plurals_en, _SPOKEN_EXTRA_NUM_EN
 from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
-    invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer
+    invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer,\
+    extract_roman_numeral_spans
 from lingua_franca.time import now_local
 
 
@@ -1685,3 +1686,21 @@ class EnglishNormalizer(Normalizer):
 def normalize_en(text, remove_articles=True):
     """ English string normalization """
     return EnglishNormalizer().normalize(text, remove_articles)
+
+
+def normalize_roman_numerals_en(utterance, ordinals=False):
+    # localization might be needed for ordinals flag
+    norm_utt = utterance
+    for num, (start, end) in reversed(extract_roman_numeral_spans(utterance)):
+        if ordinals:
+            if str(num)[-1] == "1":
+                num = f"{num}st"
+            elif str(num)[-1] == "2":
+                num = f"{num}nd"
+            elif str(num)[-1] == "3":
+                num = f"{num}rd"
+            else:
+                num = f"{num}th"
+        norm_utt = norm_utt[:start] + f"{num}" + norm_utt[end:]
+    return norm_utt
+

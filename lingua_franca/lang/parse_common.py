@@ -18,6 +18,8 @@ import re
 import json
 from lingua_franca.internal import  resolve_resource_file, FunctionNotLocalizedError
 import unicodedata
+from quebra_frases import span_indexed_empty_space_tokenize
+
 
 ROMAN_NUMERALS = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
 
@@ -462,3 +464,36 @@ def extract_numbers_generic(text, pronounce_handler, extract_handler,
             extract = extract_handler(to_parse, short_scale, ordinals)
     numbers.reverse()
     return numbers
+
+
+
+def roman_to_int(word):
+    if not is_roman_numeral(word):
+        return None
+    number = 0
+    for i in range(len(word)):
+        if i > 0 and ROMAN_NUMERALS[word[i]] > ROMAN_NUMERALS[word[i - 1]]:
+            number += ROMAN_NUMERALS[word[i]] - 2 * ROMAN_NUMERALS[word[i - 1]]
+        else:
+            number += ROMAN_NUMERALS[word[i]]
+    return number
+
+
+def is_roman_numeral(word):
+    return all(char in ROMAN_NUMERALS for char in word)
+
+
+def extract_roman_numeral_spans(utterance):
+    """
+    This function tags roman numerals in an utterance.
+
+    Args:
+        utterance (str): the string to normalize
+    Returns:
+        (list): list of tuples with detected number and span of the
+                number in parent utterance [(number, (start_idx, end_idx))]
+
+    """
+    spans = span_indexed_empty_space_tokenize(utterance)
+    return [(roman_to_int(word), (start, end)) for start, end, word in spans
+            if is_roman_numeral(word)]
