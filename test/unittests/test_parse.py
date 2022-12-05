@@ -20,11 +20,9 @@ from dateutil import tz
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.lang.parse_common import tokenize, Token
-from lingua_franca.parse import extract_datetime
-from lingua_franca.parse import fuzzy_match
-from lingua_franca.parse import match_one
-from lingua_franca.parse import extract_langcode
+from lingua_franca.parse import extract_datetime, fuzzy_match, match_one, extract_langcode, yes_or_no
 from lingua_franca.time import default_timezone, now_local, set_default_tz
+from lingua_franca.internal import FunctionNotLocalizedError
 
 
 def setUpModule():
@@ -133,6 +131,15 @@ class TestLangcode(unittest.TestCase):
         test_with_conf("Portuguese", 'pt', 1.0)
         test_with_conf("Português", 'pt', 0.8)
         test_with_conf("Inglês", 'en', 0.6)
+
+
+class TestYesNo(unittest.TestCase):
+    def test_bad_lang(self):
+
+        def test_utt():
+            yes_or_no("pretend this is klingon text", lang="unk")
+
+        self.assertRaises(FunctionNotLocalizedError, test_utt)
 
 
 if __name__ == "__main__":

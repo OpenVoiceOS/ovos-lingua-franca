@@ -17,10 +17,7 @@ import unittest
 from datetime import datetime, time
 
 from lingua_franca import load_language, unload_language, set_default_lang
-from lingua_franca.parse import get_gender
-from lingua_franca.parse import extract_datetime
-from lingua_franca.parse import extract_number
-from lingua_franca.parse import normalize
+from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no
 from lingua_franca.time import default_timezone
 
 
@@ -279,6 +276,38 @@ class TestExtractGender(unittest.TestCase):
         self.assertEqual(get_gender("ponte", lang="pt"), None)
         self.assertEqual(get_gender("ponte", "essa ponte caiu",
                                     lang="pt"), "f")
+
+
+class TestYesNo(unittest.TestCase):
+    def test_yesno(self):
+
+        def test_utt(text, expected):
+            res = yes_or_no(text, lang="pt-pt")
+            self.assertEqual(res, expected)
+
+        test_utt("sim", True)
+        test_utt("não", False)
+        test_utt("bacalhau", None)
+        test_utt("por favor", True)
+        test_utt("por favor não", False)
+        test_utt("claro", True)
+        test_utt("obviamente", True)
+        test_utt("é obvio", True)
+        test_utt("é mentira", False)
+        test_utt("claro que não", False)
+        test_utt("isso está claramente errado", False)
+        test_utt("isso ẽ claramente verdade", True)
+        test_utt("efetivamente isso aconteceu", True)
+        test_utt("efetivamente isso não aconteceu", False)
+        test_utt("de facto isso aconteceu", True)
+        test_utt("de facto isso não é verdade", False)
+        test_utt("efetivamente isso não é verdade", False)
+        test_utt("obviamente falso", False)
+        test_utt("é obvio que não", False)
+
+        # double negatives
+        # it's not a lie -> True
+        test_utt("não é mentira", True)
 
 
 if __name__ == "__main__":

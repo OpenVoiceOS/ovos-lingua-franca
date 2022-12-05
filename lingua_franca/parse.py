@@ -15,6 +15,7 @@
 #
 import json
 from lingua_franca.util import match_one, fuzzy_match, MatchStrategy
+from lingua_franca.lang.parse_common import match_yes_or_no
 from difflib import SequenceMatcher
 from warnings import warn
 from lingua_franca.time import now_local
@@ -22,6 +23,8 @@ from lingua_franca.internal import populate_localized_function_dict, \
     get_active_langs, get_full_lang_code, get_primary_lang_code, \
     get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
     resolve_resource_file, FunctionNotLocalizedError
+import unicodedata
+
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_number",
@@ -30,10 +33,17 @@ _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_langcode",
                          "normalize",
                          "get_gender",
+                         "yes_or_no",
                          "is_fractional",
                          "is_ordinal")
 
 populate_localized_function_dict("parse", langs=get_active_langs())
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def yes_or_no(text, lang=""):
+    text = normalize(text, lang=lang, remove_articles=True).lower()
+    return match_yes_or_no(text, lang)
 
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
