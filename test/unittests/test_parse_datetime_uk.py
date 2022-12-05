@@ -35,8 +35,18 @@ class TestDateTimeExtraction(unittest.TestCase):
         load_language("uk-uk")
         set_default_lang("uk")
 
-        print(extract_duration("25 днів"))
-        print('25 днів')
+        self.assertEqual(extract_duration("чотириста дев'яносто сім днів "),
+                        (timedelta(days=497), ""))
+        self.assertEqual(extract_duration("триста 91.6 секунд"),
+                         (timedelta(seconds=391.6), ""))
+
+        # todo fix this issue
+        self.assertEqual(extract_duration("розбуди меня через три тижня, "
+                                          "чотириста дев'яносто сім днів "
+                                          "і триста 91.6 секунд"),
+                         (timedelta(weeks=3, days=497, seconds=391.6),
+                          "розбуди меня через ,  і"))
+
         self.assertEqual(extract_duration("25 днів"),
                          (timedelta(days=25.0), ""))
         self.assertEqual(extract_duration("10 секунд"),
@@ -54,10 +64,9 @@ class TestDateTimeExtraction(unittest.TestCase):
         self.assertEqual(extract_duration("7.5 секунд"),
                          (timedelta(seconds=7.5), ""))
 
-        # todo why returns "в"
         self.assertEqual(extract_duration("вісім з половиною днів "
                                           "тридцять дев'ять секунд"),
-                         (timedelta(days=8.5, seconds=39), "в"))
+                         (timedelta(days=8.5, seconds=39), ""))
         self.assertEqual(extract_duration("встанови таймер на 30 хвилин"),
                          (timedelta(minutes=30), "встанови таймер на"))
         self.assertEqual(extract_duration("чотири з половиною хвилини до"
@@ -65,13 +74,6 @@ class TestDateTimeExtraction(unittest.TestCase):
                          (timedelta(minutes=4.5), "до заходу сонця"))
         self.assertEqual(extract_duration("дев'ятнадцять хвилин після першої години"),
                          (timedelta(minutes=19), "після першої години"))
-
-        # # todo fix this issue
-        # self.assertEqual(extract_duration("розбуди меня через три тижня, "
-        #                                   "чотириста дев'яносто сім днів "
-        #                                   "і триста 91.6 секунд"),
-        #                  (timedelta(weeks=3, days=497, seconds=391.6),
-        #                   "разбуди меня через , a"))
 
         self.assertEqual(extract_duration("фільм одну годину п'ятдесят сім"
                                           " і пів хвилин довжиною"),
@@ -104,10 +106,9 @@ class TestDateTimeExtraction(unittest.TestCase):
         load_language("uk-uk")
         set_default_lang("uk")
 
-        # testExtract("зараз година",
-        #             "2017-06-27 13:04:00", "година")
-        # self.u = "секунду"
-        # testExtract("через %s" % self.u,
+        testExtract("зараз година",
+                    "2017-06-27 13:04:00", "година")
+        # testExtract("через одну хвилину",
         #             "2017-06-27 13:04:01", "")
         # testExtract("через хвилину",
         #             "2017-06-27 13:05:00", "")

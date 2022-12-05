@@ -152,6 +152,7 @@ def _convert_words_to_numbers_uk(text, short_scale=True, ordinals=False):
     numbers_to_replace = \
         _extract_numbers_with_text_uk(tokens, short_scale, ordinals)
     numbers_to_replace.sort(key=lambda number: number.start_index)
+    print(f'numbers_to_replace {numbers_to_replace}')
 
     results = []
     for token in tokens:
@@ -165,7 +166,7 @@ def _convert_words_to_numbers_uk(text, short_scale=True, ordinals=False):
             if numbers_to_replace and \
                     token.index == numbers_to_replace[0].end_index:
                 numbers_to_replace.pop(0)
-
+    print(f'results in _convert_words_to_numbers_uk {results}')
     return ' '.join(results)
 
 
@@ -198,9 +199,8 @@ def _extract_numbers_with_text_uk(tokens, short_scale=True,
 
         if not to_replace:
             break
-
         results.append(to_replace)
-
+        print(f'to_replace {to_replace}')
         tokens = [
             t if not
             to_replace.start_index <= t.index <= to_replace.end_index
@@ -397,11 +397,9 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
 
         prev_word = tokens[idx - 1].word if idx > 0 else ""
         prev_word = _text_uk_inflection_normalize(prev_word, 1)
-        print(f'word {word}')
-        print(f'prev_word {prev_word}')
         next_word = tokens[idx + 1].word if idx + 1 < len(tokens) else ""
         next_word = _text_uk_inflection_normalize(next_word, 1)
-        print(f'next_word {next_word}')
+        print(f'prev_word {prev_word} word {word} next_word {next_word}')
 
         # In Ukrainian (?) we do not use suffix (1st,2nd,..) but use point instead (1.,2.,..)
         if is_numeric(word[:-1]) and \
@@ -412,7 +410,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
         # Normalize Ukrainian inflection of numbers (один, одна, одно,...)
         if not ordinals:
             if word not in _STRING_NUM_UK:
-                print(f'word not in _STRING_NUM_UK {word}')
                 word = _text_uk_inflection_normalize(word, 1)
 
         if word not in string_num_scale and \
@@ -440,7 +437,7 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
             number_words = [token]
         else:
             number_words.append(token)
-
+        print(f'number_words {number_words}')
         # is this word already a number ?
         if is_numeric(word):
             if word.isdigit():  # doesn't work with decimals
@@ -483,10 +480,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
         if prev_val in _STRING_NUM_UK.values() and current_val == 100:
             val = prev_val * current_val
 
-
-
-        # is this a spoken fraction?
-
         print(f'current_val {current_val} val {val} prev_val {prev_val}, word {word}')
         # half cup
         if val is False:
@@ -501,6 +494,7 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
                     val = 1
                 val = val * next_val
                 number_words.append(tokens[idx + 1])
+        print(f'number_words {number_words}')
         print(f'current_val {current_val} val {val} prev_val {prev_val}, word {word}')
         if word in ['пара', 'пари', 'парою', 'парами']:
             if prev_val:
@@ -518,18 +512,24 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
             if look_for_fractions(a_pieces):
                 val = float(a_pieces[0]) / float(a_pieces[1])
         else:
+            # checking if word is digit in order not to substitute
+            # existing calculated value
+            new_word = re.sub(r'\.', '', word)
+            print(f"word {word, new_word.isdigit()}")
             if all([
                 prev_word in _SUMS,
                 word not in _SUMS,
+                new_word.isdigit() is False,
                 word not in multiplies,
                 current_val >= 10
             ]):
                 # Backtrack - we've got numbers we can't sum.
+                print(f'number_words before Backtrack {number_words}')
                 number_words.pop()
                 val = prev_val
+                print(f'Backtrack val {val}')
                 break
             prev_val = val
-
             if word in multiplies and next_word not in multiplies:
                 # handle long numbers
                 # six hundred sixty six
@@ -586,7 +586,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
                 #            hundred fifty seven"
                 # >>> extract_number(foo)
                 # 9907657
-
                 time_to_sum = True
                 for other_token in tokens[idx + 1:]:
                     if other_token.word in multiplies:
@@ -695,8 +694,9 @@ def extract_duration_uk(text):
         'weeks': 0
     }
 
-    pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}(?:я|и|ин|і|ів|унд|ни|ну|ку|дні|у|днів)?"
+    pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}(?:ів|я|и|ин|і|унд|ни|ну|ку|дні|у|днів)?"
     text = _convert_words_to_numbers_uk(text)
+    print(f'text {text}')
 
     for (unit_uk, unit_en) in _TIME_UNITS_CONVERSION.items():
         unit_pattern = pattern.format(unit=unit_uk)
@@ -705,8 +705,14 @@ def extract_duration_uk(text):
             time_units[unit_en] += float(match.group(1))
             return ''
         text = re.sub(unit_pattern, repl, text)
+        print(f'text after processing {text}')
 
-    text = text.strip()
+    new_text = []
+    tokens_in_result_text = text.split(' ')
+    for token in tokens_in_result_text:
+        if not token.isdigit():
+            new_text.append(token)
+    text = " ".join(new_text).strip()
     duration = timedelta(**time_units) if any(time_units.values()) else None
 
     return duration, text
@@ -1638,7 +1644,6 @@ def extract_numbers_uk(text, short_scale=True, ordinals=False):
     """
     results = _extract_numbers_with_text_uk(tokenize(text),
                                             short_scale, ordinals)
-    print(f'extract_numbers_uk {[float(result.value) for result in results]}')
     #numbers_sum = sum([float(result.value) for result in results])
     return [float(result.value) for result in results]
 
@@ -1683,7 +1688,6 @@ def _text_uk_inflection_normalize(word, arg):
         if word in ["секунд", "секунди", "секундами", "секунду", "секунд", "сек"]:
             return "секунда"
         if word in ["днів", "дні", "днями", "дню", "днем", "днями"]:
-            print("день")
             return "день"
         if word in ["тижні", "тижнів", "тижнями", "тиждень", "тижня"]:
             return "тиждень"
@@ -1772,7 +1776,6 @@ def _plurals_normalizer(word):
         plural_case = ''.join([case for case in case_endings if case in word])
         if plural_case:
             word = word.replace(plural_case, '')+'дцять'
-            print(f'flexions deeted {word}')
             return word
 
         # checking for plurals 50, 60, 70, 80

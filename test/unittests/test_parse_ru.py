@@ -187,6 +187,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("в общем 100%"), 100)
 
     def test_extract_duration_ru(self):
+
         self.assertEqual(extract_duration("10 секунд"),
                          (timedelta(seconds=10.0), ""))
         self.assertEqual(extract_duration("5 минут"),
