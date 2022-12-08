@@ -200,10 +200,14 @@ def match_yes_or_no(text, lang):
     with open(resource_file) as f:
         words = json.load(f)
         words = {k: [_.lower() for _ in v] for k, v in words.items()}
-
-    text = unicodedata.normalize('NFD', text) \
-        .encode('ascii', 'ignore').decode("utf-8")
+    # after encoding information is lost
+    if lang == 'uk-uk':
+        text = unicodedata.normalize('NFD', text)
+    else:
+        text = unicodedata.normalize('NFD', text) \
+            .encode('ascii', 'ignore').decode("utf-8")
     text = text.lower()
+
 
     # if user says yes but later says no, he changed his mind mid-sentence
     # the highest index is the last yesno word

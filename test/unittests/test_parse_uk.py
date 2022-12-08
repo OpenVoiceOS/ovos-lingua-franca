@@ -19,6 +19,7 @@ from lingua_franca.parse import extract_number, extract_numbers
 from lingua_franca.parse import fuzzy_match
 from lingua_franca.parse import match_one
 from lingua_franca.parse import normalize
+from lingua_franca.parse import yes_or_no
 
 
 def setUpModule():
@@ -28,6 +29,27 @@ def setUpModule():
 
 def tearDownModule():
     unload_language("uk")
+
+class TestYesNo(unittest.TestCase):
+    def test_yesno(self):
+        def test_utt(text, expected):
+            res = yes_or_no(text, "uk-uk")
+            self.assertEqual(res, expected)
+
+        test_utt("ні", False)
+        test_utt("так", True)
+        test_utt("так але ні", False)
+        test_utt("не думаю", False)
+        test_utt("не згодна", False)
+        test_utt("думаю, що ні", False)
+        test_utt("горіх", None)
+        test_utt("ні, але насправді, так", True)
+        test_utt("так але насправді ні", False)
+        test_utt("будь ласка", True)
+        test_utt("будь ласка, не треба", False)
+        test_utt("задовільняє", True)
+        test_utt("незадовільно", False)
+        test_utt("правильно", True)
 
 
 class TestFuzzyMatch(unittest.TestCase):
@@ -316,3 +338,5 @@ class TestNormalize(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
+
+#%%
