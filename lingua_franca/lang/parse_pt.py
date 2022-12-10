@@ -29,9 +29,157 @@ from lingua_franca.lang.common_data_pt import _NUMBERS_PT, \
 from lingua_franca.internal import resolve_resource_file
 from lingua_franca.lang.parse_common import Normalizer
 from lingua_franca.time import now_local, DAYS_IN_1_MONTH, DAYS_IN_1_YEAR
+from lingua_franca.util.colors import Color, ColorOutOfSpace
 import json
 import re
+from quebra_frases import span_indexed_word_tokenize
 import unicodedata
+
+
+def get_color_pt(text):
+    """
+        Given a color description, return a Color object
+
+        Args:
+            text (str): the string describing a color
+        Returns:
+            (list): list of tuples with detected color and span of the
+                    color in parent utterance [(Color, (start_idx, end_idx))]
+        """
+    resource_file = resolve_resource_file(f"text/pt-pt/colors.json")
+    with open(resource_file) as f:
+        COLORS = {v.lower(): k for k, v in json.load(f).items()}
+
+    # this hack makes plural match most of the time
+    for k in list(COLORS.keys()):
+        if k.endswith("s"):
+            COLORS[k[:-1]] = COLORS[k]
+    # this hack makes male/female match most of the time
+    for k in list(COLORS.keys()):
+        if k.endswith("a") or k.endswith("o"):
+            COLORS[k[:-1]] = COLORS[k]
+
+    text = text.lower()
+    if text in COLORS:
+        h = COLORS.get(text)
+        return Color.from_hex(h)
+    if text[:-1] in COLORS:
+        h = COLORS.get(text[:-1])
+        return Color.from_hex(h)
+    if text[:-2] in COLORS:
+        h = COLORS.get(text[:-2])
+        return Color.from_hex(h)
+
+    # try to parse color description
+    color = ColorOutOfSpace()
+
+    if "claro" in text:
+        color.set_luminance(0.7)
+    if "escuro" in text:
+        color.set_luminance(0.3)
+
+    if "fosco" in text:
+        color.set_saturation(0.4)
+    if "cinzent" in text:
+        color.set_saturation(0.25)
+
+    if "preto" in text or "preta" in text:
+        color.set_luminance(0.1)
+    if "branco" in text or "branca" in text:
+        color.set_luminance(1)
+
+    red = 0.0
+    orange = 0.10
+    yellow = 0.16
+    green = 0.33
+    cyan = 0.5
+    blue = 0.66
+    violet = 0.83
+
+    if "laranja" in text:
+        color.hue = orange
+    elif "amarel" in text:
+        color.hue = yellow
+    elif "verde" in text:
+        color.hue = green
+    elif "ciano" in text:
+        color.hue = cyan
+    elif "azul" in text:
+        color.hue = blue
+    elif "violeta" in text:
+        color.hue = violet
+    else:
+        color.hue = red
+
+    return color
+
+
+def extract_color_spans_pt(text):
+    """
+        This function tags colors in an utterance.
+        Args:
+            text (str): the string to extract colors from
+        Returns:
+            (list): list of tuples with detected color and span of the
+                    color in parent utterance [(Color, (start_idx, end_idx))]
+        """
+    resource_file = resolve_resource_file(f"text/pt-pt/colors.json")
+    with open(resource_file) as f:
+        COLORS = {v.lower(): k for k, v in json.load(f).items()}
+
+    # this hack makes plural match most of the time
+    for k in list(COLORS.keys()):
+        if k.endswith("s"):
+            COLORS[k[:-1]] = COLORS[k]
+    # this hack makes male/female match most of the time
+    for k in list(COLORS.keys()):
+        if k.endswith("a") or k.endswith("o"):
+            COLORS[k[:-1]] = COLORS[k]
+
+    color_spans = []
+    text = text.lower()
+    spans = span_indexed_word_tokenize(text)
+
+    for idx, (start, end, word) in enumerate(spans):
+        word2 = word3 = ""
+        if word.endswith("s"):
+            word = word[:-1]
+        if word.endswith("a") or word.endswith("o"):
+            word = word[:-1]
+
+        next_span = spans[idx + 1] if idx + 1 < len(spans) else ()
+        next_next_span = spans[idx + 2] if idx + 2 < len(spans) else ()
+
+        if next_span:
+            word2 = next_span[-1]
+            if word2.endswith("s"):
+                word2 = word2[:-1]
+            if word2.endswith("a") or word2.endswith("o"):
+                word2 = word2[:-1]
+            word2 = f"{word} {word2}"
+        if next_next_span:
+            word3 = next_next_span[-1]
+            if word3.endswith("s"):
+                word3 = word3[:-1]
+            if word3.endswith("a") or word3.endswith("o"):
+                word3 = word3[:-1]
+            word3 = f"{word} {word2} {word3}"
+
+        if next_span and next_next_span and word3 in COLORS:
+            spans[idx + 1] = spans[idx + 2] = (-1, -1, "")
+            end = next_next_span[1]
+            color = Color.from_hex(COLORS[word3])
+            color_spans.append((color, (start, end)))
+        elif next_span and word2 in COLORS:
+            spans[idx + 1] = (-1, -1, "")
+            end = next_span[1]
+            color = Color.from_hex(COLORS[word2])
+            color_spans.append((color, (start, end)))
+        elif word in COLORS:
+            color = Color.from_hex(COLORS[word])
+            color_spans.append((color, (start, end)))
+
+    return color_spans
 
 
 def yes_or_no_pt(text):

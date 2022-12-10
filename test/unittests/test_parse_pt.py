@@ -17,9 +17,11 @@ import unittest
 from datetime import datetime, time, timedelta
 
 from lingua_franca import load_language, unload_language, set_default_lang
+from lingua_franca.parse import get_color, extract_color_spans
 from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no, \
     extract_duration
 from lingua_franca.time import default_timezone, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.util.colors import Color, ColorOutOfSpace
 
 
 def setUpModule():
@@ -342,7 +344,6 @@ class TestExtractGender(unittest.TestCase):
 
 class TestYesNo(unittest.TestCase):
     def test_yesno(self):
-
         def test_utt(text, expected):
             res = yes_or_no(text, lang="pt-pt")
             self.assertEqual(res, expected)
@@ -370,6 +371,74 @@ class TestYesNo(unittest.TestCase):
         # double negatives
         # it's not a lie -> True
         test_utt("não é mentira", True)
+
+
+class TestColors(unittest.TestCase):
+
+    def test_color_obj(self):
+        self.assertEqual(Color.from_description("branco"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(Color.from_description("preto"),
+                         Color.from_rgb(0, 0, 0))
+
+    def test_get_color(self):
+        self.assertEqual(get_color("branco"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("preto"),
+                         Color.from_rgb(0, 0, 0))
+        self.assertEqual(get_color("branca"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("preta"),
+                         Color.from_rgb(0, 0, 0))
+        self.assertEqual(get_color("branco"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("pretos"),
+                         Color.from_rgb(0, 0, 0))
+        self.assertEqual(get_color("brancas"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("pretas"),
+                         Color.from_rgb(0, 0, 0))
+
+        # "dark reddish gray"
+        desc = "cinzento escuro avermelhado"
+        color = get_color(desc)
+        self.assertTrue(isinstance(color, ColorOutOfSpace))
+        self.assertTrue(color.luminance <= 0.3)  # escuro
+        self.assertTrue(color.saturation <= 0.25)  # cinzento
+        self.assertTrue(color.hue == 0.0)  # vermelho
+
+    def test_color_spans(self):
+        utt = "antigamente a televisão era a preto e branco"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 2)
+        self.assertEqual(spans[0][1], (30, 35))
+        self.assertEqual(utt[30:35], "preto")
+        self.assertEqual(spans[0][0], Color.from_hex("#000000"))
+        self.assertEqual(spans[1][1], (38, 44))
+        self.assertEqual(utt[38:44], "branco")
+        self.assertEqual(spans[1][0], Color.from_hex("#FFFFFF"))
+
+        # female gender
+        utt = "a minha gata é preta e branca"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 2)
+        self.assertEqual(spans[0][1], (15, 20))
+        self.assertEqual(utt[15:20], "preta")
+        self.assertEqual(spans[0][0], Color.from_hex("#000000"))
+        self.assertEqual(spans[1][1], (23, 29))
+        self.assertEqual(utt[23:29], "branca")
+        self.assertEqual(spans[1][0], Color.from_hex("#FFFFFF"))
+
+        # plural
+        utt = "os gatos são pretos e as gatas são brancas"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 2)
+        self.assertEqual(spans[0][1], (13, 19))
+        self.assertEqual(utt[13:19], "pretos")
+        self.assertEqual(spans[0][0], Color.from_hex("#000000"))
+        self.assertEqual(spans[1][1], (35, 42))
+        self.assertEqual(utt[35:42], "brancas")
+        self.assertEqual(spans[1][0], Color.from_hex("#FFFFFF"))
 
 
 if __name__ == "__main__":

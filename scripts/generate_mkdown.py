@@ -17,11 +17,20 @@ res_files = {"extract_langcode": "text/{lang}/langs.json",
              "yes_or_no": "text/{lang}/yesno.json",
              "nice_date": "text/{lang}/date_time.json",
              "nice_date_time": "text/{lang}/date_time.json",
-             "nice_year": "text/{lang}/date_time.json"}
+             "nice_year": "text/{lang}/date_time.json",
+             "describe_color": "text/{lang}/colors.json",
+             "get_color": "text/{lang}/colors.json",
+             "extract_color_spans": "text/{lang}/colors.json"}
 
 fallback_methods = {
     'nice_duration': ["pronounce_number"]
 }
+
+generics = {l: ["extract_langcode",
+                "describe_color",
+                "get_color",
+                'nice_duration',
+                "extract_color_spans"] for l in langs}
 
 
 def check_resource_file_methods():
@@ -31,14 +40,16 @@ def check_resource_file_methods():
         for mname in parse_methods:
             if mname in res_files:
                 rfile = res_files[mname].format(lang=get_full_lang_code(lang))
-                parse[lang][mname] = exists(f"{res_dir}/{rfile}")
+                impl = exists(f"{res_dir}/{rfile}")
+                parse[lang][mname] = impl
             else:
                 parse[lang][mname] = False
 
         for mname in format_methods:
             if mname in res_files:
                 rfile = res_files[mname].format(lang=get_full_lang_code(lang))
-                fmt[lang][mname] = exists(f"{res_dir}/{rfile}")
+                impl = exists(f"{res_dir}/{rfile}")
+                fmt[lang][mname] = impl
             else:
                 fmt[lang][mname] = False
 
@@ -51,16 +62,20 @@ def check_lang_files():
             with open(lparse) as f:
                 code = f.read()
                 for mname in parse_methods:
-                    parse[lang][mname] = parse[lang].get(mname) or \
-                                         f"def {mname}_{lang}(" in code
+                    impl = f"def {mname}_{lang}(" in code
+                    parse[lang][mname] = parse[lang].get(mname) or impl
+                    if impl and mname in generics[lang]:
+                        generics[lang].remove(mname)
 
         lfmt = f"{lang_root}/format_{lang}.py"
         if exists(lfmt):
             with open(lfmt) as f:
                 code = f.read()
                 for mname in format_methods:
-                    fmt[lang][mname] = fmt[lang].get(mname) or \
-                                       f"def {mname}_{lang}(" in code
+                    impl = f"def {mname}_{lang}(" in code
+                    fmt[lang][mname] = fmt[lang].get(mname) or impl
+                    if impl and mname in generics[lang]:
+                        generics[lang].remove(mname)
 
 
 def check_fallback_impls():
@@ -86,19 +101,27 @@ def check_fallback_impls():
 
 
 def get_mkdown():
+    print(generics)
     mkdown = """
 # Language Support Status
 
-- Supported Languages
+
+- :heavy_check_mark: - fully implemented
+- :construction: - lang agnostic fallback implementation
+- :x: - not implemented
+
+
+## Supported Languages
+
 """
 
     for lang in langs:
-        mkdown += f"\n    - [{get_full_lang_code(lang)}](#{lang})"
+        mkdown += f"\n- [{get_full_lang_code(lang)}](#{lang})"
 
     for lang in langs:
         mkdown += f"""
        
-## {lang}
+### {lang}
 """
 
         table = """
@@ -108,13 +131,21 @@ def get_mkdown():
         template = "|  {module}  |  {method}  |  {status}  |\n"
 
         for m in parse_methods:
+            if m not in generics[lang]:
+                s = ":heavy_check_mark:" if parse[lang].get(m) else ":x:"
+            else:
+                s = ":construction:" if parse[lang].get(m) else ":x:"
             a = template.format(module="parse", method=m,
-                                lang=lang, status=parse[lang].get(m, False))
+                                lang=lang, status=s)
             table += a
 
         for m in format_methods:
+            if m not in generics[lang]:
+                s = ":heavy_check_mark:" if fmt[lang].get(m) else ":x:"
+            else:
+                s = ":construction:" if fmt[lang].get(m) else ":x:"
             a = template.format(module="format", method=m,
-                                lang=lang, status=fmt[lang].get(m, False))
+                                lang=lang, status=s)
             table += a
 
         mkdown += table

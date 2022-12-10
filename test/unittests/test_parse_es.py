@@ -21,8 +21,9 @@ from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.parse import (normalize, extract_numbers, extract_number,
                                  extract_datetime, yes_or_no, extract_duration)
 from lingua_franca.lang.parse_es import extract_datetime_es, is_fractional_es
-from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no
 from lingua_franca.time import default_timezone, to_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.util.colors import Color, ColorOutOfSpace
+from lingua_franca.parse import get_color, extract_color_spans
 
 
 def setUpModule():
@@ -303,6 +304,28 @@ class TestYesNo(unittest.TestCase):
         test_utt("jajajaja", None)
         test_utt("por favor", True)
         test_utt("por favor no", False)
+
+
+# NOTE: this test is using the fallback parser
+# if dedicated spanish methods are implemented
+# this test should be replicated in a unimplemented language
+class TestColors(unittest.TestCase):
+
+    def test_color_obj(self):
+        self.assertEqual(Color.from_description("blanco"),
+                         Color.from_rgb(255, 255, 255))
+
+    def test_get_color(self):
+        self.assertEqual(get_color("blanco"),
+                         Color.from_rgb(255, 255, 255))
+
+    def test_color_spans(self):
+        utt = "un gato blanco"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 1)
+        self.assertEqual(spans[0][1], (8, 14))
+        self.assertEqual(utt[8:14], "blanco")
+        self.assertEqual(spans[0][0], Color.from_hex("#FFFFFF"))
 
 
 if __name__ == "__main__":

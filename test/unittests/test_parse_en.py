@@ -15,6 +15,7 @@
 #
 import unittest
 from datetime import datetime, timedelta, time
+
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 
@@ -22,12 +23,16 @@ from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.internal import FunctionNotLocalizedError
 from lingua_franca.parse import extract_datetime
 from lingua_franca.parse import extract_duration
+from lingua_franca.parse import extract_langcode
 from lingua_franca.parse import extract_number, extract_numbers
+from lingua_franca.parse import get_color, extract_color_spans
 from lingua_franca.parse import get_gender
 from lingua_franca.parse import normalize
 from lingua_franca.time import default_timezone, to_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
 from lingua_franca.parse import extract_langcode
 from lingua_franca.parse import yes_or_no
+from lingua_franca.time import default_timezone, to_local
+from lingua_franca.util.colors import Color, ColorOutOfSpace
 
 
 def setUpModule():
@@ -1703,7 +1708,6 @@ class TestGender(unittest.TestCase):
 
 class TestYesNo(unittest.TestCase):
     def test_yesno(self):
-
         def test_utt(text, expected):
             res = yes_or_no(text, "en-us")
             self.assertEqual(res, expected)
@@ -1750,7 +1754,6 @@ class TestYesNo(unittest.TestCase):
 
 class TestLangcode(unittest.TestCase):
     def test_parse_lang_code(self):
-
         def test_with_conf(text, expected_lang, min_conf=0.8):
             lang, conf = extract_langcode(text)
             self.assertEqual(lang, expected_lang)
@@ -1772,6 +1775,39 @@ class TestLangcode(unittest.TestCase):
 
         test_with_conf("Brazilian", 'pt-br')
         test_with_conf("American", 'en-us')
+
+
+class TestColors(unittest.TestCase):
+
+    def test_color_obj(self):
+        self.assertEqual(Color.from_description("white"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(Color.from_description("black"),
+                         Color.from_rgb(0, 0, 0))
+
+    def test_get_color(self):
+        self.assertEqual(get_color("white"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("black"),
+                         Color.from_rgb(0, 0, 0))
+
+        desc = "bright blue-ish gray color"
+        color = get_color(desc)
+        self.assertTrue(isinstance(color, ColorOutOfSpace))
+        self.assertTrue(color.luminance >= 0.7)  # bright
+        self.assertTrue(color.saturation <= 0.25)  # gray
+        self.assertTrue(color.hue == 0.66)  # blue
+
+    def test_color_spans(self):
+        utt = "a long time ago tv was black and white"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 2)
+        self.assertEqual(spans[0][1], (23, 28))
+        self.assertEqual(utt[23:28], "black")
+        self.assertEqual(spans[0][0], Color.from_hex("#000000"))
+        self.assertEqual(spans[1][1], (33, 38))
+        self.assertEqual(utt[33:38], "white")
+        self.assertEqual(spans[1][0], Color.from_hex("#FFFFFF"))
 
 
 if __name__ == "__main__":

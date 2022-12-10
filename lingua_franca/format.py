@@ -39,6 +39,7 @@ _REGISTERED_FUNCTIONS = ("nice_number",
                          "pronounce_number",
                          "pronounce_lang",
                          "nice_response",
+                         "describe_color",
                          "nice_duration")
 
 populate_localized_function_dict("format", langs=get_active_langs())
@@ -588,3 +589,34 @@ def nice_response(text, lang=''):
         assertEqual(nice_response_de("10 ^ 2"),
                          "10 hoch 2")
     """
+
+
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
+def describe_color(color, lang=""):
+    """
+    Args:
+        color: (Color): format for speech (True) or display (False)
+        lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+
+    Returns:
+        str: localized color description
+    """
+    lang = get_full_lang_code(lang)
+    resource_file = resolve_resource_file(f"text/{lang}/colors.json") or \
+                    resolve_resource_file("text/webcolors.json")
+    with open(resource_file) as f:
+        COLORS = json.load(f)
+
+    if color.hex in COLORS:
+        return COLORS.get(color.hex)
+
+    # fallback - just return main color
+    color = color.main_color
+    if color.hex in COLORS:
+        return COLORS.get(color.hex)
+
+    raise FunctionNotLocalizedError
+
+
+

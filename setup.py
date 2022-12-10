@@ -67,7 +67,7 @@ with open("readme.md", "r") as fh:
 setup(
     name='ovos-lingua-franca',
     version=get_version(),
-    packages=['lingua_franca', 'lingua_franca.lang'],
+    packages=['lingua_franca', 'lingua_franca.lang', 'lingua_franca.util'],
     cmdclass={'install': CustomInstall},
     url='https://github.com/OpenVoiceOS/ovos-lingua-franca',
     license='Apache2.0',
