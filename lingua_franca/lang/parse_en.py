@@ -586,16 +586,15 @@ def extract_duration_en(text):
         'days': 0,
         'weeks': 0
     }
+    # NOTE: these are spelled wrong on purpose because of the loop below that strips the s
     units = ['months', 'years', 'decades', 'centurys', 'millenniums'] + \
             list(time_units.keys())
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}s?"
     text = _convert_words_to_numbers_en(text)
-    text = text.replace("centuries", "century").replace("millenia",
-                                                        "millennium")
-    text = text.replace("a day", "1 day").replace("a year", "1 year") \
-        .replace("a decade", "1 decade").replace("a century", "1 century") \
-        .replace("a millennium", "1 millennium")
+    text = text.replace("centuries", "century").replace("millenia", "millennium")
+    for word in ('day', 'month', 'year', 'decade', 'century', 'millennium'):
+        text = text.replace(f'a {word}', '1 word')
 
     for unit_en in units:
         unit_pattern = pattern.format(unit=unit_en[:-1])  # remove 's' from unit

@@ -1106,6 +1106,7 @@ def extract_duration_es(text):
         'days': 'dias',
         'weeks': 'semanas'
     }
+    # NOTE: some of these english units are spelled wrong on purpose because of the loop below that strips the s
     non_std_un = {
         "months": "mes",
         "years": "anos",
