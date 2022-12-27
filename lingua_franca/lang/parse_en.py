@@ -594,7 +594,7 @@ def extract_duration_en(text):
     text = _convert_words_to_numbers_en(text)
     text = text.replace("centuries", "century").replace("millenia", "millennium")
     for word in ('day', 'month', 'year', 'decade', 'century', 'millennium'):
-        text = text.replace(f'a {word}', '1 word')
+        text = text.replace(f'a {word}', f'1 {word}')
 
     for unit_en in units:
         unit_pattern = pattern.format(unit=unit_en[:-1])  # remove 's' from unit
