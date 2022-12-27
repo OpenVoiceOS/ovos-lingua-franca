@@ -1,21 +1,16 @@
-from os.path import join, dirname, exists
-from lingua_franca.parse import _REGISTERED_FUNCTIONS as parse_methods
+from os.path import dirname, exists
+
 from lingua_franca.format import _REGISTERED_FUNCTIONS as format_methods
 from lingua_franca.internal import _SUPPORTED_LANGUAGES as langs, get_full_lang_code
+from lingua_franca.parse import _REGISTERED_FUNCTIONS as parse_methods
 
 lf_root = f"{dirname(dirname(__file__))}/lingua_franca"
 res_dir = f"{lf_root}/res"
 lang_root = f"{lf_root}/lang"
 mdfile = f"{dirname(dirname(__file__))}/lang_support.md"
 
-
 parse = {l: {} for l in langs}
 fmt = {l: {} for l in langs}
-
-global_impls = [
-    "pronounce_lang", "nice_date", "nice_year",
-    "nice_date_time", "nice_duration"
-]
 
 res_files = {"extract_langcode": "text/{lang}/langs.json",
              "pronounce_lang": "text/{lang}/langs.json",
@@ -78,7 +73,7 @@ def check_fallback_impls():
                 for mname in parse_methods:
                     if mname in fallback_methods and not parse[lang].get(mname):
                         parse[lang][mname] = any([f"def {m}_{lang}(" in code
-                                                 for m in fallback_methods[mname]])
+                                                  for m in fallback_methods[mname]])
 
         lfmt = f"{lang_root}/format_{lang}.py"
         if exists(lfmt):
@@ -87,7 +82,7 @@ def check_fallback_impls():
                 for mname in format_methods:
                     if mname in fallback_methods and not fmt[lang].get(mname):
                         fmt[lang][mname] = any([f"def {m}_{lang}(" in code
-                                                 for m in fallback_methods[mname]])
+                                                for m in fallback_methods[mname]])
 
 
 def get_mkdown():

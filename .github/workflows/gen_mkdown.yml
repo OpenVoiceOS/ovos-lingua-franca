@@ -31,18 +31,15 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.8
-      - name: Install System Dependencies
+      - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt install python3-dev
-          python -m pip install build wheel
-      - name: Install core repo
-        run: |
-          pip install .
+          sudo python -m pip install build wheel
+          sudo pip install .
       - name: Generate Markdown
         run: |
-          VER=$(python setup.py --version)
-          python scripts/generate_mkdown.py
+          sudo python scripts/generate_mkdown.py
       - name: Commit to dev
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
