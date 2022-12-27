@@ -254,7 +254,10 @@ def pronounce_lang(lang_code, lang=""):
         LANGUAGES = json.load(f)
     lang_code = lang_code.lower()
     lang2 = lang_code.split("-")[0]
-    return LANGUAGES.get(lang_code) or LANGUAGES.get(lang2) or lang_code
+    spoken_lang = LANGUAGES.get(lang_code) or LANGUAGES.get(lang2) or lang_code
+    if isinstance(spoken_lang, list):
+        spoken_lang = spoken_lang[0]
+    return spoken_lang
 
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
