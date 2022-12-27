@@ -46,12 +46,20 @@ def yes_or_no(text, lang=""):
     return match_yes_or_no(text, lang)
 
 
+# TODO - variant kwarg - ISO 639-2 vs ISO 639-1
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def extract_langcode(text, lang=""):
     resource_file = resolve_resource_file(f"text/{lang}/langs.json") or \
                     resolve_resource_file("text/en-us/langs.json")
+    LANGUAGES = {}
     with open(resource_file) as f:
-        LANGUAGES = {v: k for k, v in json.load(f).items()}
+        for k, v in json.load(f).items():
+            if isinstance(v, str):
+                v = [v]
+            # list of spoken names for this language
+            # multiple valid spellings may exist
+            for l in v:
+                LANGUAGES[l] = k
     return match_one(text, LANGUAGES, strategy=MatchStrategy.TOKEN_SET_RATIO)
 
 
