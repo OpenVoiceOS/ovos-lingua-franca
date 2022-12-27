@@ -14,11 +14,12 @@
 # limitations under the License.
 #
 import unittest
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from lingua_franca import load_language, unload_language, set_default_lang
-from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no
-from lingua_franca.time import default_timezone
+from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no, \
+    extract_duration
+from lingua_franca.time import default_timezone, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
 
 
 def setUpModule():
@@ -253,6 +254,67 @@ class TestNormalize(unittest.TestCase):
             'marca consulta para 2 semanas e 6 dias depois de Sabado',
             anchor, lang='pt-pt', default_time=default)
         self.assertEqual(default, res[0].time())
+
+
+class TestExtractDuration(unittest.TestCase):
+    def test_extract_duration(self):
+        self.assertEqual(extract_duration("10 segundos"),
+                         (timedelta(seconds=10.0), ""))
+        self.assertEqual(extract_duration("5 minutos"),
+                         (timedelta(minutes=5), ""))
+        self.assertEqual(extract_duration("2 horas"),
+                         (timedelta(hours=2), ""))
+        self.assertEqual(extract_duration("3 dias"),
+                         (timedelta(days=3), ""))
+        self.assertEqual(extract_duration("25 semanas"),
+                         (timedelta(weeks=25), ""))
+        self.assertEqual(extract_duration("sete horas"),
+                         (timedelta(hours=7), ""))
+        self.assertEqual(extract_duration("7.5 segundos"),
+                         (timedelta(seconds=7.5), ""))
+        # TODO - imperfect remainder
+        self.assertEqual(extract_duration("oito dias e 39 segundos"),
+                         (timedelta(days=8, seconds=39), "e"))
+        # TODO - imperfect remainder
+        self.assertEqual(extract_duration("acorda-me daqui a três semanas, quatro dias e noventa segundos"),
+                         (timedelta(weeks=3, days=4, seconds=90),
+                          "acorda - me daqui a ,  e"))
+        self.assertEqual(extract_duration("10-segundos"),
+                         (timedelta(seconds=10.0), ""))
+        self.assertEqual(extract_duration("5-minutos"),
+                         (timedelta(minutes=5), ""))
+
+    def test_non_std_units(self):
+        self.assertEqual(extract_duration("1 mês"),
+                         (timedelta(days=DAYS_IN_1_MONTH), ""))
+        self.assertEqual(
+            extract_duration("1 mês"),
+            (timedelta(days=DAYS_IN_1_MONTH), ""))
+
+        self.assertEqual(extract_duration("3 meses"),
+                         (timedelta(days=DAYS_IN_1_MONTH * 3), ""))
+        self.assertEqual(extract_duration("um ano"),
+                         (timedelta(days=DAYS_IN_1_YEAR), ""))
+        self.assertEqual(extract_duration("1 ano"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1), ""))
+        self.assertEqual(extract_duration("5 anos"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 5), ""))
+        self.assertEqual(extract_duration("uma década"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("1 decada"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("5 decadas"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10 * 5), ""))
+        self.assertEqual(extract_duration("1 século"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("um seculo"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("5 séculos"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100 * 5), ""))
+        self.assertEqual(extract_duration("1 milénio"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000), ""))
+        self.assertEqual(extract_duration("5 milenios"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000 * 5), ""))
 
 
 class TestExtractGender(unittest.TestCase):

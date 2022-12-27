@@ -16,7 +16,6 @@
 import json
 import re
 from datetime import datetime, timedelta, time
-
 from dateutil.relativedelta import relativedelta
 
 from lingua_franca.internal import resolve_resource_file
@@ -28,7 +27,7 @@ from lingua_franca.lang.common_data_en import _ARTICLES_EN, _LONG_ORDINAL_EN, _L
     _generate_plurals_en, _SPOKEN_EXTRA_NUM_EN
 from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
     invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer
-from lingua_franca.time import now_local
+from lingua_franca.time import now_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
 
 
 def _convert_words_to_numbers_en(text, short_scale=True, ordinals=False):
@@ -587,18 +586,42 @@ def extract_duration_en(text):
         'days': 0,
         'weeks': 0
     }
+    # NOTE: these are spelled wrong on purpose because of the loop below that strips the s
+    units = ['months', 'years', 'decades', 'centurys', 'millenniums'] + \
+            list(time_units.keys())
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}s?"
     text = _convert_words_to_numbers_en(text)
+    text = text.replace("centuries", "century").replace("millenia", "millennium")
+    for word in ('day', 'month', 'year', 'decade', 'century', 'millennium'):
+        text = text.replace(f'a {word}', f'1 {word}')
 
-    for unit_en in time_units:
+    for unit_en in units:
         unit_pattern = pattern.format(unit=unit_en[:-1])  # remove 's' from unit
 
         def repl(match):
             time_units[unit_en] += float(match.group(1))
             return ''
 
-        text = re.sub(unit_pattern, repl, text)
+        def repl_non_std(match):
+            val = float(match.group(1))
+            if unit_en == "months":
+                val = DAYS_IN_1_MONTH * val
+            if unit_en == "years":
+                val = DAYS_IN_1_YEAR * val
+            if unit_en == "decades":
+                val = 10 * DAYS_IN_1_YEAR * val
+            if unit_en == "centurys":
+                val = 100 * DAYS_IN_1_YEAR * val
+            if unit_en == "millenniums":
+                val = 1000 * DAYS_IN_1_YEAR * val
+            time_units["days"] += val
+            return ''
+
+        if unit_en not in time_units:
+            text = re.sub(unit_pattern, repl_non_std, text)
+        else:
+            text = re.sub(unit_pattern, repl, text)
 
     text = text.strip()
     duration = timedelta(**time_units) if any(time_units.values()) else None

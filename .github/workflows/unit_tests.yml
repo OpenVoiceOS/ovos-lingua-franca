@@ -12,6 +12,7 @@ on:
       - 'LICENSE'
       - 'CHANGELOG.md'
       - 'MANIFEST.in'
+      - 'lang_support.md'
       - 'readme.md'
       - 'scripts/**'
   push:

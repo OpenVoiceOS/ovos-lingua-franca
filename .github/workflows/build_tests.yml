@@ -16,6 +16,7 @@ on:
       - 'CHANGELOG.md'
       - 'MANIFEST.in'
       - 'readme.md'
+      - 'lang_support.md'
       - 'scripts/**'
   workflow_dispatch:
 

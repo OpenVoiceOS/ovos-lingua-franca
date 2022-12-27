@@ -2,7 +2,20 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.6a2...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.6a3...HEAD)
+
+**Implemented enhancements:**
+
+- feat/extract\_duration\_pt\_es [\#48](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/48) ([JarbasAl](https://github.com/JarbasAl))
+- feat/ lang support markdown tables [\#46](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/46) ([JarbasAl](https://github.com/JarbasAl))
+
+**Fixed bugs:**
+
+- fix/markdown automation [\#47](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/47) ([JarbasAl](https://github.com/JarbasAl))
+
+## [V0.4.6a3](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/V0.4.6a3) (2022-11-27)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.6a2...V0.4.6a3)
 
 **Fixed bugs:**
 
