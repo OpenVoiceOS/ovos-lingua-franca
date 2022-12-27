@@ -648,6 +648,7 @@ def extract_number_uk(text, short_scale=True, ordinals=False):
                                    was found
 
     """
+    print(f'before normalixation {text}')
     return _extract_number_with_text_uk(tokenize(text.lower()),
                                         short_scale, ordinals).value
 
@@ -700,6 +701,7 @@ def extract_duration_uk(text):
 
     for (unit_uk, unit_en) in _TIME_UNITS_CONVERSION.items():
         unit_pattern = pattern.format(unit=unit_uk)
+        print(unit_pattern)
 
         def repl(match):
             time_units[unit_en] += float(match.group(1))
@@ -756,6 +758,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
         s = s.replace("сьогодні вечером|сьогодні ввечері|вечором", "ввечері")
         s = s.replace("сьогодні вночі", "вночі")
         word_list = s.split()
+        print(f'word_list {word_list}')
 
         for idx, word in enumerate(word_list):
             ##########
@@ -817,6 +820,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
         return None
 
     anchor_date = anchor_date or now_local()
+    print(f'anchor_date {anchor_date}')
     found = False
     day_specified = False
     day_offset = False
@@ -835,7 +839,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
     time_qualifiers_pm.extend(_WORDS_EVENING_UK)
     time_qualifiers_pm.extend(_WORDS_NIGHT_UK)
     time_qualifiers_list = set(time_qualifiers_am + time_qualifiers_pm)
-    markers = ['на', 'у', 'в', 'о', 'до', 'на', 'це',
+    markers = ['на', 'у', 'в', 'о', 'до', 'це',
                'біля', 'цей', 'через', 'після', 'за', 'той']
     days = ["понеділок", "вівторок", "середа",
             "четвер", "п'ятниця", "субота", "неділя"]
@@ -855,8 +859,10 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
 
         if word in markers:
             preposition = word
+        print(f'preposition {preposition}')
 
         word = _text_uk_inflection_normalize(word, 2)
+        print(f'word {word}')
         word_prev_prev = _text_uk_inflection_normalize(
             words[idx - 2], 2) if idx > 1 else ""
         word_prev = _text_uk_inflection_normalize(
@@ -885,7 +891,9 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                 year_offset = multiplier * 10
             elif word_next == "століття" or word_next == "сторіччя":
                 year_offset = multiplier * 100
-            elif word_next == "тисячоліття":
+            elif word_next in ["тисячоліття", "тисячоліть"]:
+                year_offset = multiplier * 1000
+            elif word_next in ["тисяча", "тисячі", "тисяч"]:
                 year_offset = multiplier * 1000
         elif word in time_qualifiers_list and preposition != "через" and word_next != "тому":
             time_qualifier = word
@@ -908,23 +916,28 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
         elif word == "вчора" and not from_flag:
             day_offset = -1
             used += 1
-        elif (word in ["день", "дня",  "дні"] and
+        elif (word in ["день", "дня",  "дні", "днів"] and
               word_next == "після" and
               word_next_next == "завтра" and
               not from_flag and
               (not word_prev or not word_prev[0].isdigit())):
             day_offset = 2
             used = 2
-        elif word in ["день", "дня",  "дні"] and is_numeric(word_prev) and preposition == "через":
+        elif word in ["день", "дня",  "дні", "днів"] and is_numeric(word_prev) and preposition == "через":
             if word_prev and word_prev[0].isdigit():
                 day_offset += int(word_prev)
                 start -= 1
                 used = 2
-        elif word in ["день", "дня",  "дні"] and is_numeric(word_prev) and word_next == "тому":
+        elif word in ["день", "дня",  "дні", "днів"] and is_numeric(word_prev) and word_next == "тому":
             if word_prev and word_prev[0].isdigit():
                 day_offset += -int(word_prev)
                 start -= 1
                 used = 3
+        elif word in ["день", "дня",  "дні", "днів"] and is_numeric(word_prev) and word_prev_prev == "на":
+            if word_prev and word_prev[0].isdigit():
+                day_offset += int(word_prev)
+                start -= 1
+                used = 2
         elif word == "сьогодні" and not from_flag and word_prev:
             if word_prev[0].isdigit():
                 day_offset += int(word_prev) * 7
@@ -939,7 +952,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                 start -= 1
                 used = 2
                 # parse 10 months, next month, last month
-        elif word == "неділя" and not from_flag and preposition in ["через", "на"]:
+        elif word == "тиждень" and not from_flag and preposition in ["через", "на"]:
             if word_prev[0].isdigit():
                 day_offset = int(word_prev) * 7
                 start -= 1
@@ -967,8 +980,13 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                 used = 2
         # parse 5 years, next year, last year
         elif word == "рік" and not from_flag and preposition in ["через", "на"]:
+            print(f'word_prev_prev {word_prev_prev}, word_prev {word_prev}')
             if word_prev[0].isdigit():
-                year_offset = int(word_prev)
+                if word_prev_prev[0].isdigit():
+                    year_offset = int(word_prev)*int(word_prev_prev)
+                else:
+                    year_offset = int(word_prev)
+                print(f'year_offset {year_offset}')
                 start -= 1
                 used = 2
             elif word_prev in _WORDS_NEXT_UK:
@@ -1122,6 +1140,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
 
         # parse noon, midnight, morning, afternoon, evening
         used = 0
+        print(markers)
         if word == "опівдні":
             hr_abs = 12
             used += 1
@@ -1149,12 +1168,13 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                 hr_abs = 22
         # parse half an hour, quarter hour
         #  should be added different variations oh "hour forms"
-        elif word == "година" and \
+        elif word in ["година", "годину", "години"] and \
                 (word_prev in markers or word_prev_prev in markers):
             if word_prev in ["пів", "половина", "опів на", "опів"]:
                 min_offset = 30
             elif word_prev == "чверть":
                 min_offset = 15
+            #parse in an hour
             elif word_prev == "через":
                 hr_offset = 1
             else:
@@ -1169,12 +1189,13 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
             min_abs = -1
             # parse 5:00 am, 12:00 p.m., etc
         # parse in a minute
-        elif word == "хвилинy" and word_prev == "через":
+        elif word == "хвилину" and word_prev == "через":
             min_offset = 1
             words[idx - 1] = ""
+            print(f'used {used}')
             used += 1
         # parse in a second
-        elif word == "секундy" and word_prev == "через":
+        elif word == "секунду" and word_prev == "через":
             sec_offset = 1
             words[idx - 1] = ""
             used += 1
@@ -1347,7 +1368,7 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                         if word_next == "година":
                             used += 1
                     elif (
-                            (word_next == "година" or
+                            (word_next == "година" or word_next == "годину" or
                              remainder == "година") and
                             word[0] != '0' and
                             # (wordPrev != "в" and wordPrev != "на")
@@ -1691,9 +1712,9 @@ def _text_uk_inflection_normalize(word, arg):
             return "день"
         if word in ["тижні", "тижнів", "тижнями", "тиждень", "тижня"]:
             return "тиждень"
-        if word in ["місяцем", "місяці", "місяця", "місяцях", "місяцем", "місяцями"]:
+        if word in ["місяцем", "місяці", "місяця", "місяцях", "місяцем", "місяцями", "місяців"]:
             return "місяць"
-        if word in ["року", "роки", "році", "роках", "роком", "роками"]:
+        if word in ["року", "роки", "році", "роках", "роком", "роками", "років"]:
             return "рік"
         if word in _WORDS_MORNING_UK:
             return "вранці"
@@ -1705,6 +1726,10 @@ def _text_uk_inflection_normalize(word, arg):
             return "ніч"
         if word in ["вікенд", "вихідних", "вихідними"]:
             return "вихідні"
+        if word in ["столітті", "століттях", "століть"]:
+            return "століття"
+        if word in ["десятиліття", "десятиліть", "десятиліттях"]:
+            return "десятиліття"
         if word in ["столітті", "століттях", "століть"]:
             return "століття"
 
@@ -1733,7 +1758,7 @@ def _text_uk_inflection_normalize(word, arg):
         if word[-3:] in ["ого", "ому"]:
             tmp = word[:-3] + "ень"
         elif word[-2:] in ["ні", "ня"]:
-            tmp = word[:-3] + "ень"
+            tmp = word[:-2] + "ень"
         for name in _MONTHS_UK:
             if name == tmp:
                 return name

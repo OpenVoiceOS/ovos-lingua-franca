@@ -407,9 +407,9 @@ class TestNiceDateFormat(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                0, 2, 3, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt, use_24hour=False),
-                         "дванадцять нуль два")
+                         "дванадцята година нуль два")
         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-                         "дванадцять нуль два ночі")
+                         "дванадцята година нуль два ночі")
         self.assertEqual(nice_time(dt, speech=False, use_24hour=False),
                          "12:02")
         self.assertEqual(nice_time(dt, speech=False, use_24hour=False, use_ampm=True),
@@ -447,19 +447,19 @@ class TestNiceDateFormat(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                12, 15, 9, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt, use_24hour=False),
-                         "чверть після дванадцятої")
+                         "чверть після дванадцятої години")
         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-                         "чверть після дванадцятої дня")
+                         "чверть після дванадцятої години дня")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 30, 00, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-                         "половина після п'ятої ранку")
+                         "половина після п'ятої години ранку")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 45, 00, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt, use_24hour=False),
-                         "без чверті два")
+                         "без четверті друга година")
 
     def test_nice_date(self):
         lang = "uk-uk"
@@ -540,9 +540,10 @@ class TestNiceDateFormat(unittest.TestCase):
     def test_nice_duration(self):
 
         self.assertEqual(nice_duration(1), "одна секунда")
-        self.assertEqual(nice_duration(3), "три секундs")
+        self.assertEqual(nice_duration(3), "три секунди")
         self.assertEqual(nice_duration(1, speech=False), "0:01")
         self.assertEqual(nice_duration(61), "одна хвилина одна секунда")
+        self.assertEqual(nice_duration(121), "дві хвилини одна секунда")
         self.assertEqual(nice_duration(61, speech=False), "1:01")
         self.assertEqual(nice_duration(5000),
                          "одна година двадцять три хвилини двадцять секунд")

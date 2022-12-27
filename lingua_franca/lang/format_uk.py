@@ -17,7 +17,8 @@
 
 from lingua_franca.lang.format_common import convert_to_mixed_fraction
 from lingua_franca.lang.common_data_uk import _NUM_STRING_UK, \
-    _FRACTION_STRING_UK, _LONG_SCALE_UK, _SHORT_SCALE_UK, _SHORT_ORDINAL_UK, _LONG_ORDINAL_UK
+    _FRACTION_STRING_UK, _LONG_SCALE_UK, _SHORT_SCALE_UK, \
+    _SHORT_ORDINAL_UK, _LONG_ORDINAL_UK, HOURS_UK
 from lingua_franca.internal import FunctionNotLocalizedError
 
 
@@ -354,20 +355,26 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
             string = dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
-
+    print(f'String {string}')
     if not speech:
         return string
 
     # Generate a speakable version of the time
     if use_24hour:
+        print(f'24 h format')
         speak = ""
 
         # Either "0 8 hundred" or "13 hundred"
         if string[0] == '0':
-            speak += pronounce_hour_uk(int(string[0])) + " "
+            speak = pronounce_hour_uk(int(string[0]))
+            if not speak:
+                speak = pronounce_number_uk(int(string[0]))+' '
             speak += pronounce_number_uk(int(string[1]))
         else:
             speak = pronounce_hour_uk(int(string[0:2]))
+            if speak == None:
+                speak = pronounce_number_uk(int(string[0:2]))
+            print(f'speak {speak}')
 
         speak += " "
         if string[3:5] == '00':
@@ -378,6 +385,7 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
                 speak += pronounce_number_uk(int(string[4]))
             else:
                 speak += pronounce_number_uk(int(string[3:5]))
+        print(f'speak {speak}')
         return speak
     else:
         if dt.hour == 0 and dt.minute == 0:
@@ -386,13 +394,14 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
             return "опівдні"
 
         hour = dt.hour % 12 or 12  # 12 hour clock and 0 is spoken as 12
+        print(f'hour {hour}')
         if dt.minute == 15:
-            speak = pronounce_hour_uk(hour) + " з чвертю"
+            speak = "чверть після " + pronounce_hour_genitive_uk(hour)
         elif dt.minute == 30:
-            speak = pronounce_hour_uk(hour) + " з половиною"
+            speak = "половина після " + pronounce_hour_genitive_uk(hour)
         elif dt.minute == 45:
             next_hour = (dt.hour + 1) % 12 or 12
-            speak = "без четверти " + pronounce_hour_uk(next_hour)
+            speak = "без четверті " + pronounce_hour_uk(next_hour)
         else:
             speak = pronounce_hour_uk(hour)
 
@@ -403,7 +412,7 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
                     return speak + " " + plural_uk(dt.hour % 12, "година", "години", "годин", "годиною", "годинами", "годині")
             else:
                 if dt.minute < 10:
-                    speak += " ноль"
+                    speak += " нуль"
                 speak += " " + pronounce_number_uk(dt.minute)
 
         if use_ampm:
@@ -443,12 +452,14 @@ def nice_duration_uk(duration, speech=True):
 
     if days > 0:
         out += pronounce_number_uk(days)
-        out += " " + plural_uk(days, "день", "дня", "днів", "днем", "днями", "днем")
+        out += " " + plural_uk(days, "день", "дня", "днів")
     if hours > 0:
         if out:
             out += " "
-        out += pronounce_number_uk(hours)
-        out += " " + plural_uk(hours, "година", "години", "годин", "годиною", "годинами", "годині")
+        out += pronounce_number_feminine_uk(hours)
+        if out == 'один':
+            out = 'одна'
+        out += " " + plural_uk(hours, "година", "години", "годин")
     if minutes > 0:
         if out:
             out += " "
@@ -464,9 +475,17 @@ def nice_duration_uk(duration, speech=True):
 
 
 def pronounce_hour_uk(num):
-    if num == 1:
-        return "година"
-    return pronounce_number_uk(num)
+    if num in HOURS_UK.keys():
+        return HOURS_UK[num] + ' година'
+
+
+def pronounce_hour_genitive_uk(num):
+    if num in HOURS_UK.keys():
+        if num == 3:
+            gen_hour = HOURS_UK[num][:-1]+'ьої'
+        else:
+            gen_hour = HOURS_UK[num][:-1]+'ої'
+        return gen_hour + ' години'
 
 
 def pronounce_number_feminine_uk(num):
@@ -476,7 +495,7 @@ def pronounce_number_feminine_uk(num):
     if num % 10 == 1 and num // 10 != 1:
         return pronounced[:-2] + "на"
     elif num % 10 == 2 and num // 10 != 1:
-        return pronounced[:-1] + "е"
+        return pronounced[:-1] + "і"
 
     return pronounced
 
