@@ -25,7 +25,7 @@ from lingua_franca.parse import extract_duration
 from lingua_franca.parse import extract_number, extract_numbers
 from lingua_franca.parse import get_gender
 from lingua_franca.parse import normalize
-from lingua_franca.time import default_timezone, to_local
+from lingua_franca.time import default_timezone, to_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
 from lingua_franca.parse import extract_langcode
 from lingua_franca.parse import yes_or_no
 
@@ -596,6 +596,38 @@ class TestExtractDuration(unittest.TestCase):
                          (timedelta(minutes=4.5), "until sunset"))
         self.assertEqual(extract_duration("Nineteen minutes past THE hour"),
                          (timedelta(minutes=19), "past THE hour"))
+
+    def test_non_std_units(self):
+        self.assertEqual(extract_duration("1 month"),
+                         (timedelta(days=DAYS_IN_1_MONTH), ""))
+        self.assertEqual(
+            extract_duration("1 month"),
+            (timedelta(days=DAYS_IN_1_MONTH), ""))
+
+        self.assertEqual(extract_duration("3 months"),
+                         (timedelta(days=DAYS_IN_1_MONTH * 3), ""))
+        self.assertEqual(extract_duration("a year"),
+                         (timedelta(days=DAYS_IN_1_YEAR), ""))
+        self.assertEqual(extract_duration("1 year"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1), ""))
+        self.assertEqual(extract_duration("5 years"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 5), ""))
+        self.assertEqual(extract_duration("a decade"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("1 decade"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("5 decades"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10 * 5), ""))
+        self.assertEqual(extract_duration("1 century"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("a century"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("5 centuries"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100 * 5), ""))
+        self.assertEqual(extract_duration("1 millennium"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000), ""))
+        self.assertEqual(extract_duration("5 millenniums"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000 * 5), ""))
 
 
 class TestExtractDateTime(unittest.TestCase):
