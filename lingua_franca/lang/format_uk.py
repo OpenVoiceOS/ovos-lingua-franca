@@ -355,13 +355,11 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
             string = dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
-    print(f'String {string}')
     if not speech:
         return string
 
     # Generate a speakable version of the time
     if use_24hour:
-        print(f'24 h format')
         speak = ""
 
         # Either "0 8 hundred" or "13 hundred"
@@ -374,7 +372,6 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
             speak = pronounce_hour_uk(int(string[0:2]))
             if speak == None:
                 speak = pronounce_number_uk(int(string[0:2]))
-            print(f'speak {speak}')
 
         speak += " "
         if string[3:5] == '00':
@@ -385,7 +382,6 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
                 speak += pronounce_number_uk(int(string[4]))
             else:
                 speak += pronounce_number_uk(int(string[3:5]))
-        print(f'speak {speak}')
         return speak
     else:
         if dt.hour == 0 and dt.minute == 0:
@@ -394,7 +390,6 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
             return "опівдні"
 
         hour = dt.hour % 12 or 12  # 12 hour clock and 0 is spoken as 12
-        print(f'hour {hour}')
         if dt.minute == 15:
             speak = "чверть після " + pronounce_hour_genitive_uk(hour)
         elif dt.minute == 30:
