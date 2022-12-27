@@ -49,6 +49,7 @@ def yes_or_no(text, lang=""):
 # TODO - variant kwarg - ISO 639-2 vs ISO 639-1
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def extract_langcode(text, lang=""):
+    lang = get_full_lang_code(lang)
     resource_file = resolve_resource_file(f"text/{lang}/langs.json") or \
                     resolve_resource_file("text/en-us/langs.json")
     LANGUAGES = {}

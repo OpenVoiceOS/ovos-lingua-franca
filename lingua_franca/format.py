@@ -248,6 +248,7 @@ date_time_format = DateTimeFormat(os.path.join(os.path.dirname(__file__),
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def pronounce_lang(lang_code, lang=""):
+    lang = get_full_lang_code(lang)
     resource_file = resolve_resource_file(f"text/{lang}/langs.json") or \
                     resolve_resource_file("text/en-us/langs.json")
     with open(resource_file) as f:
