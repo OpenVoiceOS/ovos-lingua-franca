@@ -257,7 +257,7 @@ def pronounce_lang(lang_code, lang=""):
     return LANGUAGES.get(lang_code) or LANGUAGES.get(lang2) or lang_code
 
 
-@localized_function(run_own_code_on=[UnsupportedLanguageError])
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_number(number, lang='', speech=True, denominators=None):
     """Format a float to human readable functions
 
@@ -320,6 +320,7 @@ def pronounce_number(number, lang='', places=2, short_scale=True,
     """
 
 
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_date(dt, lang='', now=None):
     """
     Format a datetime to a pronounceable date
@@ -344,6 +345,7 @@ def nice_date(dt, lang='', now=None):
     return date_time_format.date_format(dt, full_code, now)
 
 
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_date_time(dt, lang='', now=None, use_24hour=False,
                    use_ampm=False):
     """
@@ -373,6 +375,7 @@ def nice_date_time(dt, lang='', now=None, use_24hour=False,
                                              use_ampm)
 
 
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_year(dt, lang='', bc=False):
     """
         Format a datetime to a pronounceable year
