@@ -1,0 +1,50 @@
+# This workflow will generate a distribution and upload it to PyPI
+
+name: Generate Markdown
+on:
+  push:
+    branches:
+      - dev
+    paths-ignore:
+      - 'lingua_franca/version.py'
+      - 'test/**'
+      - 'examples/**'
+      - '.github/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'lang_support.md'
+      - 'MANIFEST.in'
+      - 'readme.md'
+      - 'scripts/**'
+  workflow_dispatch:
+
+jobs:
+  gen_mkdown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: dev
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install python3-dev
+          python -m pip install build wheel
+      - name: Install core repo
+        run: |
+          pip install .
+      - name: Generate Markdown
+        run: |
+          VER=$(python setup.py --version)
+          python scripts/generate_mkdown.py
+      - name: Commit to dev
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: generate_markdown
+          branch: dev

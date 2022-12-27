@@ -33,6 +33,9 @@ from lingua_franca.internal import localized_function, \
 
 _REGISTERED_FUNCTIONS = ("nice_number",
                          "nice_time",
+                         "nice_date",
+                         "nice_date_time",
+                         "nice_year",
                          "pronounce_number",
                          "pronounce_lang",
                          "nice_response",
