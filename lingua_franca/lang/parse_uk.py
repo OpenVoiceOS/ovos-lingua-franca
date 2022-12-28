@@ -152,7 +152,6 @@ def _convert_words_to_numbers_uk(text, short_scale=True, ordinals=False):
     numbers_to_replace = \
         _extract_numbers_with_text_uk(tokens, short_scale, ordinals)
     numbers_to_replace.sort(key=lambda number: number.start_index)
-    print(f'numbers_to_replace {numbers_to_replace}')
 
     results = []
     for token in tokens:
@@ -166,7 +165,6 @@ def _convert_words_to_numbers_uk(text, short_scale=True, ordinals=False):
             if numbers_to_replace and \
                     token.index == numbers_to_replace[0].end_index:
                 numbers_to_replace.pop(0)
-    print(f'results in _convert_words_to_numbers_uk {results}')
     return ' '.join(results)
 
 
@@ -200,7 +198,6 @@ def _extract_numbers_with_text_uk(tokens, short_scale=True,
         if not to_replace:
             break
         results.append(to_replace)
-        print(f'to_replace {to_replace}')
         tokens = [
             t if not
             to_replace.start_index <= t.index <= to_replace.end_index
@@ -399,7 +396,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
         prev_word = _text_uk_inflection_normalize(prev_word, 1)
         next_word = tokens[idx + 1].word if idx + 1 < len(tokens) else ""
         next_word = _text_uk_inflection_normalize(next_word, 1)
-        print(f'prev_word {prev_word} word {word} next_word {next_word}')
 
         # In Ukrainian (?) we do not use suffix (1st,2nd,..) but use point instead (1.,2.,..)
         if is_numeric(word[:-1]) and \
@@ -437,7 +433,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
             number_words = [token]
         else:
             number_words.append(token)
-        print(f'number_words {number_words}')
         # is this word already a number ?
         if is_numeric(word):
             if word.isdigit():  # doesn't work with decimals
@@ -480,7 +475,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
         if prev_val in _STRING_NUM_UK.values() and current_val == 100:
             val = prev_val * current_val
 
-        print(f'current_val {current_val} val {val} prev_val {prev_val}, word {word}')
         # half cup
         if val is False:
             val = is_fractional_uk(word, word, short_scale=short_scale)
@@ -494,8 +488,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
                     val = 1
                 val = val * next_val
                 number_words.append(tokens[idx + 1])
-        print(f'number_words {number_words}')
-        print(f'current_val {current_val} val {val} prev_val {prev_val}, word {word}')
         if word in ['пара', 'пари', 'парою', 'парами']:
             if prev_val:
                 val = val * prev_val
@@ -515,7 +507,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
             # checking if word is digit in order not to substitute
             # existing calculated value
             new_word = re.sub(r'\.', '', word)
-            print(f"word {word, new_word.isdigit()}")
             if all([
                 prev_word in _SUMS,
                 word not in _SUMS,
@@ -523,11 +514,9 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
                 word not in multiplies,
                 current_val >= 10
             ]):
-                # Backtrack - we've got numbers we can't sum.
-                print(f'number_words before Backtrack {number_words}')
+                # Backtrack - we've got numbers we can't sum
                 number_words.pop()
                 val = prev_val
-                print(f'Backtrack val {val}')
                 break
             prev_val = val
             if word in multiplies and next_word not in multiplies:
@@ -602,7 +591,6 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
 
     if val is not None and to_sum:
         val += sum(to_sum)
-    print(f'val, number_words {val, number_words}')
     return val, number_words
 
 
@@ -648,7 +636,6 @@ def extract_number_uk(text, short_scale=True, ordinals=False):
                                    was found
 
     """
-    print(f'before normalixation {text}')
     return _extract_number_with_text_uk(tokenize(text.lower()),
                                         short_scale, ordinals).value
 
@@ -697,17 +684,14 @@ def extract_duration_uk(text):
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}(?:ів|я|и|ин|і|унд|ни|ну|ку|дні|у|днів)?"
     text = _convert_words_to_numbers_uk(text)
-    print(f'text {text}')
 
     for (unit_uk, unit_en) in _TIME_UNITS_CONVERSION.items():
         unit_pattern = pattern.format(unit=unit_uk)
-        print(unit_pattern)
 
         def repl(match):
             time_units[unit_en] += float(match.group(1))
             return ''
         text = re.sub(unit_pattern, repl, text)
-        print(f'text after processing {text}')
 
     new_text = []
     tokens_in_result_text = text.split(' ')
@@ -758,7 +742,6 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
         s = s.replace("сьогодні вечером|сьогодні ввечері|вечором", "ввечері")
         s = s.replace("сьогодні вночі", "вночі")
         word_list = s.split()
-        print(f'word_list {word_list}')
 
         for idx, word in enumerate(word_list):
             ##########
@@ -820,7 +803,6 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
         return None
 
     anchor_date = anchor_date or now_local()
-    print(f'anchor_date {anchor_date}')
     found = False
     day_specified = False
     day_offset = False
@@ -859,10 +841,8 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
 
         if word in markers:
             preposition = word
-        print(f'preposition {preposition}')
 
         word = _text_uk_inflection_normalize(word, 2)
-        print(f'word {word}')
         word_prev_prev = _text_uk_inflection_normalize(
             words[idx - 2], 2) if idx > 1 else ""
         word_prev = _text_uk_inflection_normalize(
@@ -980,13 +960,11 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
                 used = 2
         # parse 5 years, next year, last year
         elif word == "рік" and not from_flag and preposition in ["через", "на"]:
-            print(f'word_prev_prev {word_prev_prev}, word_prev {word_prev}')
             if word_prev[0].isdigit():
                 if word_prev_prev[0].isdigit():
                     year_offset = int(word_prev)*int(word_prev_prev)
                 else:
                     year_offset = int(word_prev)
-                print(f'year_offset {year_offset}')
                 start -= 1
                 used = 2
             elif word_prev in _WORDS_NEXT_UK:
@@ -1140,7 +1118,6 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
 
         # parse noon, midnight, morning, afternoon, evening
         used = 0
-        print(markers)
         if word == "опівдні":
             hr_abs = 12
             used += 1
@@ -1192,7 +1169,6 @@ def extract_datetime_uk(text, anchor_date=None, default_time=None):
         elif word == "хвилину" and word_prev == "через":
             min_offset = 1
             words[idx - 1] = ""
-            print(f'used {used}')
             used += 1
         # parse in a second
         elif word == "секунду" and word_prev == "через":

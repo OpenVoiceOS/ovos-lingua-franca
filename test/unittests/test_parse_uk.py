@@ -82,11 +82,6 @@ class TestNormalize(unittest.TestCase):
         load_language("uk-uk")
         set_default_lang("uk")
 
-        # # TODO handle this case returns 6.6
-        # self.assertEqual(
-        #    extract_number("6 крапка шість шість шість"),
-        #    6.666)
-
         self.assertEqual(extract_number("половина чашки"), 0.5)
         self.assertEqual(extract_number("пів чашки"), 0.5)
         self.assertEqual(extract_number("чверть чашки"), 0.25)
@@ -339,4 +334,3 @@ if __name__ == "__main__":
     unittest.main()
 
 
-#%%
