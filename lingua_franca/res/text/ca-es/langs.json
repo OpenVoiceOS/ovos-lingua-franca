@@ -1,0 +1,276 @@
+{
+    "ab": "Abkhaz",
+    "ae": "Avèstic",
+    "af": "Afrikaans",
+    "ak": "Àkan",
+    "am": "Amhàric",
+    "an": "Aragonès",
+    "ar": "Àrab",
+    "as": "Assamès",
+    "av": "Àvar",
+    "ay": "Aimara",
+    "az": "Àzeri",
+    "ba": "Baixkir",
+    "be": "Bielorús",
+    "bg": "Búlgar",
+    "bh": "Bihari",
+    "bi": "Bislama",
+    "bm": "Bambara",
+    "bn": "Bengalí",
+    "bo": "Tibetà",
+    "br": "Bretó",
+    "bs": "Serbocroat",
+    "ca": "Català",
+    "ce": "Txetxè",
+    "ch": "Chamorro",
+    "co": "Cors",
+    "cr": "Cree",
+    "cs": "Txec",
+    "cu": "Antic Eslavònic",
+    "cv": "Txuvaix",
+    "cy": "Gal·Lès",
+    "da": "Danès",
+    "de": "Alemany",
+    "dv": "Divehi",
+    "dz": "Dzongka",
+    "ee": "Ewe",
+    "el": "Grec Modern",
+    "en": "Anglès",
+    "eo": "Esperanto",
+    "es": "Castellà",
+    "et": "Estonià",
+    "eu": [
+        "Basc",
+        "Èuscar"
+    ],
+    "fa": "Persa",
+    "ff": "Ful",
+    "fi": [
+        "Finès",
+        "Finlandès"
+    ],
+    "fj": "Fijià",
+    "fo": "Feroès",
+    "fr": "Francès",
+    "fy": "Frisó",
+    "ga": [
+        "Irlandès",
+        "Gaèlic Irlandès"
+    ],
+    "gd": [
+        "Gaèlic Escocès",
+        "Gaèlic"
+    ],
+    "gl": "Gallec",
+    "gn": "Guaraní",
+    "gu": "Gujarati",
+    "gv": [
+        "Manx",
+        "Gaèlic Manx"
+    ],
+    "ha": "Haussa",
+    "he": "Hebreu",
+    "hi": "Hindi",
+    "ho": [
+        "Motu",
+        "Hiri Motu"
+    ],
+    "hr": "Serbocroat",
+    "ht": [
+        "Haitià",
+        "Crioll Haitià"
+    ],
+    "hu": "Hongarès",
+    "hy": "Armeni",
+    "hz": "Herero",
+    "ia": "Interlingua",
+    "id": [
+        "Indonesi",
+        "Bahasa Indonesia",
+        "Malai"
+    ],
+    "ie": "Interllengua",
+    "ig": [
+        "Igbo",
+        "Ibo"
+    ],
+    "ii": "Yi",
+    "ik": [
+        "Esquimal",
+        "Èsquim",
+        "Inuit",
+        "Inupiaq"
+    ],
+    "io": [
+        "Esperanto",
+        "Ido"
+    ],
+    "is": "Islandès",
+    "it": "Italià",
+    "iu": [
+        "Esquimal",
+        "Èsquim",
+        "Inuit",
+        "Inuktitut"
+    ],
+    "ja": "Japonès",
+    "jv": "Javanès",
+    "ka": "Georgià",
+    "kg": "Koongo",
+    "ki": "Kikuiu",
+    "kj": "Kwanyama",
+    "kk": "Kazakh",
+    "kl": [
+        "Esquimal",
+        "Èsquim",
+        "Inuit",
+        "Kalaallisut"
+    ],
+    "km": "Khmer",
+    "kn": "Kannada",
+    "ko": "Coreà",
+    "kr": "Kanuri",
+    "ks": "Caixmiri",
+    "ku": "Kurd",
+    "kv": "Korni",
+    "kw": "Còrnic",
+    "ky": "Kirguís",
+    "la": "Llatí",
+    "lb": [
+        "Luxemburguès",
+        "Alt Alemany Inferior"
+    ],
+    "lg": "Ganda",
+    "li": [
+        "Limburguès",
+        "Flamenc",
+        "Neerlandès"
+    ],
+    "ln": "Lingala",
+    "lo": [
+        "Lao",
+        "Laosià"
+    ],
+    "lt": "Lituà",
+    "lu": "Luba",
+    "lv": "Letó",
+    "mg": "Malgaix",
+    "mh": "Marshallès",
+    "mi": "Maori",
+    "mk": "Macedònic",
+    "ml": "Malaialam",
+    "mn": [
+        "Mongol",
+        "Khalkha"
+    ],
+    "mo": "Moldau",
+    "mr": "Marathi",
+    "ms": "Malai",
+    "mt": "Maltès",
+    "my": "Birmà",
+    "na": "Nauruà",
+    "nb": [
+        "Noruec",
+        "Bokmål",
+        "Bokmål Noruec",
+        "Riksmål"
+    ],
+    "nd": "Ndebele Del Nord",
+    "ne": "Nepalès",
+    "ng": [
+        "Ovambo",
+        "Ndonga"
+    ],
+    "nl": [
+        "Neerlandès",
+        "Flamenc",
+        "Holandès"
+    ],
+    "nn": "Noruec Nynorsk",
+    "no": "Noruec",
+    "nr": "Ndebele Del Sud",
+    "nv": "Navaho",
+    "ny": [
+        "Nyanga",
+        "Chewa"
+    ],
+    "oc": [
+        "Occità",
+        "Llengua D'Oc"
+    ],
+    "oj": "Ojibwa",
+    "om": "Oromo",
+    "or": "Oriya",
+    "os": "Osset",
+    "pa": "Panjabi",
+    "pi": "Pali",
+    "pl": "Polonès",
+    "ps": "Paixtu",
+    "pt": "Portuguès",
+    "qu": "Quítxua",
+    "rm": "Retoromànic",
+    "rn": "Rundi",
+    "ro": "Romanès",
+    "ru": "Rus",
+    "rw": "Ruanda",
+    "sa": "Sànscrit",
+    "sc": "Sard",
+    "sd": "Sindhi",
+    "se": [
+        "Sami",
+        "Saami",
+        "Sàmic"
+    ],
+    "sg": "Sango",
+    "sh": "Serbocroat",
+    "si": "Singalès",
+    "sk": "Eslovac",
+    "sl": [
+        "Eslovè",
+        "Eslovènic"
+    ],
+    "sm": "Samoà",
+    "sn": "Shona",
+    "so": "Somali",
+    "sq": "Albanès",
+    "sr": "Serbi",
+    "ss": "Swazi",
+    "st": "Sotho Del Sud",
+    "su": "Sondanès",
+    "sv": "Suec",
+    "sw": "Suahili",
+    "ta": "Tàmil",
+    "te": "Telugu",
+    "tg": "Tadjik",
+    "th": "Tailandès",
+    "ti": "Tigrinya",
+    "tk": "Turcman",
+    "tl": "Tagàlog",
+    "tn": "Tswana",
+    "to": "Tongalès",
+    "tr": "Turc",
+    "ts": "Tsonga",
+    "tw": "Twi",
+    "ty": "Tahitià",
+    "ug": "Uigur",
+    "uk": "Ucraïnès",
+    "ur": "Urdú",
+    "uz": "Uzbek",
+    "ve": "Venda",
+    "vi": [
+        "Annamita",
+        "Vietnamita"
+    ],
+    "vo": "Volapük",
+    "wa": "Való",
+    "wo": "Wòlof",
+    "xh": "Xosa",
+    "yi": [
+        "Judeoalemany",
+        "Jiddisch"
+    ],
+    "yo": "Ioruba",
+    "za": "Zhuang",
+    "zh": "Xinès",
+    "zu": "Zulu"
+}

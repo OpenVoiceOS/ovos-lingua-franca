@@ -1,0 +1,238 @@
+{
+    "aa": "Afar",
+    "ab": "Abcázio",
+    "af": "Africânder",
+    "ak": "Acã",
+    "am": "Amárico",
+    "ar": "Árabe",
+    "an": "Aragonês",
+    "as": "Assamês",
+    "av": "Avárico",
+    "ae": "Avéstico",
+    "ay": "Aimará",
+    "az": "Azerbaijano",
+    "ba": "Basquir",
+    "bm": "Bâmbara",
+    "be": "Bielorrusso",
+    "bn": [
+        "Bengali",
+        "Bangla"
+    ],
+    "bh": "Maithili",
+    "bi": "Bislamá Bichlamar",
+    "bs": "Bósnio",
+    "br": "Bretão",
+    "bg": "Búlgaro",
+    "ca": "Catalão",
+    "ch": "Chamorro",
+    "ce": [
+        "Tchecheno",
+        "Checheno"
+    ],
+    "cu": [
+        "Eslavo Eclesiástico",
+        "Eslavo Antigo",
+        "Búlgaro Antigo"
+    ],
+    "cv": "Tchuvache",
+    "kw": "Córnico",
+    "co": "Corso",
+    "cr": "Cree",
+    "da": "Dinamarquês",
+    "dv": [
+        "Diveí",
+        "Maldivense"
+    ],
+    "dz": [
+        "Dzongkha",
+        "Zoncá"
+    ],
+    "en": "Inglês",
+    "eo": "Esperanto",
+    "et": "Estoniano",
+    "ee": "Jeje",
+    "fo": [
+        "Feroês",
+        "Feróico"
+    ],
+    "fj": "Fidjiano",
+    "fi": "Finlandês",
+    "fy": "Frisão Ocidental",
+    "ff": "Fula",
+    "gd": "Gaélico Escocês",
+    "ga": "Irlandês",
+    "gl": "Galego",
+    "gv": [
+        "Manês",
+        "Manx"
+    ],
+    "gn": "Guarani",
+    "gu": [
+        "Gujarati",
+        "Guzerate"
+    ],
+    "ht": [
+        "Crioulo Haitiano",
+        "Haitian"
+    ],
+    "ha": "Hauçá",
+    "he": "Hebraico",
+    "hz": "Hereró",
+    "hi": [
+        "Hindi",
+        "Híndi",
+        "Indi"
+    ],
+    "ho": "Hiri Motu",
+    "hu": "Húngaro",
+    "ig": "Ibo",
+    "io": "Ido",
+    "ii": "Yi De Sichuan",
+    "iu": "Inuktitut",
+    "ie": "Interlíngua",
+    "ia": "Interlíngua",
+    "id": "Indonésio",
+    "ik": "Inupiaq",
+    "it": "Italiano",
+    "jv": "Javanês",
+    "ja": "Japonês",
+    "kl": "Groenlandês",
+    "kn": "Canarês",
+    "ks": "Caxemir",
+    "kr": [
+        "Kanuri",
+        "Canúri"
+    ],
+    "kk": "Cazaque",
+    "km": "Khmer",
+    "ki": [
+        "Kikuyu",
+        "Gikuyu"
+    ],
+    "rw": "Quiniaruanda",
+    "ky": "Quirguiz",
+    "kv": "Komi",
+    "kg": "Kongo",
+    "ko": "Coreano",
+    "kj": "Oshikwanyama",
+    "ku": "Curdo",
+    "lo": "Laociano",
+    "la": "Latim",
+    "lv": "Letão",
+    "li": "Limburguês",
+    "ln": "Lingala",
+    "lt": "Lituano",
+    "lb": "Luxemburguês",
+    "lu": "Luba-Catanga",
+    "lg": "Luganda",
+    "mh": "Marshallês",
+    "ml": "Malaiala",
+    "mr": "Marata",
+    "mg": "Malgaxe",
+    "mt": "Maltês",
+    "mo": "Moldavo",
+    "mn": "Mongol",
+    "na": "Nauruano",
+    "nv": [
+        "Navajo",
+        "Navaho"
+    ],
+    "nr": "Ndebele Do Sul",
+    "nd": "Ndebele Do Norte",
+    "ng": "Ndonga",
+    "ne": [
+        "Nepali",
+        "Nepalês"
+    ],
+    "nn": "Novo Norueguês",
+    "nb": "Bokmål Norueguês",
+    "no": "Norueguês",
+    "ny": [
+        "Nianja",
+        "Chewa",
+        "Nyanja"
+    ],
+    "oc": "Occitano",
+    "oj": "Chippewa",
+    "or": "Oriá",
+    "om": "Oromo",
+    "os": "Oseto",
+    "pa": "Panjabi",
+    "pi": "Páli",
+    "pl": [
+        "Polaco",
+        "Polonês"
+    ],
+    "pt": "Português",
+    "ps": [
+        "Pachto",
+        "Pastó",
+        "Afegão"
+    ],
+    "qu": [
+        "Quíchua",
+        "Quéchua"
+    ],
+    "rm": "Reto-Romano",
+    "rn": [
+        "Kirundi",
+        "Rundi"
+    ],
+    "ru": "Russo",
+    "sg": "Sango",
+    "sa": "Sânscrito",
+    "si": [
+        "Cingalês",
+        "Sinhala"
+    ],
+    "sl": "Esloveno",
+    "se": "Sami Do Norte",
+    "sm": "Samoano",
+    "sn": "Chona",
+    "sd": "Sindi",
+    "so": "Somali",
+    "st": "Soto Do Sul",
+    "es": [
+        "Castelhano",
+        "Espanhol"
+    ],
+    "sc": "Sardo",
+    "ss": "Suázi",
+    "su": "Sundanês",
+    "sw": "Suaíli",
+    "sv": "Sueco",
+    "ty": "Taitiano",
+    "ta": "Tâmil",
+    "tt": "Tártaro",
+    "te": "Telugu",
+    "tg": "Tajique",
+    "tl": "Tagalo",
+    "th": "Tailandês",
+    "ti": "Tigrínia",
+    "to": "Tonganês",
+    "tn": "Tswana",
+    "ts": "Tsonga",
+    "tk": "Turcomano",
+    "tr": "Turco",
+    "tw": "Twi",
+    "ug": "Uigur",
+    "uk": "Ucraniano",
+    "ur": "Urdu",
+    "uz": [
+        "Uzbeque",
+        "Uzbek"
+    ],
+    "ve": "Venda",
+    "vi": "Vietnamita",
+    "vo": "Volapuque",
+    "wa": "Valão",
+    "wo": "Uolofe",
+    "xh": "Xhosa",
+    "yi": "Iídiche",
+    "yo": "Iorubá",
+    "za": [
+        "Zhuang",
+        "Chuang"
+    ],
+    "zu": "Zulu"
+}

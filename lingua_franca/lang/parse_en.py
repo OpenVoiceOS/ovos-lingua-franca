@@ -28,6 +28,71 @@ from lingua_franca.lang.common_data_en import _ARTICLES_EN, _LONG_ORDINAL_EN, _L
 from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
     invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer
 from lingua_franca.time import now_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.util.colors import Color, ColorOutOfSpace
+
+
+def get_color_en(text):
+    """
+        Given a color description, return a Color object
+
+        Args:
+            text (str): the string describing a color
+        Returns:
+            (list): list of tuples with detected color and span of the
+                    color in parent utterance [(Color, (start_idx, end_idx))]
+        """
+    resource_file = resolve_resource_file(f"text/en-us/colors.json") or \
+                    resolve_resource_file("text/webcolors.json")
+    with open(resource_file) as f:
+        COLORS = {v.lower(): k for k, v in json.load(f).items()}
+
+    text = text.lower()
+    if text in COLORS:
+        h = COLORS.get(text)
+        return Color.from_hex(h)
+
+    # try to parse color description
+    color = ColorOutOfSpace()
+
+    if "bright" in text:
+        color.set_luminance(0.7)
+    if "dark" in text:
+        color.set_luminance(0.3)
+
+    if "light" in text or "pale" in text:
+        color.set_saturation(0.4)
+    if "grey" in text or "gray" in text:
+        color.set_saturation(0.25)
+
+    if "black" in text:
+        color.set_luminance(0.1)
+    if "white" in text:
+        color.set_luminance(1)
+
+    red = 0.0
+    orange = 0.10
+    yellow = 0.16
+    green = 0.33
+    cyan = 0.5
+    blue = 0.66
+    violet = 0.83
+
+    if "orange" in text:
+        color.hue = orange
+    elif "yellow" in text:
+        color.hue = yellow
+    elif "green" in text:
+        color.hue = green
+    elif "cyan" in text:
+        color.hue = cyan
+    elif "blue" in text:
+        color.hue = blue
+    elif "violet" in text:
+        color.hue = violet
+    else:
+        color.hue = red
+
+    return color
 
 
 def _convert_words_to_numbers_en(text, short_scale=True, ordinals=False):

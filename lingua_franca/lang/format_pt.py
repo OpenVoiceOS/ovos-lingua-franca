@@ -13,10 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+import json
 from lingua_franca.lang.format_common import convert_to_mixed_fraction
 from lingua_franca.lang.common_data_pt import _FRACTION_STRING_PT, \
     _NUM_STRING_PT
+from lingua_franca.internal import resolve_resource_file
 
 
 def nice_number_pt(number, speech, denominators=range(1, 21)):
@@ -221,3 +222,58 @@ def nice_time_pt(dt, speech=True, use_24hour=False, use_ampm=False):
             elif hour != 0 and hour != 12:
                 speak += " da noite"
     return speak
+
+
+def describe_color_pt(color):
+    resource_file = resolve_resource_file(f"text/pt-pt/colors.json")
+    with open(resource_file) as f:
+        COLORS = json.load(f)
+
+    if color.hex in COLORS:
+        return COLORS.get(color.hex)
+
+    name = color.main_color.name
+
+    # luminance
+    if color.luminance <= 0.15:
+        name = " quase preto"  # "almost black"
+    elif color.luminance >= 0.85:
+        name = " quase branco"  # "almost white"
+
+    # hue
+    # R >== B >= G Red
+    if color.red >= color.blue >= color.green and \
+            color.main_color.name != "red":
+        name += " avermelhado"  # red-ish
+    # R >== G >= = B 	Orange
+    elif color.red >= color.green >= color.blue and \
+            color.main_color.name != "orange":
+        name += " alaranjado"
+    # G >= R >== B Yellow
+    elif color.green >= color.red >= color.blue and \
+            color.main_color.name != "yellow":
+        name += " amarelado"
+    # G >== B >= R  Green
+    elif color.green >= color.blue >= color.red and \
+            color.main_color.name != "green":
+        name += " esverdeado"
+    # B >= G >= R  Blue
+    elif color.blue >= color.green >= color.red and \
+            color.main_color.name != "blue":
+        name += " azulado"
+    # B >= R >== G  Violet
+    elif color.blue >= color.red >= color.green and \
+            color.main_color.name != "purple":
+        name += " arroxeado"
+
+    # light vs dark
+    if color.luminance <= 0.3:
+        name += " escuro"  # dark
+    elif color.luminance >= 0.6:
+        name += " claro"  # light
+
+    # saturation
+    if color.saturation >= 0.85:
+        name += " e intenso"  # and intense
+
+    return name
