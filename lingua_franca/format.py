@@ -161,6 +161,7 @@ class DateTimeFormat:
         return s
 
     def _decade_format(self, number, number_tuple, lang):
+        print(number, number_tuple)
         s = self._format_string(number % 100, 'decade_format', lang)
         return s.format(x=number_tuple.x, xx=number_tuple.xx,
                         x0=number_tuple.x0, x_in_x0=number_tuple.x_in_x0,
@@ -230,7 +231,7 @@ class DateTimeFormat:
             dt.year, number_tuple, lang, formatted_decade, formatted_hundreds)
 
         s = self._format_string(dt.year, 'year_format', lang)
-
+        print(f'{dt.year, (int(dt.year / 100)), dt.year % 100, formatted_hundreds, formatted_decade, formatted_thousand, formatted_bc}')
         return re.sub(' +', ' ',
                       s.format(
                           year=str(dt.year),
