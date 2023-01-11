@@ -45,7 +45,6 @@ def nice_number_uk(number, speech=True, denominators=range(1, 21)):
 
     if not speech:
         if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
             return str(whole)
         else:
             return '{} {}/{}'.format(whole, num, den)
@@ -55,9 +54,6 @@ def nice_number_uk(number, speech=True, denominators=range(1, 21)):
     den_str = _FRACTION_STRING_UK[den]
 
     if whole == 0:
-        # if num == 1 and den <= 4:
-        #     return_string = '{}'.format(den_str)
-        # else:
         return_string = '{} {}'.format(num, den_str)
     elif num == 1 and den == 2:
         return_string = '{} з половиною'.format(whole)
@@ -370,7 +366,7 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
             speak += pronounce_number_uk(int(string[1]))
         else:
             speak = pronounce_hour_uk(int(string[0:2]))
-            if speak == None:
+            if speak is None:
                 speak = pronounce_number_uk(int(string[0:2]))
 
         speak += " "
@@ -400,25 +396,28 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
         else:
             speak = pronounce_hour_uk(hour)
 
+            if use_ampm:
+                if dt.hour < 4:
+                    speak += " ночі"
+                elif dt.hour < 12:
+                    speak += " ранку"
+                elif dt.hour < 18:
+                    speak += " дня"
+                else:
+                    speak += " вечора"
+
+            print(f'speak {speak}')
+
             if dt.minute == 0:
                 if not use_ampm:
                     if dt.hour % 12 == 1:
                         return speak
-                    return speak + " " + plural_uk(dt.hour % 12, "година", "години", "годин")
+                    return speak + " " + plural_uk(dt.hour % 12, "година", "години", "годин", "годиною", "годинами", "годині")
             else:
                 if dt.minute < 10:
                     speak += " нуль"
                 speak += " " + pronounce_number_uk(dt.minute)
 
-        if use_ampm:
-            if dt.hour < 4:
-                speak += " ночі"
-            elif dt.hour < 12:
-                speak += " ранку"
-            elif dt.hour < 18:
-                speak += " дня"
-            else:
-                speak += " вечора"
         return speak
 
 
@@ -472,6 +471,17 @@ def pronounce_hour_uk(num):
     if num in HOURS_UK.keys():
         return HOURS_UK[num] + ' година'
 
+def pronounce_mins_uk(num):
+    if num in _NUM_STRING_UK.keys():
+        if num == 1:
+            return 'одна хвилина'
+        if num == 2:
+            return 'дві хвилини'
+        if num in [10, 20, 30, 40, 50, 60]:
+            _NUM_STRING_UK[num] + 'хвилин'
+        else:
+            return
+
 
 def pronounce_hour_genitive_uk(num):
     if num in HOURS_UK.keys():
@@ -484,6 +494,7 @@ def pronounce_hour_genitive_uk(num):
 
 def pronounce_number_feminine_uk(num):
     pronounced = pronounce_number_uk(num)
+
     num %= 100
     if num % 10 == 1 and num // 10 != 1:
         return pronounced[:-2] + "на"
