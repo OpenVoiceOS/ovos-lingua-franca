@@ -162,6 +162,9 @@ class DateTimeFormat:
 
     def _decade_format(self, number, number_tuple, lang):
         s = self._format_string(number % 100, 'decade_format', lang)
+        decade = s.format(x=number_tuple.x, xx=number_tuple.xx,
+                        x0=number_tuple.x0, x_in_x0=number_tuple.x_in_x0,
+                        number=str(number % 100))
         return s.format(x=number_tuple.x, xx=number_tuple.xx,
                         x0=number_tuple.x0, x_in_x0=number_tuple.x_in_x0,
                         number=str(number % 100))
@@ -169,6 +172,10 @@ class DateTimeFormat:
     def _number_format_hundreds(self, number, number_tuple, lang,
                                 formatted_decade):
         s = self._format_string(number % 1000, 'hundreds_format', lang)
+        hundreds = s.format(xxx=number_tuple.xxx, x00=number_tuple.x00,
+                          x_in_x00=number_tuple.x_in_x00,
+                          formatted_decade=formatted_decade,
+                          number=str(number % 1000))
         return s.format(xxx=number_tuple.xxx, x00=number_tuple.x00,
                         x_in_x00=number_tuple.x_in_x00,
                         formatted_decade=formatted_decade,

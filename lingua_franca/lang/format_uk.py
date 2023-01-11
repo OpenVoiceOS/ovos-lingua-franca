@@ -404,7 +404,7 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
                 if not use_ampm:
                     if dt.hour % 12 == 1:
                         return speak
-                    return speak + " " + plural_uk(dt.hour % 12, "година", "години", "годин", "годиною", "годинами", "годині")
+                    return speak + " " + plural_uk(dt.hour % 12, "година", "години", "годин")
             else:
                 if dt.minute < 10:
                     speak += " нуль"
@@ -419,7 +419,6 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
                 speak += " дня"
             else:
                 speak += " вечора"
-
         return speak
 
 
@@ -485,7 +484,6 @@ def pronounce_hour_genitive_uk(num):
 
 def pronounce_number_feminine_uk(num):
     pronounced = pronounce_number_uk(num)
-
     num %= 100
     if num % 10 == 1 and num // 10 != 1:
         return pronounced[:-2] + "на"
