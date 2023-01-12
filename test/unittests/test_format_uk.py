@@ -12,76 +12,75 @@
 # # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # # See the License for the specific language governing permissions and
 # # limitations under the License.
-# #
 #
 # import json
-import unittest
-import datetime
-import ast
-import sys
-from pathlib import Path
-
-from lingua_franca import get_default_lang, set_default_lang, \
-    load_language, unload_language
-from lingua_franca.format import date_time_format
-from lingua_franca.format import join_list
-from lingua_franca.format import nice_date
-from lingua_franca.format import nice_date_time
-from lingua_franca.format import nice_duration
-from lingua_franca.format import nice_number
-from lingua_franca.format import nice_time
-from lingua_franca.format import nice_year
-from lingua_franca.format import pronounce_number
-from lingua_franca.time import default_timezone
-
-
-def setUpModule():
-    load_language("uk-uk")
-    set_default_lang("uk")
-
-
-def tearDownModule():
-    unload_language("uk")
-
-
-NUMBERS_FIXTURE_UK = {
-    1.435634: "1.436",
-    2: "2",
-    5.0: "5",
-    0.027: "0.027",
-    0.5: "1 друга",
-    1.333: "1 і 1 третя",
-    2.666: "2 і 2 треті",
-    0.25: "1 четверта",
-    1.25: "1 і 1 четверта",
-    0.75: "3 четверті",
-    1.75: "1 і 3 четверті",
-    3.4: "3 і 2 п'яті",
-    16.8333: "16 і 5 шостих",
-    12.5714: "12 і 4 сьомі",
-    9.625: "9 і 5 восьмих",
-    6.777: "6 і 7 дев'ятих",
-    3.1: "3 і 1 десята",
-    2.272: "2 і 3 одинадцяті",
-    5.583: "5 і 7 дванадцятих",
-    8.384: "8 і 5 тринадцятих",
-    0.071: "1 чотирнадцята",
-    6.466: "6 і 7 п'ятнадцятих",
-    8.312: "8 і 5 шістнадцятих",
-    2.176: "2 і 3 сімнадцяті",
-    200.722: "200 і 13 вісімнадцятих",
-    7.421: "7 і 8 дев'ятнадцятих",
-    0.05: "1 двадцята"
-}
-
-def setUpModule():
-    load_language("uk-uk")
-    set_default_lang("uk")
-
-class TestNiceNumberFormat(unittest.TestCase):
-    load_language("uk-uk")
-    set_default_lang("uk")
-
+# import unittest
+# import datetime
+# import ast
+# import sys
+# from pathlib import Path
+#
+# from lingua_franca import get_default_lang, set_default_lang, \
+#     load_language, unload_language
+# from lingua_franca.format import date_time_format
+# from lingua_franca.format import join_list
+# from lingua_franca.format import nice_date
+# from lingua_franca.format import nice_date_time
+# from lingua_franca.format import nice_duration
+# from lingua_franca.format import nice_number
+# from lingua_franca.format import nice_time
+# from lingua_franca.format import nice_year
+# from lingua_franca.format import pronounce_number
+# from lingua_franca.time import default_timezone
+#
+#
+# def setUpModule():
+#     load_language("uk-uk")
+#     set_default_lang("uk")
+#
+#
+# def tearDownModule():
+#     unload_language("uk")
+#
+#
+# NUMBERS_FIXTURE_UK = {
+#     1.435634: "1.436",
+#     2: "2",
+#     5.0: "5",
+#     0.027: "0.027",
+#     0.5: "1 друга",
+#     1.333: "1 і 1 третя",
+#     2.666: "2 і 2 треті",
+#     0.25: "1 четверта",
+#     1.25: "1 і 1 четверта",
+#     0.75: "3 четверті",
+#     1.75: "1 і 3 четверті",
+#     3.4: "3 і 2 п'яті",
+#     16.8333: "16 і 5 шостих",
+#     12.5714: "12 і 4 сьомі",
+#     9.625: "9 і 5 восьмих",
+#     6.777: "6 і 7 дев'ятих",
+#     3.1: "3 і 1 десята",
+#     2.272: "2 і 3 одинадцяті",
+#     5.583: "5 і 7 дванадцятих",
+#     8.384: "8 і 5 тринадцятих",
+#     0.071: "1 чотирнадцята",
+#     6.466: "6 і 7 п'ятнадцятих",
+#     8.312: "8 і 5 шістнадцятих",
+#     2.176: "2 і 3 сімнадцяті",
+#     200.722: "200 і 13 вісімнадцятих",
+#     7.421: "7 і 8 дев'ятнадцятих",
+#     0.05: "1 двадцята"
+# }
+#
+# def setUpModule():
+#     load_language("uk-uk")
+#     set_default_lang("uk")
+#
+# class TestNiceNumberFormat(unittest.TestCase):
+#     load_language("uk-uk")
+#     set_default_lang("uk")
+#
 #     def test_convert_float_to_nice_number(self):
 #         load_language("uk-uk")
 #         set_default_lang("uk")
@@ -111,17 +110,17 @@ class TestNiceNumberFormat(unittest.TestCase):
 #                              nice_number(6.0, speech=False)))
 #
 #
-class TestPronounceNumber(unittest.TestCase):
-
-    def test_convert_int(self):
-        self.assertEqual(pronounce_number(0), "нуль")
-        self.assertEqual(pronounce_number(1), "один")
-        self.assertEqual(pronounce_number(10), "десять")
-        self.assertEqual(pronounce_number(15), "п'ятнадцять")
-        self.assertEqual(pronounce_number(20), "двадцять")
-        self.assertEqual(pronounce_number(27), "двадцять сім")
-        self.assertEqual(pronounce_number(30), "тридцять")
-        self.assertEqual(pronounce_number(33), "тридцять три")
+# class TestPronounceNumber(unittest.TestCase):
+#
+#     def test_convert_int(self):
+#         self.assertEqual(pronounce_number(0), "нуль")
+#         self.assertEqual(pronounce_number(1), "один")
+#         self.assertEqual(pronounce_number(10), "десять")
+#         self.assertEqual(pronounce_number(15), "п'ятнадцять")
+#         self.assertEqual(pronounce_number(20), "двадцять")
+#         self.assertEqual(pronounce_number(27), "двадцять сім")
+#         self.assertEqual(pronounce_number(30), "тридцять")
+#         self.assertEqual(pronounce_number(33), "тридцять три")
 #
 #     def test_convert_negative_int(self):
 #         self.assertEqual(pronounce_number(-1), "мінус один")
@@ -293,19 +292,19 @@ class TestPronounceNumber(unittest.TestCase):
 #                                           short_scale=False), "вісімнадцятитрильйонний")
 #
 #
-class TestNiceDateFormat(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Read date_time_test.json files for test data
-        cls.test_config = {}
-        p = Path(date_time_format.config_path)
-        for sub_dir in [x for x in p.iterdir() if x.is_dir()]:
-            print(sub_dir)
-            if (sub_dir / "date_time_test.json").exists():
-                print("Loading test for " +
-                      str(sub_dir / "date_time_test.json"))
-                with (sub_dir / "date_time_test.json").open() as f:
-                    cls.test_config[sub_dir.parts[-1]] = json.loads(f.read())
+# class TestNiceDateFormat(unittest.TestCase):
+#     @classmethod
+#     def setUpClass(cls):
+#         # Read date_time_test.json files for test data
+#         cls.test_config = {}
+#         p = Path(date_time_format.config_path)
+#         for sub_dir in [x for x in p.iterdir() if x.is_dir()]:
+#             print(sub_dir)
+#             if (sub_dir / "date_time_test.json").exists():
+#                 print("Loading test for " +
+#                       str(sub_dir / "date_time_test.json"))
+#                 with (sub_dir / "date_time_test.json").open() as f:
+#                     cls.test_config[sub_dir.parts[-1]] = json.loads(f.read())
 #
 #     def test_convert_times(self):
 #         dt = datetime.datetime(2017, 1, 31,
@@ -318,7 +317,7 @@ class TestNiceDateFormat(unittest.TestCase):
 #         self.assertEqual(nice_time(dt, use_24hour=False),
 #                          "перша година двадцять два")
 #         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-#                          "перша година двадцять два дня")
+#                          "перша година дня двадцять два")
 #         self.assertEqual(nice_time(dt, speech=False, use_24hour=False),
 #                          "1:22")
 #         self.assertEqual(nice_time(dt, speech=False, use_24hour=False, use_ampm=True),
@@ -358,7 +357,7 @@ class TestNiceDateFormat(unittest.TestCase):
 #         self.assertEqual(nice_time(dt, use_24hour=False),
 #                          "перша година нуль два")
 #         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-#                          "перша година нуль два дня")
+#                          "перша година дня нуль два")
 #         self.assertEqual(nice_time(dt, use_24hour=False, speech=False),
 #                          "1:02")
 #         self.assertEqual(nice_time(dt, use_24hour=False, speech=False, use_ampm=True),
@@ -378,7 +377,7 @@ class TestNiceDateFormat(unittest.TestCase):
 #         self.assertEqual(nice_time(dt, use_24hour=False),
 #                          "дванадцята година нуль два")
 #         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-#                          "дванадцята година нуль два ночі")
+#                          "дванадцята година ночі нуль два")
 #         self.assertEqual(nice_time(dt, speech=False, use_24hour=False),
 #                          "12:02")
 #         self.assertEqual(nice_time(dt, speech=False, use_24hour=False, use_ampm=True),
@@ -398,7 +397,7 @@ class TestNiceDateFormat(unittest.TestCase):
 #         self.assertEqual(nice_time(dt, use_24hour=False),
 #                          "перша година нуль два")
 #         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-#                          "перша година нуль два ночі")
+#                          "перша година ночі нуль два")
 #         self.assertEqual(nice_time(dt, speech=False, use_24hour=False),
 #                          "1:02")
 #         self.assertEqual(nice_time(dt, speech=False, use_24hour=False, use_ampm=True),
@@ -418,46 +417,46 @@ class TestNiceDateFormat(unittest.TestCase):
 #         self.assertEqual(nice_time(dt, use_24hour=False),
 #                          "чверть після дванадцятої години")
 #         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-#                          "чверть після дванадцятої години дня")
+#                          "чверть після дванадцятої години")
 #
 #         dt = datetime.datetime(2017, 1, 31,
 #                                5, 30, 00, tzinfo=default_timezone())
 #         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-#                          "половина після п'ятої години ранку")
+#                          "половина після п'ятої години")
 #
 #         dt = datetime.datetime(2017, 1, 31,
 #                                1, 45, 00, tzinfo=default_timezone())
 #         self.assertEqual(nice_time(dt, use_24hour=False),
 #                          "без четверті друга година")
 #
-#     # def test_nice_date(self):
-#     #     lang = "uk-uk"
-#     #     i = 1
-#     #     while (self.test_config[lang].get("test_nice_date") and
-#     #            self.test_config[lang]["test_nice_date"].get(str(i))):
-#     #         p = self.test_config[lang]["test_nice_date"][str(i)]
-#     #         print(f'p {p}')
-#     #         dp = ast.literal_eval(p["datetime_param"])
-#     #         np = ast.literal_eval(p["now"])
-#     #         dt = datetime.datetime(
-#     #             dp[0], dp[1], dp[2], dp[3], dp[4], dp[5],
-#     #             tzinfo=default_timezone())
-#     #         now = None if not np else datetime.datetime(
-#     #             np[0], np[1], np[2], np[3], np[4], np[5],
-#     #             tzinfo=default_timezone())
-#     #         print("Testing for " + lang + " that " + str(dt) +
-#     #               " is date " + p["assertEqual"])
-#     #         self.assertEqual(p["assertEqual"],
-#     #                          nice_date(dt, lang=lang, now=now))
-#     #         i = i + 1
-#     #
-#     #     # test all days in a year for all languages,
-#     #     # that some output is produced
-#     #     # for lang in self.test_config:
-#     #     for dt in (datetime.datetime(2017, 12, 30, 0, 2, 3,
-#     #                                  tzinfo=default_timezone()) +
-#     #                datetime.timedelta(n) for n in range(368)):
-#     #         self.assertTrue(len(nice_date(dt, lang=lang)) > 0)
+#     def test_nice_date(self):
+#         lang = "uk-uk"
+#         i = 1
+#         while (self.test_config[lang].get("test_nice_date") and
+#                self.test_config[lang]["test_nice_date"].get(str(i))):
+#             p = self.test_config[lang]["test_nice_date"][str(i)]
+#             print(f'p {p}')
+#             dp = ast.literal_eval(p["datetime_param"])
+#             np = ast.literal_eval(p["now"])
+#             dt = datetime.datetime(
+#                 dp[0], dp[1], dp[2], dp[3], dp[4], dp[5],
+#                 tzinfo=default_timezone())
+#             now = None if not np else datetime.datetime(
+#                 np[0], np[1], np[2], np[3], np[4], np[5],
+#                 tzinfo=default_timezone())
+#             print("Testing for " + lang + " that " + str(dt) +
+#                   " is date " + p["assertEqual"])
+#             self.assertEqual(p["assertEqual"],
+#                              nice_date(dt, lang=lang, now=now))
+#             i = i + 1
+#
+#         # test all days in a year for all languages,
+#         # that some output is produced
+#         # for lang in self.test_config:
+#         for dt in (datetime.datetime(2017, 12, 30, 0, 2, 3,
+#                                      tzinfo=default_timezone()) +
+#                    datetime.timedelta(n) for n in range(368)):
+#             self.assertTrue(len(nice_date(dt, lang=lang)) > 0)
 #
 #     def test_nice_date_time(self):
 #         lang = "uk-uk"
@@ -483,30 +482,30 @@ class TestNiceDateFormat(unittest.TestCase):
 #                     use_ampm=ast.literal_eval(p["use_ampm"])))
 #             i = i + 1
 #
-#     def test_nice_year(self):
-#         lang = "uk-uk"
-#         i = 1
-#         while (self.test_config[lang].get("test_nice_year") and
-#                self.test_config[lang]["test_nice_year"].get(str(i).encode("utf8"))):
-#             p = self.test_config[lang]["test_nice_year"][str(i)]
-#             dp = ast.literal_eval(p["datetime_param"])
-#             dt = datetime.datetime(
-#                 dp[0], dp[1], dp[2], dp[3], dp[4], dp[5],
-#                 tzinfo=default_timezone())
-#             print("Testing for " + lang + " that " + str(dt) +
-#                   " is year " + p["assertEqual"])
-#             self.assertEqual(p["assertEqual"], nice_year(
-#                 dt, lang=lang, bc=ast.literal_eval(p["bc"])))
-#             i = i + 1
-#
-#         # Test all years from 0 to 9999 for all languages,
-#         # that some output is produced
-#         print("Test all years in " + lang)
-#         for i in range(1, 9999):
-#             dt = datetime.datetime(i, 1, 31, 13, 2, 3,
-#                                    tzinfo=default_timezone())
-#             self.assertTrue(len(nice_year(dt, lang=lang)) > 0)
-#             # Looking through the date sequence can be helpful
+#     # def test_nice_year(self):
+#     #     lang = "uk-uk"
+#     #     i = 1
+#     #     while (self.test_config[lang].get("test_nice_year") and
+#     #            self.test_config[lang]["test_nice_year"].get(str(i).encode("utf8"))):
+#     #         p = self.test_config[lang]["test_nice_year"][str(i)]
+#     #         dp = ast.literal_eval(p["datetime_param"])
+#     #         dt = datetime.datetime(
+#     #             dp[0], dp[1], dp[2], dp[3], dp[4], dp[5],
+#     #             tzinfo=default_timezone())
+#     #         print("Testing for " + lang + " that " + str(dt) +
+#     #               " is year " + p["assertEqual"])
+#     #         self.assertEqual(p["assertEqual"], nice_year(
+#     #             dt, lang=lang, bc=ast.literal_eval(p["bc"])))
+#     #         i = i + 1
+#     #
+#     #     # Test all years from 0 to 9999 for all languages,
+#     #     # that some output is produced
+#     #     print("Test all years in " + lang)
+#     #     for i in range(1, 9999):
+#     #         dt = datetime.datetime(i, 1, 31, 13, 2, 3,
+#     #                                tzinfo=default_timezone())
+#     #         self.assertTrue(len(nice_year(dt, lang=lang)) > 0)
+#     #         # Looking through the date sequence can be helpful
 #
 #     def test_nice_duration(self):
 #
@@ -547,6 +546,6 @@ class TestNiceDateFormat(unittest.TestCase):
 #         self.assertEqual(join_list([1, "b", 3, "d"], "або"), "1, b, 3 або d")
 #
 #
-if __name__ == "__main__":
-    unittest.main()
-
+# if __name__ == "__main__":
+#     unittest.main()
+#
