@@ -15,73 +15,73 @@
 # #
 #
 # import json
-# import unittest
-# import datetime
-# import ast
-# import sys
-# from pathlib import Path
-#
-# from lingua_franca import get_default_lang, set_default_lang, \
-#     load_language, unload_language
-# from lingua_franca.format import date_time_format
-# from lingua_franca.format import join_list
-# from lingua_franca.format import nice_date
-# from lingua_franca.format import nice_date_time
-# from lingua_franca.format import nice_duration
-# from lingua_franca.format import nice_number
-# from lingua_franca.format import nice_time
-# from lingua_franca.format import nice_year
-# from lingua_franca.format import pronounce_number
-# from lingua_franca.time import default_timezone
-#
-#
-# def setUpModule():
-#     load_language("uk-uk")
-#     set_default_lang("uk")
-#
-#
-# def tearDownModule():
-#     unload_language("uk")
-#
-#
-# NUMBERS_FIXTURE_UK = {
-#     1.435634: "1.436",
-#     2: "2",
-#     5.0: "5",
-#     0.027: "0.027",
-#     0.5: "1 друга",
-#     1.333: "1 і 1 третя",
-#     2.666: "2 і 2 треті",
-#     0.25: "1 четверта",
-#     1.25: "1 і 1 четверта",
-#     0.75: "3 четверті",
-#     1.75: "1 і 3 четверті",
-#     3.4: "3 і 2 п'яті",
-#     16.8333: "16 і 5 шостих",
-#     12.5714: "12 і 4 сьомі",
-#     9.625: "9 і 5 восьмих",
-#     6.777: "6 і 7 дев'ятих",
-#     3.1: "3 і 1 десята",
-#     2.272: "2 і 3 одинадцяті",
-#     5.583: "5 і 7 дванадцятих",
-#     8.384: "8 і 5 тринадцятих",
-#     0.071: "1 чотирнадцята",
-#     6.466: "6 і 7 п'ятнадцятих",
-#     8.312: "8 і 5 шістнадцятих",
-#     2.176: "2 і 3 сімнадцяті",
-#     200.722: "200 і 13 вісімнадцятих",
-#     7.421: "7 і 8 дев'ятнадцятих",
-#     0.05: "1 двадцята"
-# }
-#
-# def setUpModule():
-#     load_language("uk-uk")
-#     set_default_lang("uk")
-#
-# class TestNiceNumberFormat(unittest.TestCase):
-#     load_language("uk-uk")
-#     set_default_lang("uk")
-#
+import unittest
+import datetime
+import ast
+import sys
+from pathlib import Path
+
+from lingua_franca import get_default_lang, set_default_lang, \
+    load_language, unload_language
+from lingua_franca.format import date_time_format
+from lingua_franca.format import join_list
+from lingua_franca.format import nice_date
+from lingua_franca.format import nice_date_time
+from lingua_franca.format import nice_duration
+from lingua_franca.format import nice_number
+from lingua_franca.format import nice_time
+from lingua_franca.format import nice_year
+from lingua_franca.format import pronounce_number
+from lingua_franca.time import default_timezone
+
+
+def setUpModule():
+    load_language("uk-uk")
+    set_default_lang("uk")
+
+
+def tearDownModule():
+    unload_language("uk")
+
+
+NUMBERS_FIXTURE_UK = {
+    1.435634: "1.436",
+    2: "2",
+    5.0: "5",
+    0.027: "0.027",
+    0.5: "1 друга",
+    1.333: "1 і 1 третя",
+    2.666: "2 і 2 треті",
+    0.25: "1 четверта",
+    1.25: "1 і 1 четверта",
+    0.75: "3 четверті",
+    1.75: "1 і 3 четверті",
+    3.4: "3 і 2 п'яті",
+    16.8333: "16 і 5 шостих",
+    12.5714: "12 і 4 сьомі",
+    9.625: "9 і 5 восьмих",
+    6.777: "6 і 7 дев'ятих",
+    3.1: "3 і 1 десята",
+    2.272: "2 і 3 одинадцяті",
+    5.583: "5 і 7 дванадцятих",
+    8.384: "8 і 5 тринадцятих",
+    0.071: "1 чотирнадцята",
+    6.466: "6 і 7 п'ятнадцятих",
+    8.312: "8 і 5 шістнадцятих",
+    2.176: "2 і 3 сімнадцяті",
+    200.722: "200 і 13 вісімнадцятих",
+    7.421: "7 і 8 дев'ятнадцятих",
+    0.05: "1 двадцята"
+}
+
+def setUpModule():
+    load_language("uk-uk")
+    set_default_lang("uk")
+
+class TestNiceNumberFormat(unittest.TestCase):
+    load_language("uk-uk")
+    set_default_lang("uk")
+
 #     def test_convert_float_to_nice_number(self):
 #         load_language("uk-uk")
 #         set_default_lang("uk")
@@ -111,17 +111,17 @@
 #                              nice_number(6.0, speech=False)))
 #
 #
-# class TestPronounceNumber(unittest.TestCase):
-#
-#     def test_convert_int(self):
-#         self.assertEqual(pronounce_number(0), "нуль")
-#         self.assertEqual(pronounce_number(1), "один")
-#         self.assertEqual(pronounce_number(10), "десять")
-#         self.assertEqual(pronounce_number(15), "п'ятнадцять")
-#         self.assertEqual(pronounce_number(20), "двадцять")
-#         self.assertEqual(pronounce_number(27), "двадцять сім")
-#         self.assertEqual(pronounce_number(30), "тридцять")
-#         self.assertEqual(pronounce_number(33), "тридцять три")
+class TestPronounceNumber(unittest.TestCase):
+
+    def test_convert_int(self):
+        self.assertEqual(pronounce_number(0), "нуль")
+        self.assertEqual(pronounce_number(1), "один")
+        self.assertEqual(pronounce_number(10), "десять")
+        self.assertEqual(pronounce_number(15), "п'ятнадцять")
+        self.assertEqual(pronounce_number(20), "двадцять")
+        self.assertEqual(pronounce_number(27), "двадцять сім")
+        self.assertEqual(pronounce_number(30), "тридцять")
+        self.assertEqual(pronounce_number(33), "тридцять три")
 #
 #     def test_convert_negative_int(self):
 #         self.assertEqual(pronounce_number(-1), "мінус один")
@@ -293,20 +293,19 @@
 #                                           short_scale=False), "вісімнадцятитрильйонний")
 #
 #
-# class TestNiceDateFormat(unittest.TestCase):
-#     @classmethod
-#     def setUpClass(cls):
-#         # Read date_time_test.json files for test data
-#         cls.test_config = {}
-#         p = Path(date_time_format.config_path)
-#         print(p)
-#         for sub_dir in [x for x in p.iterdir() if x.is_dir()]:
-#             print(sub_dir)
-#             if (sub_dir / "date_time_test.json").exists():
-#                 print("Loading test for " +
-#                       str(sub_dir / "date_time_test.json"))
-#                 with (sub_dir / "date_time_test.json").open() as f:
-#                     cls.test_config[sub_dir.parts[-1]] = json.loads(f.read())
+class TestNiceDateFormat(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Read date_time_test.json files for test data
+        cls.test_config = {}
+        p = Path(date_time_format.config_path)
+        for sub_dir in [x for x in p.iterdir() if x.is_dir()]:
+            print(sub_dir)
+            if (sub_dir / "date_time_test.json").exists():
+                print("Loading test for " +
+                      str(sub_dir / "date_time_test.json"))
+                with (sub_dir / "date_time_test.json").open() as f:
+                    cls.test_config[sub_dir.parts[-1]] = json.loads(f.read())
 #
 #     def test_convert_times(self):
 #         dt = datetime.datetime(2017, 1, 31,
@@ -548,6 +547,6 @@
 #         self.assertEqual(join_list([1, "b", 3, "d"], "або"), "1, b, 3 або d")
 #
 #
-# if __name__ == "__main__":
-#     unittest.main()
-#
+if __name__ == "__main__":
+    unittest.main()
+
