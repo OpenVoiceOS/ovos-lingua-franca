@@ -53,7 +53,6 @@ class TestYesNo(unittest.TestCase):
 
 
 class TestFuzzyMatch(unittest.TestCase):
-    #PASSED
     def test_matches(self):
         self.assertTrue(fuzzy_match("ти і ми", "ти і ми") >= 1.0)
         self.assertTrue(fuzzy_match("ти і ми", "ти") < 0.5)
@@ -62,7 +61,6 @@ class TestFuzzyMatch(unittest.TestCase):
                         fuzzy_match("ти", "ти і ми"))
         self.assertTrue(fuzzy_match("ти і ми", "він або вони") < 0.36)
 
-    #PASSED
     def test_match_one(self):
         #test list of choices
         choices = ['френк', 'кейт', 'гаррі', 'генрі']
@@ -219,7 +217,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("ось це 34. тест"), 34)
         self.assertEqual(extract_number("о цілому 100%"), 100)
 
-    # PASSED
     def test_spaces(self):
         self.assertEqual(normalize("ось це тест"),
                          "ось це тест")
@@ -228,7 +225,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("ось це один     тест"),
                          "ось це 1 тест")
 
-    # PASSED
     def test_numbers(self):
         self.assertEqual(normalize("ось це один два три тест"),
                          "ось це 1 2 3 тест")
@@ -257,7 +253,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("ось це один і половина і п'ять шість"),
                          "ось це 1 і половина і 5 6")
 
-    # PASSED
     def test_multiple_numbers(self):
         load_language("uk-uk")
         set_default_lang("uk")
@@ -319,7 +314,6 @@ class TestNormalize(unittest.TestCase):
 
         self.assertEqual(extract_numbers("шість трильйонів", short_scale=True),
                          [6e18])
-        print(extract_numbers("шість трильйонів", short_scale=False))
         self.assertEqual(extract_numbers("шість трильйонів", short_scale=False),
                          [6e18])
         self.assertEqual(extract_numbers("два порося і шість трильйонів бактерій",

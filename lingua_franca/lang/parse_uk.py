@@ -1,4 +1,3 @@
-#
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -511,7 +510,7 @@ def _extract_whole_number_with_text_uk(tokens, short_scale, ordinals):
                 word not in multiplies,
                 current_val >= 10
             ]):
-                # Backtrack - we've got numbers we can't sum
+                # Backtrack - we've got numbers we can't sum.
                 number_words.pop()
                 val = prev_val
                 break
