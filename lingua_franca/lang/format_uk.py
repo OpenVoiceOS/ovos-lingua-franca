@@ -406,8 +406,6 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
                 else:
                     speak += " вечора"
 
-            print(f'speak {speak}')
-
             if dt.minute == 0:
                 if not use_ampm:
                     if dt.hour % 12 == 1:
