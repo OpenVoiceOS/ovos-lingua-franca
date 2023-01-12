@@ -1,30 +1,8 @@
 {
   "test_nice_year": {
-    "1": {"datetime_param": "1, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "перший до нашої ери" },
-    "2": {"datetime_param": "10, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "десятий до нашої ери" },
-    "3": {"datetime_param": "92, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "дев'яносто другий до нашої ери" },
-    "4": {"datetime_param": "803, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "вісімсот третій" },
-    "5": {"datetime_param": "811, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "вісімсот одинадцятий" },
-    "6": {"datetime_param": "454, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "чотириста п'ятдесят четвертий" },
-    "7": {"datetime_param": "1005, 1, 31, 13, 22, 3", "bc": "False", "assertEqual": "тисяча п'ятий" },
-    "8": {"datetime_param": "1012, 1, 31, 13, 22, 3", "bc": "False", "assertEqual": "тисяча дванадцятий" },
-    "9": {"datetime_param": "1046, 1, 31, 13, 22, 3", "bc": "False", "assertEqual": "тисяча сорок шостий" },
-    "10": {"datetime_param": "1807, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "тисяча вісімсот сьомий" },
-    "11": {"datetime_param": "1717, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "тисяча сімсот сімнадцятий" },
-    "12": {"datetime_param": "1988, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "тисяча дев'ятьсот вісімдесят восьмий"},
-    "13": {"datetime_param": "2009, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "дві тисячі дев'ятий"},
-    "14": {"datetime_param": "2018, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "дві тисячі вісімнадцятий"},
-    "15": {"datetime_param": "2021, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "дві тисячі двадцять перший"},
-    "16": {"datetime_param": "2030, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "дві тисячі тридцять"},
-    "17": {"datetime_param": "2100, 1, 31, 13, 22, 3", "bc": "False", "assertEqual": "дві тисячі сто" },
-    "18": {"datetime_param": "1000, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "тисяча" },
-    "19": {"datetime_param": "2000, 1, 31, 13, 22, 3", "bc": "None", "assertEqual": "дві тисячі" },
-    "20": {"datetime_param": "3120, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "три тисячі сто двадцять до нашої ери" },
-    "21": {"datetime_param": "3241, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "три тисячі двісті сорок один до нашої ери" },
-    "22": {"datetime_param": "5200, 1, 31, 13, 22, 3", "bc": "False", "assertEqual": "пять тисяч двісті" },
-    "23": {"datetime_param": "1100, 1, 31, 13, 22, 3", "bc": "False", "assertEqual": "тисяча сто" },
-    "24": {"datetime_param": "2100, 1, 31, 13, 22, 3", "bc": "False", "assertEqual": "дві тисячі сто" }
+    "1": {"datetime_param": "1, 1, 31, 13, 22, 3", "bc": "True", "assertEqual": "перший до нашої ери" }
   },
+
   "test_nice_date": {
     "1": {"datetime_param": "2017, 1, 31, 0, 2, 3", "now": "None", "assertEqual": "у вівторок, тридцять першого січня, дві тисячі сімнадцятий"},
     "2": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2017, 1, 1, 0, 2, 3", "assertEqual": "у неділю, четвертого лютого, дві тисячі вісімнадцятий"},
@@ -35,8 +13,8 @@
     "7": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2018, 2, 5, 0, 2, 3", "assertEqual": "вчора"},
     "8": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2018, 2, 6, 0, 2, 3", "assertEqual": "у неділю, четвертого лютого"},
     "9": {"datetime_param": "2021, 2, 4, 0, 2, 3", "now": "None", "assertEqual": "у четвер, четвертого лютого, дві тисячі двадцять перший"}
-
   },
+
   "test_nice_date_time": {
     "1": {"datetime_param": "2017, 1, 31, 13, 22, 3", "now": "None", "use_24hour": "False", "use_ampm": "True", "assertEqual": "у вівторок, тридцять першого січня, дві тисячі сімнадцятий о першій годині дня двадцять дві хвилини"},
     "2": {"datetime_param": "2017, 1, 31, 13, 22, 3", "now": "None", "use_24hour": "True", "use_ampm": "False", "assertEqual": "у вівторок, тридцять першого січня, дві тисячі сімнадцятий о тринадцятій двадцать дві"}

@@ -1,6 +1,3 @@
-#%%
-
-#%%
 #
 # Copyright 2017 Mycroft AI Inc.
 #
