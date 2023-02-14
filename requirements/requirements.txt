@@ -1,2 +1,5 @@
 python-dateutil~=2.6
 rapidfuzz
+colour~=0.1
+webcolors
+quebra_frases

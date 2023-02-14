@@ -16,6 +16,7 @@ on:
       - 'CHANGELOG.md'
       - 'MANIFEST.in'
       - 'readme.md'
+      - 'lang_support.md'
       - 'scripts/**'
   workflow_dispatch:
 
@@ -39,6 +40,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install python3-dev swig libssl-dev
+          pip install setuptools==65.5.1
       - name: Build Source Packages
         run: |
           python setup.py sdist

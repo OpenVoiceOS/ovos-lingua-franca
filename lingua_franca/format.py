@@ -35,9 +35,13 @@ from lingua_franca.time import now_local
 
 _REGISTERED_FUNCTIONS = ("nice_number",
                          "nice_time",
+                         "nice_date",
+                         "nice_date_time",
+                         "nice_year",
                          "pronounce_number",
                          "pronounce_lang",
                          "nice_response",
+                         "describe_color",
                          "nice_duration")
 
 populate_localized_function_dict("format", langs=get_active_langs())
@@ -247,16 +251,20 @@ date_time_format = DateTimeFormat(os.path.join(os.path.dirname(__file__),
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def pronounce_lang(lang_code, lang=""):
+    lang = get_full_lang_code(lang)
     resource_file = resolve_resource_file(f"text/{lang}/langs.json") or \
                     resolve_resource_file("text/en-us/langs.json")
     with open(resource_file) as f:
         LANGUAGES = json.load(f)
     lang_code = lang_code.lower()
     lang2 = lang_code.split("-")[0]
-    return LANGUAGES.get(lang_code) or LANGUAGES.get(lang2) or lang_code
+    spoken_lang = LANGUAGES.get(lang_code) or LANGUAGES.get(lang2) or lang_code
+    if isinstance(spoken_lang, list):
+        spoken_lang = spoken_lang[0]
+    return spoken_lang
 
 
-@localized_function(run_own_code_on=[UnsupportedLanguageError])
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_number(number, lang='', speech=True, denominators=None):
     """Format a float to human readable functions
 
@@ -319,7 +327,7 @@ def pronounce_number(number, lang='', places=2, short_scale=True,
     """
 
 
-@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_date(dt, lang='', now=None):
     """
     Format a datetime to a pronounceable date
@@ -344,7 +352,7 @@ def nice_date(dt, lang='', now=None):
     return date_time_format.date_format(dt, full_code, now)
 
 
-@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_date_time(dt, lang='', now=None, use_24hour=False,
                    use_ampm=False):
     """
@@ -406,7 +414,7 @@ def nice_month(dt, date_format='MDY', lang=""):
     return month.capitalize()
 
 
-@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_year(dt, lang='', bc=False):
     """
         Format a datetime to a pronounceable year
@@ -643,3 +651,34 @@ def nice_response(text, lang=''):
         assertEqual(nice_response_de("10 ^ 2"),
                          "10 hoch 2")
     """
+
+
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
+def describe_color(color, lang=""):
+    """
+    Args:
+        color: (Color): format for speech (True) or display (False)
+        lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+
+    Returns:
+        str: localized color description
+    """
+    lang = get_full_lang_code(lang)
+    resource_file = resolve_resource_file(f"text/{lang}/colors.json") or \
+                    resolve_resource_file("text/webcolors.json")
+    with open(resource_file) as f:
+        COLORS = json.load(f)
+
+    if color.hex in COLORS:
+        return COLORS.get(color.hex)
+
+    # fallback - just return main color
+    color = color.main_color
+    if color.hex in COLORS:
+        return COLORS.get(color.hex)
+
+    raise FunctionNotLocalizedError
+
+
+

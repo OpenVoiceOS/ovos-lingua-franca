@@ -17,6 +17,10 @@ from datetime import datetime
 from dateutil.tz import gettz, tzlocal
 
 
+# used to calculate timespans
+DAYS_IN_1_YEAR = 365.2425
+DAYS_IN_1_MONTH = 30.42
+
 __default_tz = None
 
 
