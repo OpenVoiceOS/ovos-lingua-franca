@@ -14,10 +14,16 @@
 # limitations under the License.
 #
 
-from lingua_franca.lang.format_common import convert_to_mixed_fraction
-from lingua_franca.lang.common_data_de import _EXTRA_SPACE_DE, \
-    _FRACTION_STRING_DE, _MONTHS_DE, _NUM_POWERS_OF_TEN_DE, _NUM_STRING_DE
 from math import floor
+
+from lingua_franca.lang.format_common import convert_to_mixed_fraction
+from lingua_franca.lang.common_data_de import (
+    _EXTRA_SPACE,
+    _FRACTION_STRING,
+    _MONTHS,
+    _NUM_POWERS_OF_TEN,
+    _NUM_STRING
+)
 
 
 def nice_number_de(number, speech=True, denominators=range(1, 21)):
@@ -44,7 +50,7 @@ def nice_number_de(number, speech=True, denominators=range(1, 21)):
             return '{} {}/{}'.format(whole, num, den)
     if num == 0:
         return str(whole)
-    den_str = _FRACTION_STRING_DE[den]
+    den_str = _FRACTION_STRING[den]
     if whole == 0:
         if num == 1:
             return_string = 'ein {}'.format(den_str)
@@ -85,24 +91,27 @@ def pronounce_number_de(number, places=2, short_scale=True, scientific=False,
         if num > 99:
             hundreds = floor(num / 100)
             if hundreds > 0:
-                result += _NUM_STRING_DE[
-                    hundreds] + _EXTRA_SPACE_DE + 'hundert' + _EXTRA_SPACE_DE
+                number = _NUM_STRING[hundreds] if hundreds > 1 else "ein"
+                result += number + 'hundert' + _EXTRA_SPACE
                 num -= hundreds * 100
         if num == 0:
             result += ''  # do nothing
         elif num == 1:
             result += 'eins'  # need the s for the last digit
         elif num <= 20:
-            result += _NUM_STRING_DE[num]  # + _EXTRA_SPACE_DA
+            result += _NUM_STRING[num]  # + _EXTRA_SPACE_DA
         elif num > 20:
             ones = num % 10
             tens = num - ones
             if ones > 0:
-                result += _NUM_STRING_DE[ones] + _EXTRA_SPACE_DE
+                number = _NUM_STRING[ones] 
+                if ones == 1 and tens > 0:  # eins > ein
+                    number = number[:-1]       
+                result += number + _EXTRA_SPACE
                 if tens > 0:
-                    result += 'und' + _EXTRA_SPACE_DE
+                    result += 'und' + _EXTRA_SPACE
             if tens > 0:
-                result += _NUM_STRING_DE[tens] + _EXTRA_SPACE_DE
+                result += _NUM_STRING[tens] + _EXTRA_SPACE
         return result
 
     def pronounce_fractional_de(num,
@@ -112,7 +121,7 @@ def pronounce_number_de(number, places=2, short_scale=True, scientific=False,
         place = 10
         while places > 0:  # doesn't work with 1.0001 and places = 2: int(
             # number*place) % 10 > 0 and places > 0:
-            result += " " + _NUM_STRING_DE[int(num * place) % 10]
+            result += " " + _NUM_STRING[int(num * place) % 10]
             if int(num * place) % 10 == 1:
                 result += 's'  # "1" is pronounced "eins" after the decimal
                 # point
@@ -135,18 +144,18 @@ def pronounce_number_de(number, places=2, short_scale=True, scientific=False,
                 else:
                     result += "eins"
             elif scale_level == 1:
-                result += 'ein' + _EXTRA_SPACE_DE + 'tausend' + _EXTRA_SPACE_DE
+                result += 'ein' + _EXTRA_SPACE + 'tausend' + _EXTRA_SPACE
             else:
-                result += "eine " + _NUM_POWERS_OF_TEN_DE[scale_level] + ' '
+                result += "eine " + _NUM_POWERS_OF_TEN[scale_level] + ' '
         elif last_triplet > 1:
             result += pronounce_triplet_de(last_triplet)
             if scale_level == 1:
                 # result += _EXTRA_SPACE_DA
-                result += 'tausend' + _EXTRA_SPACE_DE
+                result += 'tausend' + _EXTRA_SPACE
             if scale_level >= 2:
                 # if _EXTRA_SPACE_DA == '':
                 #    result += " "
-                result += " " + _NUM_POWERS_OF_TEN_DE[scale_level]
+                result += " " + _NUM_POWERS_OF_TEN[scale_level]
             if scale_level >= 2:
                 if scale_level % 2 == 0:
                     result += "e"  # MillionE
@@ -161,7 +170,7 @@ def pronounce_number_de(number, places=2, short_scale=True, scientific=False,
     if abs(number) >= 1000000000000000000000000:  # cannot do more than this
         return str(number)
     elif number == 0:
-        return str(_NUM_STRING_DE[0])
+        return str(_NUM_STRING[0])
     elif number < 0:
         return "minus " + pronounce_number_de(abs(number), places)
     else:
@@ -278,7 +287,7 @@ def nice_response_de(text):
     words = text.split()
 
     for idx, word in enumerate(words):
-        if word.lower() in _MONTHS_DE:
+        if word.lower() in _MONTHS:
             text = _nice_ordinal_de(text)
 
         if word == '^':
@@ -300,7 +309,7 @@ def _nice_ordinal_de(text, speech=True):
         wordPrev = words[idx - 1] if idx > 0 else ""
         if word[-1:] == ".":
             if word[:-1].isdecimal():
-                if wordNext.lower() in _MONTHS_DE:
+                if wordNext.lower() in _MONTHS:
                     word = pronounce_ordinal_de(int(word[:-1]))
                     if wordPrev.lower() in ["am", "dem", "vom", "zum",
                                             "(vom", "(am", "zum"]:
