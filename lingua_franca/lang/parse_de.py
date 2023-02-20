@@ -101,12 +101,15 @@ def _extract_numbers_with_text_de(tokens, short_scale=True,
     while True:
         to_replace = \
             _extract_number_with_text_de(tokens, short_scale,
-                                         ordinals, fractions)
+                                         ordinals)
 
         if not to_replace:
             break
 
-        results.append(to_replace)
+        if isinstance(to_replace.value, float) and not fractions:
+            pass
+        else:
+            results.append(to_replace)
 
         tokens = [
             t if not
@@ -119,14 +122,14 @@ def _extract_numbers_with_text_de(tokens, short_scale=True,
 
 
 def _extract_number_with_text_de(tokens, short_scale=True,
-                                 ordinals=False, fractions=True):
+                                 ordinals=False):
     """
     This function extracts a number from a list of Tokens.
 
     Args:
         tokens str: the string to normalize
         short_scale (bool): use short scale if True, long scale if False
-        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        ordinals (bool): consider ordinal numbers
         fractional_numbers (bool): True if we should look for fractions and
                                    decimals.
     Returns:
@@ -135,20 +138,15 @@ def _extract_number_with_text_de(tokens, short_scale=True,
     """
     number, tokens = \
         _extract_number_with_text_de_helper(tokens, short_scale,
-                                            ordinals, fractions)
-    # while tokens and tokens[0].word in _ARTICLES_DE:
-    #     tokens.pop(0)
+                                            ordinals)
     return ReplaceableNumber(number, tokens)
 
 
 def _extract_number_with_text_de_helper(tokens,
-                                        short_scale, ordinals,
-                                        fractions):
+                                        short_scale, ordinals):
     """
     Helper for _extract_number_with_text_de.
-    This contains the real logic for parsing, but produces
-    a result that needs a little cleaning (specific, it may
-    contain leading articles that can be trimmed off).
+
     Args:
         tokens [Token]:
         short_scale boolean:
@@ -163,19 +161,16 @@ def _extract_number_with_text_de_helper(tokens,
             if ordinal:
                 return ordinal, [token]
 
-    return _extract_real_number_with_text_de(tokens, short_scale, fractions)
+    return _extract_real_number_with_text_de(tokens, short_scale)
 
 
-def _extract_real_number_with_text_de(tokens, short_scale, fractions):
+def _extract_real_number_with_text_de(tokens, short_scale):
     """
-    Handle numbers not handled by the decimal or fraction functions. This is
-    generally whole numbers. Note that phrases such as "one half" will be
-    handled by this function, while "one and a half" are handled by the
-    fraction function.
+    This is handling real numbers.
+
     Args:
         tokens [Token]:
         short_scale boolean:
-        ordinals boolean:
     Returns:
         int or float, [Tokens]
         The value parsed, and tokens that it corresponds to.
@@ -256,18 +251,16 @@ def _extract_real_number_with_text_de(tokens, short_scale, fractions):
             _val = 0 - _current_val
         
         # is the prev word a number and should we multiply it?
-        # twenty hundred, six hundred
         if _prev_val is not None and ( word in _MULTIPLIER or \
             word in ("einer", "eines", "einem")):
             to_sum.append(_prev_val * _current_val or _current_val)
             _val = _current_val = None
         
+        # fraction handling
         _fraction_val = is_fractional_de(word, short_scale=short_scale)
         if _fraction_val:
-            # ambiguität: 3 3/4 stunden könnte 3*(3/4) aber auch 3+(3/4) sein
             if _prev_val is not None and prev_word != "eine" and \
                     word not in _STRING_FRACTION:   # zusammengesetzter Bruch
-                # TODO makes no sense
                 _val = _prev_val + _fraction_val
                 if prev_word not in _NUMBER_CONNECTORS and tokens[idx -1] not in number_words:
                     number_words.append(tokens[idx - 1])
@@ -279,26 +272,28 @@ def _extract_real_number_with_text_de(tokens, short_scale, fractions):
                 _val = _fraction_val
             _current_val = _val
         
+        # directly following numbers without relation
         if (is_numeric_de(prev_word) or prev_word in _STRING_NUM) \
                 and not _fraction_val and not is_fractional_de(next_word) and not to_sum:
             val = _prev_val
             number_words.pop(-1)
             break 
 
+        # spoken decimals
         if _current_val is not None and _comma:
             # to_sum = [ 1, 0.2, 0.04,...]
             to_sum.append(_current_val if _current_val >= 10 else (
                 _current_val) / (10 ** (token.index - _comma.index)))
             _val = _current_val = None
 
-        # sum if
+
         if _current_val is not None and next_word in (_NUMBER_CONNECTORS | _COMMA | {""}):
             to_sum.append(_val or _current_val)
             _val = _current_val = None
 
-        if _val is not None or to_sum:
-            if not next_word and number_words:
-                val = sum(to_sum) or _val
+        
+        if not next_word and number_words:
+            val = sum(to_sum) or _val
 
     return val, number_words
 
@@ -378,7 +373,7 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
         wordList = s.split()
 
         for idx, word in enumerate(wordList):
-            ordinal = get_ordinal_index(word)
+            ordinal = _get_ordinal_index(word)
             if ordinal:
                 wordList[idx] = ordinal
 
@@ -1095,7 +1090,7 @@ def is_ordinal_de(input_str):
     return val
 
 
-def get_ordinal_index(input_str : str, type_: type = str):
+def _get_ordinal_index(input_str : str, type_: type = str):
     ord = is_ordinal_de(input_str)
     return type_(ord.replace(".","")) if ord else ord
 
@@ -1103,6 +1098,7 @@ def get_ordinal_index(input_str : str, type_: type = str):
 def is_numeric_de(input_str):
     """
     Takes in a string and tests to see if it is a number.
+
     Args:
         text (str): string to test if a number
     Returns:
@@ -1151,7 +1147,7 @@ def extract_number_de(text, short_scale=True, ordinals=False):
     Args:
         text (str): the string to normalize
         short_scale (bool): use short scale if True, long scale if False
-        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        ordinals (bool): consider ordinal numbers
     Returns:
         (int) or (float) or False: The extracted number or False if no number
                                    was found

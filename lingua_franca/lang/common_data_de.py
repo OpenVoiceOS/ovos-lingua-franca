@@ -6,7 +6,7 @@ _ARTICLES = {'der', 'das', 'die', 'dem', 'den'}
 #_SPOKEN_NUMBER
 _NUM_STRING = {
     0: 'null',
-    1: 'eins',  # ein Viertel etc., nicht eins Viertel TODO
+    1: 'eins',
     2: 'zwei',
     3: 'drei',
     4: 'vier',
@@ -202,8 +202,6 @@ for number, item in _LONG_SCALE.items():
             name = item + 'en'
             _MULTIPLIER.add(name)
             _STRING_LONG_SCALE[name] = number
-
-_COMMA = {"komma", "comma"}
 
 _LONG_ORDINAL = {
     1e6: "millionst",

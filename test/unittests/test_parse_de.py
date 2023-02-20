@@ -24,6 +24,7 @@ from lingua_franca.parse import (
     extract_numbers,
     normalize
 )
+from lingua_franca.lang.parse_de import _convert_words_to_numbers_de
 
 
 def setUpModule():
@@ -146,6 +147,9 @@ class TestExtractNumber(unittest.TestCase):
 
         self.assertEqual(extract_number("eine und eine halbe Tasse",
                                         lang="de-de"), 1.5)
+        
+        self.assertEqual(extract_number("ein halber krug",
+                                        lang="de-de"), 0.5)
 
         self.assertEqual(extract_number("ein und ein halb Tassen",
                                         lang="de-de"), 1.5)
@@ -198,6 +202,19 @@ class TestExtractNumber(unittest.TestCase):
         self.assertEqual(extract_number("von den vier das zweite",
                                         ordinals=True), 2)
 
+
+class TestConvertWordsToNumbers(unittest.TestCase):
+    # this is mostly tested with extract_number(s), but to test `fractions=False`
+    def test_convert_words_to_numbers(self):
+        
+        # convert "zwei" (2), but dont convert "ein halber" (0.5)
+        self.assertEqual(_convert_words_to_numbers_de("das ist zwei mal ein halber test", fractions=False),
+                         "das ist 2 mal ein halber test")
+
+        # dont convert "eins komma zwei" / normally 1.2
+        self.assertEqual(_convert_words_to_numbers_de("eins komma zwei plus 2 ist", fractions=False),
+                         "eins komma zwei plus 2 ist")
+                        
 
 class TestExtractNumbers(unittest.TestCase):
     
