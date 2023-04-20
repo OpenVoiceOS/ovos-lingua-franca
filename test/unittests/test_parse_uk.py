@@ -23,7 +23,7 @@ from lingua_franca.parse import yes_or_no
 
 
 def setUpModule():
-    load_language("uk-uk")
+    load_language("uk-ua")
     set_default_lang("uk")
 
 
@@ -33,7 +33,7 @@ def tearDownModule():
 class TestYesNo(unittest.TestCase):
     def test_yesno(self):
         def test_utt(text, expected):
-            res = yes_or_no(text, "uk-uk")
+            res = yes_or_no(text, "uk-ua")
             self.assertEqual(res, expected)
 
         test_utt("ні", False)
@@ -77,7 +77,7 @@ class TestFuzzyMatch(unittest.TestCase):
 class TestNormalize(unittest.TestCase):
 
     def test_extract_number(self):
-        load_language("uk-uk")
+        load_language("uk-ua")
         set_default_lang("uk")
 
         # # TODO handle this case returns 6.6
@@ -254,7 +254,7 @@ class TestNormalize(unittest.TestCase):
                          "ось це 1 і половина і 5 6")
 
     def test_multiple_numbers(self):
-        load_language("uk-uk")
+        load_language("uk-ua")
         set_default_lang("uk")
         self.assertEqual(extract_number("шістсот шістдесят шість"), 666)
         self.assertEqual(extract_number("чотирьохсот тридцяти шести"), 436)
