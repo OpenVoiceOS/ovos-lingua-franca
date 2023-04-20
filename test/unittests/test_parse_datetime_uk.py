@@ -22,7 +22,7 @@ from lingua_franca.parse import normalize
 from lingua_franca.time import default_timezone
 
 def setUpModule():
-    load_language("uk-uk")
+    load_language("uk-ua")
     set_default_lang("uk")
 
 
@@ -33,7 +33,7 @@ def tearDownModule():
 class TestDateTimeExtraction(unittest.TestCase):
 
     def test_extract_duration_uk(self):
-        load_language("uk-uk")
+        load_language("uk-ua")
         set_default_lang("uk")
 
         self.assertEqual(extract_duration("чотириста дев'яносто сім днів "),
@@ -86,7 +86,7 @@ class TestDateTimeExtraction(unittest.TestCase):
                          (timedelta(minutes=5), ""))
 
     def test_extractdatetime_uk(self):
-        load_language("uk-uk")
+        load_language("uk-ua")
         set_default_lang("uk")
 
         def extractWithFormat(text):
