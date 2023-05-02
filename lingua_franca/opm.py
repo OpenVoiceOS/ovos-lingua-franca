@@ -3,6 +3,8 @@ from typing import Optional, List
 from ovos_plugin_manager.templates.transformers import UtteranceTransformer
 from ovos_utils.log import LOG
 
+from lingua_franca.parse import normalize
+
 
 class UtteranceNormalizer(UtteranceTransformer):
 
@@ -18,12 +20,9 @@ class UtteranceNormalizer(UtteranceTransformer):
         context = context or {}
         norm = [self.strip_punctuation(u) for u in utterances] + utterances
         try:
-            from lingua_franca.parse import normalize
             lang = context.get("lang") or self.config.get("lang", "en-us")
             norm += [normalize(u, lang=lang, remove_articles=False) for u in norm] + \
                     [normalize(u, lang=lang, remove_articles=True) for u in norm]
-        except ImportError:
-            LOG.warning("lingua_franca not installed")
         except:
             LOG.exception("lingua_franca utterance normalization failed")
 
