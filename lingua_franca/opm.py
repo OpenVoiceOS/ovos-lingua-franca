@@ -6,7 +6,7 @@ from ovos_utils.log import LOG
 
 class UtteranceNormalizer(UtteranceTransformer):
 
-    def __init__(self, name="ovos-lf-utterance-normalizer", priority=1):
+    def __init__(self, name="ovos-lf-utterance-normalizer", priority=5):
         super().__init__(name, priority)
 
     @staticmethod
@@ -18,8 +18,6 @@ class UtteranceNormalizer(UtteranceTransformer):
         context = context or {}
         norm = [self.strip_punctuation(u) for u in utterances] + utterances
         try:
-            # TODO - move to ovos-classifiers when it gets it's first stable release
-            # make ovos-lf provide this plugin with a lower priority afterwards
             from lingua_franca.parse import normalize
             lang = context.get("lang") or self.config.get("lang", "en-us")
             norm += [normalize(u, lang=lang, remove_articles=False) for u in norm] + \
