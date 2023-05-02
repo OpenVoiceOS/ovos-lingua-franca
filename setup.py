@@ -79,4 +79,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
+    entry_points={
+        'neon.plugin.text': 'ovos-lf-utterance-normalizer=lingua_franca.opm:UtteranceNormalizer'
+    }
 )
