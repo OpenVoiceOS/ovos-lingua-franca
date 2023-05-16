@@ -51,6 +51,7 @@ _STRING_NUM.update({
     'ein': 1,
     'eine': 1,
     'einer': 1,
+    'eines': 1,
     'einem': 1,
     'einen': 1
 })

@@ -263,8 +263,35 @@ class TestExtractDatetime(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
+        testExtract("mache den frisörtermin in einer halben stunde",
+                    "2017-06-27 00:30:00", "mache frisörtermin")
+        
+        testExtract("mache den frisörtermin in drei stunden",
+                    "2017-06-27 03:00:00", "mache frisörtermin")
+
+        testExtract("setze den frisörtermin auf halb neun abends",
+                    "2017-06-27 20:30:00", "setze frisörtermin")
+        
+        testExtract("setze den frisörtermin auf halb neun am abend",
+                    "2017-06-27 20:30:00", "setze frisörtermin")
+        
+        testExtract("setze den timer auf zwölf uhr nachts",
+                    "2017-06-28 00:00:00", "setze timer")
+        
+        testExtract("setze den frisörtermin auf halb neun",
+                    "2017-06-27 08:30:00", "setze frisörtermin")
+
+        testExtract("setze den frisörtermin in 5 tagen",
+                    "2017-07-02 00:00:00", "setze frisörtermin")
+        
+        testExtract("setze den frisörtermin in 5 tagen um halb 10",
+                    "2017-07-02 09:30:00", "setze frisörtermin")
+        
         testExtract("setze den frisörtermin auf 5 tage von heute",
                     "2017-07-02 00:00:00", "setze frisörtermin")
+        
+        testExtract("wir bekommen das ergebnis innerhalb eines tages",
+                    "2017-06-28 00:00:00", "wir bekommen das ergebnis innerhalb")
 
         testExtract("wie ist das wetter übermorgen?",
                     "2017-06-29 00:00:00", "wie ist das wetter")
@@ -325,7 +352,7 @@ class TestExtractDatetime(unittest.TestCase):
                     "2017-06-28 07:00:00", "wie ist das wetter")
 
         testExtract("Mache einen Termin um 12:45 pm nächsten donnerstag",
-                    "2017-07-06 12:45:00", "mache einen termin")
+                    "2017-07-06 12:45:00", "mache termin")
 
         testExtract("wie ist das wetter an diesem donnerstag?",
                     "2017-06-29 00:00:00", "wie ist das wetter")
