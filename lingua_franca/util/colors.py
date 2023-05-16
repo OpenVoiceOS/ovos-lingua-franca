@@ -2,7 +2,7 @@ import re
 from colorsys import rgb_to_yiq, yiq_to_rgb, rgb_to_hls, hls_to_rgb, \
     rgb_to_hsv, hsv_to_rgb
 
-from colour import Color as _Color
+from lingua_franca.util.thirdprty import Color as _Color
 from webcolors import name_to_rgb, rgb_to_name, \
     hex_to_rgb
 
