@@ -1156,6 +1156,14 @@ class GermanNormalizer(Normalizer):
     with open(resolve_resource_file("text/de-de/normalize.json")) as f:
         _default_config = json.load(f)
 
+    def remove_symbols(self, utterance):
+        for s in self.symbols:
+            if s == "-":
+                utterance = re.sub(r"\b(\w*)-(\w*)\b", r"\1 \2", utterance)
+            else:
+                utterance = utterance.replace(s, " ")
+        return utterance
+
 
 def normalize_de(text, remove_articles=True):
     return GermanNormalizer().normalize(text, remove_articles)

@@ -45,9 +45,9 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             normalize("und noch ein Test", lang="de-de", remove_articles=True),
             "und noch ein Test")
-        self.assertEqual(normalize("dies ist der Extra-Test", lang="de-de",
+        self.assertEqual(normalize("dies ist der extra Test", lang="de-de",
                                    remove_articles=False),
-                         "dies ist der Extra-Test")
+                         "dies ist der extra Test")
 
     def test_spaces(self):
         self.assertEqual(normalize("  dies   ist  ein    test", lang="de-de"),
@@ -80,6 +80,16 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             normalize("dies ist achtzehn neunzehn zwanzig", lang="de-de"),
             "dies ist 18 19 20")
+    
+    def test_symbols(self):
+        self.assertEqual(
+            normalize("starte einen 15-Minuten-Timer", lang="de-de"),
+            "starte einen 15 Minuten Timer")
+        
+        self.assertEqual(
+            normalize('"starte einen 15-Minuten-Timer"', lang="de-de"),
+            'starte einen 15 Minuten Timer')
+
 
 
 class TestExtractNumber(unittest.TestCase):
