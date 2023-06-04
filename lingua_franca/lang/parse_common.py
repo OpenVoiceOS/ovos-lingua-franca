@@ -105,9 +105,9 @@ class Normalizer:
     @property
     def symbols(self):
         return self.config.get("symbols",
-                               [";", "_", "!", "?", "<", ">",
-                                "|", "(", ")", "=", "[", "]", "{",
-                                "}", "»", "«", "*", "~", "^", "`"])
+                               [";", "_", "!", "?", "<", ">", "|",
+                                "(", ")", "=", "[", "]", "{", "}",
+                                "»", "«", "*", "~", "^", "`", "\""])
 
     def expand_contractions(self, utterance):
         """ Expand common contractions, e.g. "isn't" -> "is not" """

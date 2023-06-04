@@ -89,6 +89,13 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             normalize('"starte einen 15-Minuten-Timer"', lang="de-de"),
             'starte einen 15 Minuten Timer')
+        
+        self.assertEqual(normalize("gib mir noch ein Test!", lang="de-de"),
+                         "gib mir noch ein Test")
+        
+        self.assertEqual(normalize("Ist das der letzte?", lang="de-de",
+                                   remove_articles=False),
+                         "Ist das der letzte")
 
 
 
