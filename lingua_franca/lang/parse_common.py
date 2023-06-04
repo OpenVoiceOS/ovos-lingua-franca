@@ -51,7 +51,7 @@ class Normalizer:
 
     @property
     def should_remove_symbols(self):
-        return self.config.get("remove_symbols", False)
+        return self.config.get("remove_symbols", True)
 
     @property
     def should_remove_accents(self):
@@ -104,8 +104,8 @@ class Normalizer:
     def symbols(self):
         return self.config.get("symbols",
                                [".", ",", ";", "_", "!", "?", "<", ">",
-                                "|", "(", ")", "=", "[", "]", "{",
-                                "}", "»", "«", "*", "~", "^", "`"])
+                                "|", "(", ")", "=", "[", "]", "{", "}",
+                                "»", "«", "*", "~", "^", "`", "\""])
 
     def expand_contractions(self, utterance):
         """ Expand common contractions, e.g. "isn't" -> "is not" """

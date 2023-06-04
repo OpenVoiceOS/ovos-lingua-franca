@@ -2,7 +2,7 @@
   "lowercase": false,
   "numbers_to_digits": true,
   "expand_contractions": true,
-  "remove_symbols": false,
+  "remove_symbols": true,
   "remove_accents": false,
   "remove_articles": false,
   "remove_stopwords": false,
