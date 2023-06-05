@@ -28,7 +28,7 @@ from lingua_franca.internal import localized_function, \
     get_full_lang_code, get_default_lang, get_default_loc, \
     is_supported_full_lang, _raise_unsupported_language, \
     UnsupportedLanguageError, NoneLangWarning, InvalidLangWarning, \
-    FunctionNotLocalizedError, resolve_resource_file, FunctionNotLocalizedError
+    FunctionNotLocalizedError, resolve_resource_file
 from lingua_franca.time import now_local
 
 
