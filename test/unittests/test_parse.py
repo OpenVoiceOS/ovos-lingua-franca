@@ -115,7 +115,7 @@ class TestParseCommon(unittest.TestCase):
                           Token('1', 3)])
 
         self.assertEqual(tokenize('hashtag #1world'),
-                         [Token('hashtag', 0), Token('#1world', 1)])
+                         [Token('hashtag', 0), Token('#', 1), Token('1world', 2)])
 
 
 class TestLangcode(unittest.TestCase):

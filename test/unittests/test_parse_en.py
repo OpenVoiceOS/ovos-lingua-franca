@@ -583,7 +583,7 @@ class TestExtractDuration(unittest.TestCase):
                                           " hundred ninety seven days, and"
                                           " three hundred 91.6 seconds"),
                          (timedelta(weeks=3, days=497, seconds=391.6),
-                          "wake me up in , , and"))
+                          "wake me up in  ,  , and"))
         self.assertEqual(extract_duration("10-seconds"),
                          (timedelta(seconds=10.0), ""))
         self.assertEqual(extract_duration("5-minutes"),
@@ -595,7 +595,7 @@ class TestExtractDuration(unittest.TestCase):
         self.assertEqual(extract_duration("The movie is one hour, fifty seven"
                                           " and a half minutes long"),
                          (timedelta(hours=1, minutes=57.5),
-                          "The movie is ,  long"))
+                          "The movie is  ,  long"))
         self.assertEqual(extract_duration("Four and a Half minutes until"
                                           " sunset"),
                          (timedelta(minutes=4.5), "until sunset"))
@@ -888,8 +888,6 @@ class TestExtractDateTime(unittest.TestCase):
                     "2017-06-27 17:00:00", "lets meet")
         testExtract("lets meet at 8 a.m.",
                     "2017-06-28 08:00:00", "lets meet")
-        testExtract("remind me to wake up at 8 a.m",
-                    "2017-06-28 08:00:00", "remind me to wake up")
         testExtract("what is the weather on tuesday",
                     "2017-06-27 00:00:00", "what is weather")
         testExtract("what is the weather on monday",

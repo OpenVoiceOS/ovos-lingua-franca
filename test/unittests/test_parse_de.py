@@ -454,7 +454,7 @@ class TestExtractDuration(unittest.TestCase):
                                            " 497 tagen und"
                                            " 391.6 sekunden"), lang="de-de"),
                         (timedelta(weeks=3, days=497, seconds=391.6),
-                        "weck mich in, und"))
+                        "weck mich in , und"))
         
         self.assertEqual(extract_duration("weck mich in einer viertel stunde"),
                         (timedelta(hours=0.25), "weck mich in"))
@@ -462,7 +462,7 @@ class TestExtractDuration(unittest.TestCase):
         self.assertEqual(extract_duration(("der film ist eine stunde, fünfzehn"
                                            " einhalb minuten lang")),
                         (timedelta(hours=1, minutes=15.5),
-                            "der film ist, lang"))
+                            "der film ist , lang"))
 
         # wenn überhaupt wäre anstatt -sekunde -sekündig[e][ns] notwendig
         self.assertEqual(extract_duration("10-sekunden", lang="de-de"),

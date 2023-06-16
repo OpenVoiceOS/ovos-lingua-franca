@@ -16,8 +16,10 @@
 from collections import namedtuple
 import re
 import json
-from lingua_franca.internal import  resolve_resource_file, FunctionNotLocalizedError
 import unicodedata
+
+from quebra_frases import word_tokenize
+from lingua_franca.internal import  resolve_resource_file, FunctionNotLocalizedError
 
 
 class Normalizer:
@@ -33,11 +35,7 @@ class Normalizer:
 
     @staticmethod
     def tokenize(utterance):
-        # Split things like 12%
-        utterance = re.sub(r"([0-9]+)([\%])", r"\1 \2", utterance)
-        # Split thins like #1
-        utterance = re.sub(r"(\#)([0-9]+\b)", r"\1 \2", utterance)
-        return utterance.split()
+        return word_tokenize(utterance)
 
     @property
     def should_lowercase(self):
@@ -105,7 +103,7 @@ class Normalizer:
     @property
     def symbols(self):
         return self.config.get("symbols",
-                               [";", "_", "!", "?", "<", ">",
+                               [".", ",", ";", "_", "!", "?", "<", ">",
                                 "|", "(", ")", "=", "[", "]", "{",
                                 "}", "»", "«", "*", "~", "^", "`"])
 
@@ -148,9 +146,8 @@ class Normalizer:
         return utterance
 
     def remove_symbols(self, utterance):
-        for s in self.symbols:
-            utterance = utterance.replace(s, " ")
-        return utterance
+        words = self.tokenize(utterance)        
+        return " ".join([w for w in words if w not in self.symbols])
 
     def remove_accents(self, utterance):
         for s in self.accents:
@@ -171,9 +168,9 @@ class Normalizer:
             utterance = utterance.lower()
         if self.should_expand_contractions:
             utterance = self.expand_contractions(utterance)
+        utterance = self.replace_words(utterance)
         if self.should_numbers_to_digits:
             utterance = self.numbers_to_digits(utterance)
-        utterance = self.replace_words(utterance)
 
         # removals
         if self.should_remove_symbols:

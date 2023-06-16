@@ -218,11 +218,11 @@ class TestNormalize(unittest.TestCase):
                                           " sto devadesát sedm dní, a"
                                           " tři sto 91.6 sekund"),
                          (timedelta(weeks=3, days=497, seconds=391.6),
-                          "vzbuď mě za , , a"))
+                          "vzbuď mě za  ,  , a"))
         self.assertEqual(extract_duration("film je jedna hodina, padesát sedm"
                                           " a půl minuty dlouhý"),
                          (timedelta(hours=1, minutes=57.5),
-                             "film je ,  dlouhý"))
+                             "film je  ,  dlouhý"))
         self.assertEqual(extract_duration("10-sekund"),
                          (timedelta(seconds=10.0), ""))
         self.assertEqual(extract_duration("5-minut"),
