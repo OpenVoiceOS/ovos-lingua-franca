@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a2...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a3...HEAD)
+
+**Implemented enhancements:**
+
+- move to quebra tokenizer [\#61](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/61) ([emphasize](https://github.com/emphasize))
+
+## [V0.4.8a3](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/V0.4.8a3) (2023-06-05)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a2...V0.4.8a3)
 
 **Fixed bugs:**
 
