@@ -1157,7 +1157,7 @@ class GermanNormalizer(Normalizer):
         _default_config = json.load(f)
 
     def remove_symbols(self, utterance):
-        utterance = re.sub(r"\b(\w*)-(\w*)\b", r"\1 \2", utterance)
+        utterance = re.sub(r"\b(\w*)-([A-Za-z]+)\b", r"\1 \2", utterance)
         return super().remove_symbols(utterance)
 
 
