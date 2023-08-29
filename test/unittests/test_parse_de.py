@@ -364,12 +364,42 @@ class TestExtractDatetime(unittest.TestCase):
 
         testExtract("wie ist das wetter am mittwoch um 07:00",
                     "2017-06-28 07:00:00", "wie ist das wetter")
+        
+        testExtract("wie ist das wetter am mittwoch um 07:00 Uhr",
+                    "2017-06-28 07:00:00", "wie ist das wetter")
+        
+        # TTS failure 
+        testExtract("wie ist das wetter am mittwoch um 07.00 Uhr",
+                    "2017-06-28 07:00:00", "wie ist das wetter")
+        
+        # TTS failure
+        testExtract("wie ist das wetter am mittwoch um 07.30 Uhr",
+                    "2017-06-28 07:30:00", "wie ist das wetter")
 
         testExtract("wie ist das wetter am mittwoch um 7 uhr",
                     "2017-06-28 07:00:00", "wie ist das wetter")
+        
+        testExtract("wie ist das wetter am mittwoch um 7 uhr 30",
+                    "2017-06-28 07:30:00", "wie ist das wetter")
+        
+        # TTS failure
+        testExtract("wie ist das wetter am mittwoch um 7 uhr 30 uhr",
+                    "2017-06-28 07:30:00", "wie ist das wetter")
+        
+        testExtract("wie ist das wetter am mittwoch um 7:30 Uhr abends",
+                    "2017-06-28 19:30:00", "wie ist das wetter")
+        
+        testExtract("wie ist das wetter am mittwoch um 7 uhr 30 am abend",
+                    "2017-06-28 19:30:00", "wie ist das wetter")
+        
+        testExtract("wie ist das wetter am mittwoch um 5 uhr nachmittags",
+                    "2017-06-28 17:00:00", "wie ist das wetter")
+        
+        testExtract("wie ist das wetter am mittwoch um 11 uhr mittags",
+                    "2017-06-28 11:00:00", "wie ist das wetter")
 
         testExtract("Mache einen Termin um 12:45 pm nächsten donnerstag",
-                    "2017-07-06 12:45:00", "mache termin")
+                    "2017-07-06 12:45:00", "mache 1 termin")
 
         testExtract("wie ist das wetter an diesem donnerstag?",
                     "2017-06-29 00:00:00", "wie ist das wetter")

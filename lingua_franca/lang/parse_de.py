@@ -277,6 +277,20 @@ def _extract_real_number_with_text_de(tokens, short_scale):
             if not next_word or not number:
                 val = f"{_val-1}:{int(60*_prev_val)}"
                 break
+        
+        # correct time format (whisper "13.30 Uhr")
+        if all([isinstance(_current_val, float),
+                next_word.lower() in ["uhr", "pm", "am", "a.m.", "p.m."]]):
+            components = word.split(".")
+            if len(components) == 2 and \
+                    all(map(str.isdigit, components)) and\
+                    int(components[0]) < 25 and int(components[1]) < 60:
+                _hstr, _mstr = components
+                _mstr = _mstr.ljust(2, "0")
+                tokens[idx] = Token(f"{_hstr}:{_mstr}", idx) 
+                number_words.clear()
+                _val = _prev_val = None
+                continue    
 
         # spoken decimals
         if _current_val is not None and _comma:
@@ -413,7 +427,7 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
     days = ['montag', 'dienstag', 'mittwoch',
             'donnerstag', 'freitag', 'samstag', 'sonntag']
     months = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
-              'juli', 'august', 'september', 'october', 'november',
+              'juli', 'august', 'september', 'oktober', 'november',
               'dezember']
     monthsShort = ['jan', 'feb', 'mär', 'apr', 'mai', 'juni', 'juli', 'aug',
                    'sept', 'oct', 'nov', 'dez']
@@ -627,6 +641,7 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
         wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
         wordNextNextNextNext = words[idx + 4] if idx + 4 < len(words) else ""
+        wordNextNextNextNextNext = words[idx + 5] if idx + 5 < len(words) else ""
 
         # parse noon, midnight, morning, afternoon, evening
         used = 0
@@ -702,6 +717,19 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                     elif nextWord in timeQualifiersList:
                         used += 1
                         timeQualifier = "am"
+                    elif nextWord == "uhr":
+                        used += 1
+                        if wordNextNext in eveningQualifiers:
+                            used += 1
+                            timeQualifier = "pm"
+                        elif wordNextNext in timeQualifiersList:
+                            used += 1
+                            timeQualifier = "am"
+                        elif strHH.isdigit():
+                            if int(strHH) > 12:
+                                timeQualifier = "pm"
+                            else:
+                                timeQualifier = "am"
             else:
                 # try to parse # s without colons
                 # 5 hours, 10 minutes etc.
@@ -713,9 +741,6 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                         strNum += word[i]
                     else:
                         remainder += word[i]
-
-                if remainder == "":
-                    timeQualifier = wordNext.replace(".", "").lstrip().rstrip()
 
                 if (
                         remainder == "pm" or
@@ -760,7 +785,9 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                         strHH = word
                         used += 1
                         isTime = True
-                        if wordNextNext in timeQualifiersList:
+                        if wordNextNext in timeQualifiersList or \
+                                wordNextNextNext in timeQualifiersList \
+                                and not is_number_de(wordNextNext):
                             strMM = ""
                             if wordNextNext[:10] == "nachmittag":
                                 used += 1
@@ -769,6 +796,13 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                                     "nachmittag":
                                 used += 2
                                 timeQualifier = "pm"
+                            elif wordNextNext[:6] == "mittag":
+                                used += 1
+                                timeQualifier = "am"
+                            elif wordNextNext == "am" and wordNextNextNext == \
+                                    "mittag":
+                                used += 2
+                                timeQualifier = "am"
                             elif wordNextNext[:5] == "abend":
                                 used += 1
                                 timeQualifier = "pm"
@@ -793,7 +827,13 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                         elif is_numeric_de(wordNextNext):
                             strMM = wordNextNext
                             used += 1
-                            if wordNextNextNext == timeQualifier:
+                            # TTS failure "16 Uhr 30 Uhr" (common with google)
+                            if wordNextNextNext == "uhr":
+                                used += 1
+                                wordNextNextNext = wordNextNextNextNext
+                                wordNextNextNextNext = wordNextNextNextNextNext
+                            if wordNextNextNext in timeQualifiersList or \
+                                    wordNextNextNextNext in timeQualifiersList:
                                 if wordNextNextNext[:10] == "nachmittag":
                                     used += 1
                                     timeQualifier = "pm"
@@ -801,6 +841,13 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                                         wordNextNextNextNext == "nachmittag":
                                     used += 2
                                     timeQualifier = "pm"
+                                elif wordNextNext[:6] == "mittag":
+                                    used += 1
+                                    timeQualifier = "am"
+                                elif wordNextNext == "am" and wordNextNextNext == \
+                                        "mittag":
+                                    used += 2
+                                    timeQualifier = "am"
                                 elif wordNextNextNext[:5] == "abend":
                                     used += 1
                                     timeQualifier = "pm"
@@ -821,8 +868,19 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                                         timeQualifier = "pm"
                                     else:
                                         timeQualifier = "am"
+                            elif strHH.isdigit():
+                                if int(strHH) > 12:
+                                    timeQualifier = "pm"
+                                else:
+                                    timeQualifier = "am"
+                        elif strHH.isdigit():
+                            if int(strHH) > 12:
+                                timeQualifier = "pm"
+                            else:
+                                timeQualifier = "am"
 
-                    elif wordNext in timeQualifiersList:
+                    elif wordNext in timeQualifiersList or \
+                            wordNextNext in timeQualifiersList:
                         strHH = word
                         strMM = 00
                         isTime = True
@@ -832,6 +890,13 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                         elif wordNext == "am" and wordNextNext == "nachmittag":
                             used += 2
                             timeQualifier = "pm"
+                        elif wordNextNext[:6] == "mittag":
+                            used += 1
+                            timeQualifier = "am"
+                        elif wordNextNext == "am" and wordNextNextNext == \
+                                "mittag":
+                            used += 2
+                            timeQualifier = "am"
                         elif wordNext[:5] == "abend":
                             used += 1
                             timeQualifier = "pm"
@@ -851,10 +916,8 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                             else:
                                 timeQualifier = "am"
 
-                # if timeQualifier != "":
-                #     military = True
-                # else:
-                #     isTime = False
+                if timeQualifier == "":
+                    isTime = False
 
             strHH = int(strHH) if strHH else 0
             strMM = int(strMM) if strMM else 0
@@ -923,7 +986,11 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
         for idx, en_month in enumerate(en_monthsShort):
             datestr = datestr.replace(monthsShort[idx], en_month)
 
-        temp = datetime.strptime(datestr, "%B %d")
+        if hasYear:
+            temp = datetime.strptime(datestr, "%B %d %Y")
+        else:
+            temp = datetime.strptime(datestr, "%B %d")
+
         if extractedDate.tzinfo:
             temp = temp.replace(tzinfo=extractedDate.tzinfo)
 
