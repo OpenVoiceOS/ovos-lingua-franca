@@ -280,7 +280,7 @@ def _extract_real_number_with_text_de(tokens, short_scale):
         
         # correct time format (whisper "13.30 Uhr")
         if all([isinstance(_current_val, float),
-                next_word.lower() in ["uhr", "pm", "am", "a.m.", "p.m."]]):
+                next_word.lower() in ["uhr", "pm", "a.m.", "p.m."]]):
             components = word.split(".")
             if len(components) == 2 and \
                     all(map(str.isdigit, components)) and\
