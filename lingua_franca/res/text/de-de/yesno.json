@@ -3,11 +3,55 @@
     "Ja",
     "Jawohl",
     "Na klaro",
-    "Sicher"
+    "Sicher",
+    "natürlich",
+    "selbstverständlich",
+    "gewiss",
+    "freilich",
+    "bestimmt",
+    "auf jeden",
+    "jedenfalls",
+    "gut",
+    "einverstanden",
+    "okay",
+    "in Ordnung",
+    "klar",
+    "geritzt",
+    "abgemacht",
+    "gebongt",
+    "o.k.",
+    "okey",
+    "ok"
   ],
   "no": [
-    "Negative",
+    "Negativ",
     "Nö",
-    "Nein"
+    "Nein",
+    "nicht",
+    "keinen Fall",
+    "keinesfalls",
+    "keineswegs",
+    "ausgeschlossen",
+    "mitnichten",
+    "unmöglich",
+    "nichts da", 
+    "weit gefehlt",
+    "niemals",
+    "nee",
+    "neehee",
+    "niet",
+    "no",
+    "nöff",
+    "nope"
+  ],
+  "neutral_yes": [
+    "vielleicht",
+    "keine Ahnung"
+  ],
+  "neutral_no": [
+    "vielleicht nicht",
+    "vielleicht doch nicht",
+    "weiss nicht",
+    "weiß nicht"
   ]
 }
