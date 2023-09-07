@@ -198,7 +198,7 @@ def match_yes_or_no(text, lang):
         words = json.load(f)
         words = {k: [_.lower() for _ in v] for k, v in words.items()}
     # after encoding information is lost
-    if lang == 'uk-uk':
+    if lang == 'uk-ua':
         text = unicodedata.normalize('NFD', text)
     else:
         text = unicodedata.normalize('NFD', text) \

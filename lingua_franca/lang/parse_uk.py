@@ -1643,7 +1643,7 @@ def extract_numbers_uk(text, short_scale=True, ordinals=False):
 
 
 class UkrainianNormalizer(Normalizer):
-    with open(resolve_resource_file("text/uk-uk/normalize.json"), encoding='utf8') as f:
+    with open(resolve_resource_file("text/uk-ua/normalize.json"), encoding='utf8') as f:
         _default_config = json.load(f)
 
 

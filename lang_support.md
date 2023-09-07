@@ -28,7 +28,7 @@
 - [sv-se](#sv)
 - [fa-ir](#fa)
 - [eu-eu](#eu)
-- [uk-uk](#uk)
+- [uk-ua](#uk)
        
 ### az
 

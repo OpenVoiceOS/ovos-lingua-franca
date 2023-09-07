@@ -18,6 +18,7 @@ import json
 import os
 import re
 from collections import namedtuple
+from typing import List, Optional
 from warnings import warn
 from os.path import join
 
@@ -570,7 +571,8 @@ def nice_duration(duration, lang='', speech=True):
     return out
 
 
-def join_list(items, connector, sep=None, lang=''):
+def join_list(items: List[str], connector: str, sep: Optional[str] = None,
+              lang: str = '') -> str:
     """ Join a list into a phrase using the given connector word
 
     Examples:
