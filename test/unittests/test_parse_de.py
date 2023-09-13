@@ -25,6 +25,7 @@ from lingua_franca.parse import (
     normalize
 )
 from lingua_franca.lang.parse_de import _convert_words_to_numbers_de
+from lingua_franca.parse import yes_or_no
 
 
 def setUpModule():
@@ -96,7 +97,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("Ist das der letzte?", lang="de-de",
                                    remove_articles=False),
                          "Ist das der letzte")
-
 
 
 class TestExtractNumber(unittest.TestCase):
@@ -429,6 +429,7 @@ class TestExtractDatetime(unittest.TestCase):
 
         self.assertEqual(default, res[0].time())
 
+
 class TestExtractDuration(unittest.TestCase):
     def test_extract_duration_de(self):
 
@@ -487,6 +488,43 @@ class TestExtractDuration(unittest.TestCase):
 
         self.assertEqual(extract_duration("5-minuten", lang="de-de"),
                         (timedelta(minutes=5), ""))
+
+
+class TestYesNo(unittest.TestCase):
+    def test_yesno(self):
+        def test_utt(text, expected):
+            res = yes_or_no(text, "de-de")
+            self.assertEqual(res, expected)
+
+        test_utt("ja", True)
+        test_utt("nein", False)
+        test_utt("wohl kaum", False)
+        test_utt("ich denke nicht", False)
+        test_utt("test", None)
+        test_utt("nein, obwohl doch", True)
+        test_utt("ja, aber eigentlich, nein", False)
+        test_utt("ja, ich will das sicher nicht", False)
+        test_utt("das ist ein problem", False)
+        test_utt("bitte", True)
+        test_utt("bitte nicht", False)
+        test_utt("vergiss es", False)
+
+        # test "neutral_yes" -> only count as yes word if there isn't a "no" in sentence
+        test_utt("Nein! bitte!", False)
+        test_utt("Das ist nicht richtig.", False)
+        test_utt("Das klingt nicht gut.", False)
+        test_utt("Klingt gut", True)
+        test_utt("sicher nicht", False)
+
+        # test "neutral_no" -> only count as no word if there isn't a "yes" in sentence
+        test_utt("ja, das ist falsch", True)
+        test_utt("ok, vergiss es", True)
+        test_utt("vergess was ich gesagt habe", False)
+        test_utt("ja, das ist gelogen", True)
+        test_utt("das ist gelogen", False)
+
+        # test double negation
+        test_utt("kein problem", True)
 
 
 if __name__ == "__main__":
