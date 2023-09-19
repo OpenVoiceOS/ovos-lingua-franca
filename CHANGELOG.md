@@ -2,7 +2,55 @@
 
 ## [Unreleased](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.7...HEAD)
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a6...HEAD)
+
+**Implemented enhancements:**
+
+- fix german time parser [\#65](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/65) ([emphasize](https://github.com/emphasize))
+
+## [V0.4.8a6](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/V0.4.8a6) (2023-09-07)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a5...V0.4.8a6)
+
+**Merged pull requests:**
+
+- Fix typo in `uk-ua` language code [\#62](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/62) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [V0.4.8a5](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/V0.4.8a5) (2023-08-21)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a4...V0.4.8a5)
+
+**Implemented enhancements:**
+
+- extend german normalizer [\#59](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/59) ([emphasize](https://github.com/emphasize))
+
+## [V0.4.8a4](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/V0.4.8a4) (2023-08-15)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a3...V0.4.8a4)
+
+**Implemented enhancements:**
+
+- move to quebra tokenizer [\#61](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/61) ([emphasize](https://github.com/emphasize))
+
+## [V0.4.8a3](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/V0.4.8a3) (2023-06-05)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a2...V0.4.8a3)
+
+**Fixed bugs:**
+
+- fix nice date utils [\#60](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/60) ([emphasize](https://github.com/emphasize))
+
+## [V0.4.8a2](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/V0.4.8a2) (2023-05-19)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.8a1...V0.4.8a2)
+
+**Implemented enhancements:**
+
+- german parse overhaul [\#54](https://github.com/OpenVoiceOS/ovos-lingua-franca/pull/54) ([emphasize](https://github.com/emphasize))
+
+## [V0.4.8a1](https://github.com/OpenVoiceOS/ovos-lingua-franca/tree/V0.4.8a1) (2023-04-07)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-lingua-franca/compare/V0.4.7...V0.4.8a1)
 
 **Merged pull requests:**
 

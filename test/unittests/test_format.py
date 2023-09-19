@@ -24,12 +24,18 @@ from dateutil import tz
 # TODO either write a getter for lingua_franca.internal._SUPPORTED_LANGUAGES,
 # or make it public somehow
 from lingua_franca import load_language, unload_language, set_default_lang
-from lingua_franca.format import date_time_format
-from lingua_franca.format import nice_date
-from lingua_franca.format import nice_date_time
-from lingua_franca.format import nice_number
-from lingua_franca.format import nice_time
-from lingua_franca.format import nice_year
+from lingua_franca.format import (
+    date_time_format,
+    nice_date,
+    nice_date_time,
+    nice_number,
+    nice_time,
+    nice_year,
+    nice_day,
+    nice_month,
+    nice_weekday,
+    get_date_strings
+)
 from lingua_franca.lang.format_common import convert_to_mixed_fraction as cmf
 from lingua_franca.time import default_timezone, set_default_tz, now_local, \
     to_local
@@ -213,6 +219,69 @@ class TestNiceDateFormat(unittest.TestCase):
             unload_language(lang)
 
         set_default_lang('en')
+
+
+class TestNiceDateUtils(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lang = 'en-us'
+
+    def test_nice_day(self):
+        # Test with include_month=True
+        dt = datetime.datetime(2022, 10, 31)
+        self.assertEqual(nice_day(dt, 'MDY', True, self.lang), "October 31")
+        self.assertEqual(nice_day(dt, 'DMY', True, self.lang), "31 October")
+
+        # Test with include_month=False
+        self.assertEqual(nice_day(dt, include_month=False, lang=self.lang), "31")
+
+    def test_nice_month(self):
+        dt = datetime.datetime(2022, 10, 31)
+        self.assertEqual(nice_month(dt, lang=self.lang), "October")
+
+    def test_nice_weekday(self):
+        dt = datetime.datetime(2022, 10, 31)
+        self.assertEqual(nice_weekday(dt, lang=self.lang), "Monday")
+    
+    def test_get_date_strings(self):
+        # Test with default arguments
+        dt = datetime.datetime(2022, 10, 31, 13, 30, 0)
+        expected_output = {
+            "date_string": "10/31/2022",
+            "time_string": "1:30",
+            "month_string": "October",
+            "day_string": "31",
+            "year_string": "2022",
+            "weekday_string": "Monday"
+        }
+        self.assertEqual(get_date_strings(dt,
+                                          time_format="half",
+                                          lang=self.lang), expected_output)
+
+        # Test with different date_format
+        expected_output = {
+            "date_string": "31/10/2022",
+            "time_string": "1:30",
+            "month_string": "October",
+            "day_string": "31",
+            "year_string": "2022",
+            "weekday_string": "Monday"
+        }
+        self.assertEqual(get_date_strings(dt,
+                                          time_format="half",
+                                          date_format='DMY',
+                                          lang=self.lang), expected_output)
+
+        # Test with different time_format
+        expected_output = {
+            "date_string": "10/31/2022",
+            "time_string": "13:30",
+            "month_string": "October",
+            "day_string": "31",
+            "year_string": "2022",
+            "weekday_string": "Monday"
+        }
+        self.assertEqual(get_date_strings(dt, lang=self.lang), expected_output)        
 
 
 class TestMixedFraction(unittest.TestCase):

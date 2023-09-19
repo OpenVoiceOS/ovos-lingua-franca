@@ -36,7 +36,7 @@ from lingua_franca.time import default_timezone
 
 
 def setUpModule():
-    load_language("uk-uk")
+    load_language("uk-ua")
     set_default_lang("uk")
 
 
@@ -75,15 +75,15 @@ NUMBERS_FIXTURE_UK = {
 }
 
 def setUpModule():
-    load_language("uk-uk")
+    load_language("uk-ua")
     set_default_lang("uk")
 
 class TestNiceNumberFormat(unittest.TestCase):
-    load_language("uk-uk")
+    load_language("uk-ua")
     set_default_lang("uk")
 
     def test_convert_float_to_nice_number(self):
-        load_language("uk-uk")
+        load_language("uk-ua")
         set_default_lang("uk")
         for number, number_str in NUMBERS_FIXTURE_UK.items():
             self.assertEqual(nice_number(number, speech=True), number_str,
@@ -462,7 +462,7 @@ class TestNiceDateFormat(unittest.TestCase):
                          "без четверті друга година")
 
     def test_nice_date(self):
-        lang = "uk-uk"
+        lang = "uk-ua"
         i = 1
         print(self.test_config[lang]["test_nice_date"].get(str(i)))
         while (self.test_config[lang].get("test_nice_date") and
@@ -491,7 +491,7 @@ class TestNiceDateFormat(unittest.TestCase):
             self.assertTrue(len(nice_date(dt, lang=lang)) > 0)
 
     def test_nice_date_time(self):
-        lang = "uk-uk"
+        lang = "uk-ua"
         i = 1
         while (self.test_config[lang].get("test_nice_date_time") and
                self.test_config[lang]["test_nice_date_time"].get(str(i))):
@@ -514,7 +514,7 @@ class TestNiceDateFormat(unittest.TestCase):
             i = i + 1
 
     def test_nice_year(self):
-        lang = "uk-uk"
+        lang = "uk-ua"
         i = 1
         while (self.test_config[lang].get("test_nice_year") and
                self.test_config[lang]["test_nice_year"].get(str(i))):

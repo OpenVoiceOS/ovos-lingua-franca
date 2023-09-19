@@ -13,77 +13,302 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 import re
+import json
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
-    extract_numbers_generic, Normalizer
-from lingua_franca.lang.common_data_de import _DE_NUMBERS
-from lingua_franca.lang.format_de import pronounce_number_de
-from lingua_franca.time import now_local
+
+from lingua_franca.lang.parse_common import (
+    ReplaceableNumber,
+    Normalizer,
+    Token,
+    look_for_fractions,
+    tokenize,
+)
+from lingua_franca.lang.common_data_de import (
+    _STRING_NUM,
+    _STRING_FRACTION,
+    _STRING_LONG_ORDINAL,
+    _STRING_LONG_SCALE,
+    _MULTIPLIER,
+    _NEGATIVES,
+    _NUMBER_CONNECTORS,
+    _COMMA,
+    _ARTICLES
+)
+from lingua_franca.time import now_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.internal import resolve_resource_file
 
 
-de_numbers = {
-    'null': 0,
-    'ein': 1,
-    'eins': 1,
-    'eine': 1,
-    'einer': 1,
-    'einem': 1,
-    'einen': 1,
-    'eines': 1,
-    'zwei': 2,
-    'drei': 3,
-    'vier': 4,
-    'fünf': 5,
-    'sechs': 6,
-    'sieben': 7,
-    'acht': 8,
-    'neun': 9,
-    'zehn': 10,
-    'elf': 11,
-    'zwölf': 12,
-    'dreizehn': 13,
-    'vierzehn': 14,
-    'fünfzehn': 15,
-    'sechzehn': 16,
-    'siebzehn': 17,
-    'achtzehn': 18,
-    'neunzehn': 19,
-    'zwanzig': 20,
-    'einundzwanzig': 21,
-    'zweiundzwanzig': 22,
-    'dreiundzwanzig': 23,
-    'vierundzwanzig': 24,
-    'fünfundzwanzig': 25,
-    'sechsundzwanzig': 26,
-    'siebenundzwanzig': 27,
-    'achtundzwanzig': 28,
-    'neunundzwanzig': 29,
-    'dreißig': 30,
-    'einunddreißig': 31,
-    'vierzig': 40,
-    'fünfzig': 50,
-    'sechzig': 60,
-    'siebzig': 70,
-    'achtzig': 80,
-    'neunzig': 90,
-    'hundert': 100,
-    'zweihundert': 200,
-    'dreihundert': 300,
-    'vierhundert': 400,
-    'fünfhundert': 500,
-    'sechshundert': 600,
-    'siebenhundert': 700,
-    'achthundert': 800,
-    'neunhundert': 900,
-    'tausend': 1000,
-    'million': 1000000
-}
 
-# TODO: short_scale and ordinals don't do anything here.
-# The parameters are present in the function signature for API compatibility
-# reasons.
+def _convert_words_to_numbers_de(text, short_scale=False,
+                                 ordinals=False, fractions=True):
+    """
+    Convert words in a string into their equivalent numbers.
+    Args:
+        text str:
+        short_scale boolean: True if short scale numberres should be used.
+        ordinals boolean: True if ordinals (e.g. first, second, third) should
+                          be parsed to their number values (1, 2, 3...)
+    Returns:
+        str
+        The original text, with numbers subbed in where appropriate.
+    """
+    tokens = tokenize(text)
+    numbers_to_replace = \
+        _extract_numbers_with_text_de(tokens, short_scale, ordinals, fractions)
+    numbers_to_replace.sort(key=lambda number: number.start_index)
+
+    results = []
+    for token in tokens:
+        if not numbers_to_replace or \
+                token.index < numbers_to_replace[0].start_index:
+            results.append(token.word)
+        else:
+            if numbers_to_replace and \
+                    token.index == numbers_to_replace[0].start_index:
+                results.append(str(numbers_to_replace[0].value))
+            if numbers_to_replace and \
+                    token.index == numbers_to_replace[0].end_index:
+                numbers_to_replace.pop(0)
+
+    return ' '.join(results)
+
+
+def _extract_numbers_with_text_de(tokens, short_scale=True,
+                                  ordinals=False, fractions=True):
+    """
+    Extract all numbers from a list of Tokens, with the words that
+    represent them.
+
+    Args:
+        [Token]: The tokens to parse.
+        short_scale bool: True if short scale numbers should be used, False for
+                          long scale. True by default.
+        ordinals bool: True if ordinal words (first, second, third, etc) should
+                       be parsed.
+        fractional_numbers bool: True if we should look for fractions and
+                                 decimals.
+
+    Returns:
+        [ReplaceableNumber]: A list of tuples, each containing a number and a
+                         string.
+
+    """
+    placeholder = "<placeholder>"  # inserted to maintain correct indices
+    results = []
+    while True:
+        to_replace = \
+            _extract_number_with_text_de(tokens, short_scale,
+                                         ordinals)
+
+        if not to_replace:
+            break
+
+        if isinstance(to_replace.value, float) and not fractions:
+            pass
+        else:
+            results.append(to_replace)
+
+        tokens = [
+            t if not
+            to_replace.start_index <= t.index <= to_replace.end_index
+            else
+            Token(placeholder, t.index) for t in tokens
+        ]
+    results.sort(key=lambda n: n.start_index)
+    return results
+
+
+def _extract_number_with_text_de(tokens, short_scale=True,
+                                 ordinals=False):
+    """
+    This function extracts a number from a list of Tokens.
+
+    Args:
+        tokens str: the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers
+        fractional_numbers (bool): True if we should look for fractions and
+                                   decimals.
+    Returns:
+        ReplaceableNumber
+
+    """
+    number, tokens = \
+        _extract_number_with_text_de_helper(tokens, short_scale,
+                                            ordinals)
+    return ReplaceableNumber(number, tokens)
+
+
+def _extract_number_with_text_de_helper(tokens,
+                                        short_scale, ordinals):
+    """
+    Helper for _extract_number_with_text_de.
+
+    Args:
+        tokens [Token]:
+        short_scale boolean:
+        ordinals boolean:
+        fractional_numbers boolean:
+    Returns:
+        int or float, [Tokens]
+    """
+    if ordinals:
+        for token in tokens:
+            ordinal = is_ordinal_de(token.word)
+            if ordinal:
+                return ordinal, [token]
+
+    return _extract_real_number_with_text_de(tokens, short_scale)
+
+
+def _extract_real_number_with_text_de(tokens, short_scale):
+    """
+    This is handling real numbers.
+
+    Args:
+        tokens [Token]:
+        short_scale boolean:
+    Returns:
+        int or float, [Tokens]
+        The value parsed, and tokens that it corresponds to.
+    """
+    number_words = []
+    val = _val = _current_val = None
+    _comma = False
+    to_sum = []
+
+    for idx, token in enumerate(tokens):
+
+        _prev_val = _current_val
+        _current_val = None
+
+        word = token.word
+
+        if word in _NUMBER_CONNECTORS and not number_words:
+            continue
+        if word in (_NEGATIVES | _NUMBER_CONNECTORS | _COMMA):
+            number_words.append(token)
+            if word in _COMMA:
+                _comma = token
+                _current_val = _val or _prev_val
+            continue
+
+        prev_word = tokens[idx - 1].word if idx > 0 else ""
+        next_word = tokens[idx + 1].word if idx + 1 < len(tokens) else ""
+
+        if word not in _STRING_LONG_SCALE and \
+                word not in _STRING_NUM and \
+                word not in _MULTIPLIER and \
+                not is_numeric_de(word) and \
+                not is_fractional_de(word):
+            words_only = [token.word for token in number_words]
+            if _val is not None:
+                to_sum.append(_val)
+            if to_sum:
+                val = sum(to_sum)
+
+            if number_words and (not all([w in _ARTICLES | _NEGATIVES
+                                         | _NUMBER_CONNECTORS for w in words_only])
+                                 or str(val) == number_words[-1].word):
+                break
+            else:
+                number_words.clear()
+                to_sum.clear()
+                val = _val = _prev_val = None
+            continue
+        elif word not in _MULTIPLIER \
+                and prev_word not in _MULTIPLIER \
+                and prev_word not in _NUMBER_CONNECTORS \
+                and prev_word not in _NEGATIVES \
+                and prev_word not in _COMMA \
+                and prev_word not in _STRING_LONG_SCALE \
+                and prev_word not in _STRING_NUM \
+                and not is_ordinal_de(word) \
+                and not is_numeric_de(prev_word)  \
+                and not is_fractional_de(prev_word):
+            number_words = [token]
+        else:
+            number_words.append(token)
+
+        # is this word already a number or a word of a number?
+        _val = _current_val = is_number_de(word)
+
+        # is this a negative number?
+        if _current_val is not None and prev_word in _NEGATIVES:
+            _val = 0 - _current_val
+        
+        # is the prev word a number and should we multiply it?
+        if _prev_val is not None and ( word in _MULTIPLIER or \
+            word in ("einer", "eines", "einem")):
+            to_sum.append(_prev_val * _current_val or _current_val)
+            _val = _current_val = None
+        
+        # fraction handling
+        _fraction_val = is_fractional_de(word, short_scale=short_scale)
+        if _fraction_val:
+            if _prev_val is not None and prev_word != "eine" and \
+                    word not in _STRING_FRACTION:   # zusammengesetzter Bruch
+                _val = _prev_val + _fraction_val
+                if prev_word not in _NUMBER_CONNECTORS and tokens[idx -1] not in number_words:
+                    number_words.append(tokens[idx - 1])
+            elif _prev_val is not None:
+                _val = _prev_val * _fraction_val
+                if tokens[idx -1] not in number_words:
+                    number_words.append(tokens[idx - 1])
+            else:
+                _val = _fraction_val
+            _current_val = _val
+        
+        # directly following numbers without relation
+        if (is_numeric_de(prev_word) or prev_word in _STRING_NUM) \
+                and not _fraction_val and not is_fractional_de(next_word) and not to_sum:
+            val = _prev_val
+            number_words.pop(-1)
+            break
+
+        # is this a spoken time ("drei viertel acht")
+        if isinstance(_prev_val, float) and is_number_de(word) and not to_sum:
+            if idx+1 < len(tokens):
+                _, number = _extract_real_number_with_text_de([tokens[idx + 1]],
+                                                              short_scale=short_scale)
+            if not next_word or not number:
+                val = f"{_val-1}:{int(60*_prev_val)}"
+                break
+        
+        # correct time format (whisper "13.30 Uhr")
+        if all([isinstance(_current_val, float),
+                next_word.lower() in ["uhr", "pm", "a.m.", "p.m."]]):
+            components = word.split(".")
+            if len(components) == 2 and \
+                    all(map(str.isdigit, components)) and\
+                    int(components[0]) < 25 and int(components[1]) < 60:
+                _hstr, _mstr = components
+                _mstr = _mstr.ljust(2, "0")
+                tokens[idx] = Token(f"{_hstr}:{_mstr}", idx) 
+                number_words.clear()
+                _val = _prev_val = None
+                continue    
+
+        # spoken decimals
+        if _current_val is not None and _comma:
+            # to_sum = [ 1, 0.2, 0.04,...]
+            to_sum.append(_current_val if _current_val >= 10 else (
+                _current_val) / (10 ** (token.index - _comma.index)))
+            _val = _current_val = None
+
+
+        if _current_val is not None and next_word in (_NUMBER_CONNECTORS | _COMMA | {""}):
+            to_sum.append(_val or _current_val)
+            _val = _current_val = None
+
+        
+        if not next_word and number_words:
+            val = sum(to_sum) or _val
+
+    return val, number_words
 
 
 def extract_duration_de(text):
@@ -122,10 +347,9 @@ def extract_duration_de(text):
     }
 
     # Einzahl und Mehrzahl
-    pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}[ne]?"
+    pattern = r"(?:^|\s)(?P<value>\d+(?:[.,]?\d+)?\b)(?:\s+|\-)(?P<unit>{unit}[nes]?[sn]?\b)"
 
-    # TODO Einstiegspunkt für Text-zu-Zahlen Konversion
-    #text = _convert_words_to_numbers_de(text)
+    text = _convert_words_to_numbers_de(text)
 
     for (unit_en, unit_de) in time_units.items():
         unit_pattern = pattern.format(
@@ -133,7 +357,8 @@ def extract_duration_de(text):
         time_units[unit_en] = 0
 
         def repl(match):
-            time_units[unit_en] += float(match.group(1))
+            value = match.group("value").replace(",",".")
+            time_units[unit_en] += float(value)
             return ''
         text = re.sub(unit_pattern, repl, text)
 
@@ -141,91 +366,6 @@ def extract_duration_de(text):
     duration = timedelta(**time_units) if any(time_units.values()) else None
 
     return (duration, text)
-
-
-def extract_number_de(text, short_scale=True, ordinals=False):
-    """
-    This function prepares the given text for parsing by making
-    numbers consistent, getting rid of contractions, etc.
-    Args:
-        text (str): the string to normalize
-    Returns:
-        (int) or (float): The value of extracted number
-
-
-    undefined articles cannot be suppressed in German:
-    'ein Pferd' means 'one horse' and 'a horse'
-
-    """
-    # TODO: short_scale and ordinals don't do anything here.
-    # The parameters are present in the function signature for API compatibility
-    # reasons.
-    text = text.lower()
-    aWords = text.split()
-    aWords = [word for word in aWords if
-              word not in ["der", "die", "das", "des", "den", "dem"]]
-    and_pass = False
-    valPreAnd = False
-    val = False
-    count = 0
-    while count < len(aWords):
-        word = aWords[count]
-        if is_numeric(word):
-            # if word.isdigit():            # doesn't work with decimals
-            val = float(word)
-        elif is_fractional_de(word):
-            val = is_fractional_de(word)
-        elif is_ordinal_de(word):
-            val = is_ordinal_de(word)
-        else:
-            if word in _DE_NUMBERS:
-                val = _DE_NUMBERS[word]
-                if count < (len(aWords) - 1):
-                    wordNext = aWords[count + 1]
-                else:
-                    wordNext = ""
-                valNext = is_fractional_de(wordNext)
-
-                if valNext:
-                    val = val * valNext
-                    aWords[count + 1] = ""
-
-        if not val:
-            # look for fractions like "2/3"
-            aPieces = word.split('/')
-            # if (len(aPieces) == 2 and is_numeric(aPieces[0])
-            #   and is_numeric(aPieces[1])):
-            if look_for_fractions(aPieces):
-                val = float(aPieces[0]) / float(aPieces[1])
-            elif and_pass:
-                # added to value, quit here
-                val = valPreAnd
-                break
-            else:
-                count += 1
-                continue
-
-        aWords[count] = ""
-
-        if and_pass:
-            aWords[count - 1] = ''  # remove "and"
-            val += valPreAnd
-        elif count + 1 < len(aWords) and aWords[count + 1] == 'und':
-            and_pass = True
-            valPreAnd = val
-            val = False
-            count += 2
-            continue
-        elif count + 2 < len(aWords) and aWords[count + 2] == 'und':
-            and_pass = True
-            valPreAnd = val
-            val = False
-            count += 3
-            continue
-
-        break
-
-    return val or False
 
 
 def extract_datetime_de(text, anchorDate=None, default_time=None):
@@ -238,17 +378,16 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
             for 12 hour date format
         """
 
-        s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
-            .replace(' der ', ' ').replace(' den ', ' ').replace(' an ',
-                                                                 ' ').replace(
-            ' am ', ' ') \
-            .replace(' auf ', ' ').replace(' um ', ' ')
+        s = _convert_words_to_numbers_de(s)
+        s = s.lower().replace('?', '').replace(' der ', ' ').replace(' den ', ' ')\
+            .replace(' an ', ' ').replace(' am ', ' ').replace(' auf ', ' ')\
+            .replace(' um ', ' ')
         wordList = s.split()
 
         for idx, word in enumerate(wordList):
-            if is_ordinal_de(word) is not False:
-                word = str(is_ordinal_de(word))
-                wordList[idx] = word
+            ordinal = _get_ordinal_index(word)
+            if ordinal:
+                wordList[idx] = ordinal
 
         return wordList
 
@@ -280,13 +419,15 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
     timeQualifier = ""
 
     timeQualifiersList = ['früh', 'morgens', 'vormittag', 'vormittags',
-                          'nachmittag', 'nachmittags', 'abend', 'abends',
-                          'nachts']
+                          'mittag', 'mittags', 'nachmittag', 'nachmittags',
+                          'abend', 'abends', 'nacht', 'nachts', 'pm', 'p.m.']
+    eveningQualifiers = ['nachmittag', 'nachmittags', 'abend', 'abends', 'nacht',
+                        'nachts', 'pm', 'p.m.']
     markers = ['in', 'am', 'gegen', 'bis', 'für']
     days = ['montag', 'dienstag', 'mittwoch',
             'donnerstag', 'freitag', 'samstag', 'sonntag']
     months = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
-              'juli', 'august', 'september', 'october', 'november',
+              'juli', 'august', 'september', 'oktober', 'november',
               'dezember']
     monthsShort = ['jan', 'feb', 'mär', 'apr', 'mai', 'juni', 'juli', 'aug',
                    'sept', 'oct', 'nov', 'dez']
@@ -316,15 +457,6 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
 
-        # this isn't in clean string because I don't want to save back to words
-
-        if word != 'morgen' and word != 'übermorgen':
-            if word[-2:] == "en":
-                word = word[:-2]  # remove en
-        if word != 'heute':
-            if word[-1:] == "e":
-                word = word[:-1]  # remove plural for most nouns
-
         start = idx
         used = 0
         # save timequalifier for later
@@ -343,14 +475,16 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
             dayOffset = 2
             used += 1
             # parse 5 days, 10 weeks, last week, next week
-        elif word == "tag" or word == "tage":
-            if wordPrev[0].isdigit():
-                dayOffset += int(wordPrev)
+        elif word[:3] == "tag" and len(word) <= 5:
+            num = is_number_de(wordPrev)
+            if num:
+                dayOffset += num
                 start -= 1
                 used = 2
-        elif word == "woch" and not fromFlag:
-            if wordPrev[0].isdigit():
-                dayOffset += int(wordPrev) * 7
+        elif word[:5] == "woche" and len(word) <= 7 and not fromFlag:
+            num = is_number_de(wordPrev)
+            if num:
+                dayOffset += num * 7
                 start -= 1
                 used = 2
             elif wordPrev[:6] == "nächst":
@@ -362,9 +496,10 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
                 # parse 10 months, next month, last month
-        elif word == "monat" and not fromFlag:
-            if wordPrev[0].isdigit():
-                monthOffset = int(wordPrev)
+        elif word[:5] == "monat" and len(word) <= 7 and not fromFlag:
+            num = is_number_de(wordPrev)
+            if num:
+                monthOffset = num
                 start -= 1
                 used = 2
             elif wordPrev[:6] == "nächst":
@@ -376,9 +511,10 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                 start -= 1
                 used = 2
                 # parse 5 years, next year, last year
-        elif word == "jahr" and not fromFlag:
-            if wordPrev[0].isdigit():
-                yearOffset = int(wordPrev)
+        elif word[:4] == "jahr" and len(word) <= 6 and not fromFlag:
+            num = is_number_de(wordPrev)
+            if num:
+                yearOffset = num
                 start -= 1
                 used = 2
             elif wordPrev[:6] == "nächst":
@@ -505,6 +641,7 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
         wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
         wordNextNextNextNext = words[idx + 4] if idx + 4 < len(words) else ""
+        wordNextNextNextNextNext = words[idx + 5] if idx + 5 < len(words) else ""
 
         # parse noon, midnight, morning, afternoon, evening
         used = 0
@@ -528,16 +665,14 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                 hrAbs = 19
             used += 1
             # parse half an hour, quarter hour
-        elif word == "stunde" and \
+        elif word[:5] == "nacht":
+            if not hrAbs:
+                hrAbs = 23
+            used += 1
+        elif word[:6] == "stunde" and \
                 (wordPrev in markers or wordPrevPrev in markers):
-            if wordPrev[:4] == "halb":
-                minOffset = 30
-            elif wordPrev == "viertel":
-                minOffset = 15
-            elif wordPrev == "dreiviertel":
-                minOffset = 45
-            else:
-                hrOffset = 1
+            factor = is_number_de(word) or 1
+            minOffset = 60 * factor
             if wordPrevPrev in markers:
                 words[idx - 2] = ""
             words[idx - 1] = ""
@@ -549,6 +684,7 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
             isTime = True
             strHH = ""
             strMM = ""
+            timeQualifier = ""
             remainder = ""
             if ':' in word:
                 # parse colons
@@ -575,51 +711,25 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                         break
                 if remainder == "":
                     nextWord = wordNext.replace(".", "")
-                    if nextWord == "am" or nextWord == "pm":
-                        remainder = nextWord
+                    if nextWord in eveningQualifiers:
                         used += 1
-                    elif nextWord == "abends":
-                        remainder = "pm"
+                        timeQualifier = "pm"
+                    elif nextWord in timeQualifiersList:
                         used += 1
-                    elif wordNext == "am" and wordNextNext == "morgen":
-                        remainder = "am"
-                        used += 2
-                    elif wordNext == "am" and wordNextNext == "nachmittag":
-                        remainder = "pm"
-                        used += 2
-                    elif wordNext == "am" and wordNextNext == "abend":
-                        remainder = "pm"
-                        used += 2
-                    elif wordNext == "morgens":
-                        remainder = "am"
+                        timeQualifier = "am"
+                    elif nextWord == "uhr":
                         used += 1
-                    elif wordNext == "nachmittags":
-                        remainder = "pm"
-                        used += 1
-                    elif wordNext == "abends":
-                        remainder = "pm"
-                        used += 1
-                    elif wordNext == "heute" and wordNextNext == "morgen":
-                        remainder = "am"
-                        used = 2
-                    elif wordNext == "heute" and wordNextNext == "nachmittag":
-                        remainder = "pm"
-                        used = 2
-                    elif wordNext == "heute" and wordNextNext == "abend":
-                        remainder = "pm"
-                        used = 2
-                    elif wordNext == "nachts":
-                        if strHH > 4:
-                            remainder = "pm"
-                        else:
-                            remainder = "am"
-                        used += 1
-                    else:
-                        if timeQualifier != "":
-                            if strHH <= 12 and \
-                                    (timeQualifier == "abends" or
-                                     timeQualifier == "nachmittags"):
-                                strHH += 12  # what happens when strHH is 24?
+                        if wordNextNext in eveningQualifiers:
+                            used += 1
+                            timeQualifier = "pm"
+                        elif wordNextNext in timeQualifiersList:
+                            used += 1
+                            timeQualifier = "am"
+                        elif strHH.isdigit():
+                            if int(strHH) > 12:
+                                timeQualifier = "pm"
+                            else:
+                                timeQualifier = "am"
             else:
                 # try to parse # s without colons
                 # 5 hours, 10 minutes etc.
@@ -632,16 +742,13 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                     else:
                         remainder += word[i]
 
-                if remainder == "":
-                    remainder = wordNext.replace(".", "").lstrip().rstrip()
-
                 if (
                         remainder == "pm" or
                         wordNext == "pm" or
                         remainder == "p.m." or
                         wordNext == "p.m."):
                     strHH = strNum
-                    remainder = "pm"
+                    timeQualifier = "pm"
                     used = 1
                 elif (
                         remainder == "am" or
@@ -649,26 +756,26 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                         remainder == "a.m." or
                         wordNext == "a.m."):
                     strHH = strNum
-                    remainder = "am"
+                    timeQualifier = "am"
                     used = 1
                 else:
-                    if wordNext == "stund" and int(word) < 100:
+                    if wordNext[:6] == "stunde" and len(wordNext) <= 7:
                         # "in 3 hours"
-                        hrOffset = int(word)
+                        hrOffset = is_number_de(word) or 1 
                         used = 2
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
-                    elif wordNext == "minut":
+                    elif wordNext[:6] == "minute" and len(wordNext) <= 7:
                         # "in 10 minutes"
-                        minOffset = int(word)
+                        minOffset = is_number_de(word) or 1
                         used = 2
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
-                    elif wordNext == "sekund":
+                    elif wordNext[:7] == "sekunde" and len(wordNext) <= 8:
                         # in 5 seconds
-                        secOffset = int(word)
+                        secOffset = is_number_de(word) or 1
                         used = 2
                         isTime = False
                         hrAbs = -1
@@ -678,106 +785,150 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
                         strHH = word
                         used += 1
                         isTime = True
-                        if wordNextNext == timeQualifier:
+                        if wordNextNext in timeQualifiersList or \
+                                wordNextNextNext in timeQualifiersList \
+                                and not is_number_de(wordNextNext):
                             strMM = ""
                             if wordNextNext[:10] == "nachmittag":
                                 used += 1
-                                remainder = "pm"
+                                timeQualifier = "pm"
                             elif wordNextNext == "am" and wordNextNextNext == \
                                     "nachmittag":
                                 used += 2
-                                remainder = "pm"
+                                timeQualifier = "pm"
+                            elif wordNextNext[:6] == "mittag":
+                                used += 1
+                                timeQualifier = "am"
+                            elif wordNextNext == "am" and wordNextNextNext == \
+                                    "mittag":
+                                used += 2
+                                timeQualifier = "am"
                             elif wordNextNext[:5] == "abend":
                                 used += 1
-                                remainder = "pm"
+                                timeQualifier = "pm"
                             elif wordNextNext == "am" and wordNextNextNext == \
                                     "abend":
                                 used += 2
-                                remainder = "pm"
+                                timeQualifier = "pm"
                             elif wordNextNext[:7] == "morgens":
                                 used += 1
-                                remainder = "am"
+                                timeQualifier = "am"
                             elif wordNextNext == "am" and wordNextNextNext == \
                                     "morgen":
                                 used += 2
-                                remainder = "am"
-                            elif wordNextNext == "nachts":
+                                timeQualifier = "am"
+                            elif wordNextNext[:5] == "nacht":
                                 used += 1
                                 if 8 <= int(word) <= 12:
-                                    remainder = "pm"
+                                    timeQualifier = "pm"
                                 else:
-                                    remainder = "am"
+                                    timeQualifier = "am"
 
-                        elif is_numeric(wordNextNext):
+                        elif is_numeric_de(wordNextNext):
                             strMM = wordNextNext
                             used += 1
-                            if wordNextNextNext == timeQualifier:
+                            # TTS failure "16 Uhr 30 Uhr" (common with google)
+                            if wordNextNextNext == "uhr":
+                                used += 1
+                                wordNextNextNext = wordNextNextNextNext
+                                wordNextNextNextNext = wordNextNextNextNextNext
+                            if wordNextNextNext in timeQualifiersList or \
+                                    wordNextNextNextNext in timeQualifiersList:
                                 if wordNextNextNext[:10] == "nachmittag":
                                     used += 1
-                                    remainder = "pm"
+                                    timeQualifier = "pm"
                                 elif wordNextNextNext == "am" and \
                                         wordNextNextNextNext == "nachmittag":
                                     used += 2
-                                    remainder = "pm"
+                                    timeQualifier = "pm"
+                                elif wordNextNext[:6] == "mittag":
+                                    used += 1
+                                    timeQualifier = "am"
+                                elif wordNextNext == "am" and wordNextNextNext == \
+                                        "mittag":
+                                    used += 2
+                                    timeQualifier = "am"
                                 elif wordNextNextNext[:5] == "abend":
                                     used += 1
-                                    remainder = "pm"
+                                    timeQualifier = "pm"
                                 elif wordNextNextNext == "am" and \
                                         wordNextNextNextNext == "abend":
                                     used += 2
-                                    remainder = "pm"
+                                    timeQualifier = "pm"
                                 elif wordNextNextNext[:7] == "morgens":
                                     used += 1
-                                    remainder = "am"
+                                    timeQualifier = "am"
                                 elif wordNextNextNext == "am" and \
                                         wordNextNextNextNext == "morgen":
                                     used += 2
-                                    remainder = "am"
+                                    timeQualifier = "am"
                                 elif wordNextNextNext == "nachts":
                                     used += 1
                                     if 8 <= int(word) <= 12:
-                                        remainder = "pm"
+                                        timeQualifier = "pm"
                                     else:
-                                        remainder = "am"
+                                        timeQualifier = "am"
+                            elif strHH.isdigit():
+                                if int(strHH) > 12:
+                                    timeQualifier = "pm"
+                                else:
+                                    timeQualifier = "am"
+                        elif strHH.isdigit():
+                            if int(strHH) > 12:
+                                timeQualifier = "pm"
+                            else:
+                                timeQualifier = "am"
 
-                    elif wordNext == timeQualifier:
+                    elif wordNext in timeQualifiersList or \
+                            wordNextNext in timeQualifiersList:
                         strHH = word
                         strMM = 00
                         isTime = True
                         if wordNext[:10] == "nachmittag":
                             used += 1
-                            remainder = "pm"
+                            timeQualifier = "pm"
                         elif wordNext == "am" and wordNextNext == "nachmittag":
                             used += 2
-                            remainder = "pm"
+                            timeQualifier = "pm"
+                        elif wordNextNext[:6] == "mittag":
+                            used += 1
+                            timeQualifier = "am"
+                        elif wordNextNext == "am" and wordNextNextNext == \
+                                "mittag":
+                            used += 2
+                            timeQualifier = "am"
                         elif wordNext[:5] == "abend":
                             used += 1
-                            remainder = "pm"
+                            timeQualifier = "pm"
                         elif wordNext == "am" and wordNextNext == "abend":
                             used += 2
-                            remainder = "pm"
+                            timeQualifier = "pm"
                         elif wordNext[:7] == "morgens":
                             used += 1
-                            remainder = "am"
+                            timeQualifier = "am"
                         elif wordNext == "am" and wordNextNext == "morgen":
                             used += 2
-                            remainder = "am"
+                            timeQualifier = "am"
                         elif wordNext == "nachts":
                             used += 1
                             if 8 <= int(word) <= 12:
-                                remainder = "pm"
+                                timeQualifier = "pm"
                             else:
-                                remainder = "am"
+                                timeQualifier = "am"
 
-                # if timeQualifier != "":
-                #     military = True
-                # else:
-                #     isTime = False
+                if timeQualifier == "":
+                    isTime = False
 
             strHH = int(strHH) if strHH else 0
             strMM = int(strMM) if strMM else 0
-            strHH = strHH + 12 if remainder == "pm" and strHH < 12 else strHH
-            strHH = strHH - 12 if remainder == "am" and strHH >= 12 else strHH
+            if timeQualifier != "":
+                if strHH <= 12 and timeQualifier == "pm" and not \
+                    (strHH == 12 and any([q in words for q in ("pm", "p.m.")])):
+                    if strHH == 12:
+                        strHH = 0
+                        dayOffset +=1
+                    else:
+                        strHH += 12
             if strHH > 24 or strMM > 59:
                 isTime = False
                 used = 0
@@ -835,7 +986,11 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
         for idx, en_month in enumerate(en_monthsShort):
             datestr = datestr.replace(monthsShort[idx], en_month)
 
-        temp = datetime.strptime(datestr, "%B %d")
+        if hasYear:
+            temp = datetime.strptime(datestr, "%B %d %Y")
+        else:
+            temp = datetime.strptime(datestr, "%B %d")
+
         if extractedDate.tzinfo:
             temp = temp.replace(tzinfo=extractedDate.tzinfo)
 
@@ -900,107 +1055,112 @@ def extract_datetime_de(text, anchorDate=None, default_time=None):
     return [extractedDate, resultStr]
 
 
-def is_fractional_de(input_str, short_scale=True):
+def is_fractional_de(input_str, short_scale=False):
     """
     This function takes the given text and checks if it is a fraction.
-
     Args:
         input_str (str): the string to check if fractional
         short_scale (bool): use short scale if True, long scale if False
     Returns:
         (bool) or (float): False if not a fraction, otherwise the fraction
-
     """
-    if input_str.lower().startswith("halb"):
-        return 0.5
+    # account for different numerators, e.g. zweidrittel
 
-    if input_str.lower() == "drittel":
-        return 1.0 / 3
-    elif input_str.endswith('tel'):
-        if input_str.endswith('stel'):
-            input_str = input_str[:len(input_str) - 4]  # e.g. "hundertstel"
-        else:
-            input_str = input_str[:len(input_str) - 3]  # e.g. "fünftel"
-        if input_str.lower() in _DE_NUMBERS:
-            return 1.0 / (_DE_NUMBERS[input_str.lower()])
+    input_str = input_str.lower()
+    numerator = 1
+    prev_number = 0
+    denominator = False
+    remainder = ""
 
-    return False
+    # first check if is a fraction containing a char (eg "2/3")
+    _bucket = input_str.split('/')
+    if look_for_fractions(_bucket):
+        numerator = float(_bucket[0])
+        denominator = float(_bucket[1])
+
+    if not denominator:
+        for fraction in sorted(_STRING_FRACTION.keys(),
+                               key=lambda x: len(x),
+                               reverse=True):
+            if fraction in input_str and not denominator:
+                denominator = _STRING_FRACTION.get(fraction)
+                remainder = input_str.replace(fraction, "")
+                break
+
+        if remainder:
+            if not _STRING_NUM.get(remainder, False):
+                #acount for eineindrittel
+                for numstring, number in _STRING_NUM.items():
+                    if remainder.endswith(numstring):
+                        prev_number = _STRING_NUM.get(
+                            remainder.replace(numstring, "", 1), 0)
+                        numerator = number
+                        break
+                else:
+                    return False
+            else:
+                numerator = _STRING_NUM.get(remainder)
+
+    if denominator:
+        return prev_number + (numerator / denominator)
+    else:
+        return False
 
 
 def is_ordinal_de(input_str):
     """
     This function takes the given text and checks if it is an ordinal number.
-
     Args:
         input_str (str): the string to check if ordinal
     Returns:
         (bool) or (float): False if not an ordinal, otherwise the number
         corresponding to the ordinal
-
     ordinals for 1, 3, 7 and 8 are irregular
-
-    only works for ordinals corresponding to the numbers in _DE_NUMBERS
-
+    only works for ordinals corresponding to the numbers in _STRING_NUM
     """
-
-    lowerstr = input_str.lower()
-
-    if lowerstr.startswith("erste"):
-        return 1
-    if lowerstr.startswith("dritte"):
-        return 3
-    if lowerstr.startswith("siebte"):
-        return 7
-    if lowerstr.startswith("achte"):
-        return 8
-
-    if lowerstr[-3:] == "ste":  # from 20 suffix is -ste*
-        lowerstr = lowerstr[:-3]
-        if lowerstr in _DE_NUMBERS:
-            return _DE_NUMBERS[lowerstr]
-
-    if lowerstr[-4:] in ["ster", "stes", "sten", "stem"]:
-        lowerstr = lowerstr[:-4]
-        if lowerstr in _DE_NUMBERS:
-            return _DE_NUMBERS[lowerstr]
-
-    if lowerstr[-2:] == "te":  # below 20 suffix is -te*
-        lowerstr = lowerstr[:-2]
-        if lowerstr in _DE_NUMBERS:
-            return _DE_NUMBERS[lowerstr]
-
-    if lowerstr[-3:] in ["ter", "tes", "ten", "tem"]:
-        lowerstr = lowerstr[:-3]
-        if lowerstr in _DE_NUMBERS:
-            return _DE_NUMBERS[lowerstr]
-
-    return False
+    val = _STRING_LONG_ORDINAL.get(input_str.lower(), False)
+    # account for numbered ordinals
+    if not val and input_str.endswith('.') and is_numeric_de(input_str[:-1]):
+        val = input_str
+    return val
 
 
-def normalize_de(text, remove_articles=True):
-    """ German string normalization """
-    # TODO return GermanNormalizer().normalize(text, remove_articles)
-    words = text.split()  # this also removed extra spaces
-    normalized = ""
-    for word in words:
-        if remove_articles and word in ["der", "die", "das", "des", "den",
-                                        "dem"]:
-            continue
+def _get_ordinal_index(input_str : str, type_: type = str):
+    ord = is_ordinal_de(input_str)
+    return type_(ord.replace(".","")) if ord else ord
 
-        # Expand common contractions, e.g. "isn't" -> "is not"
-        contraction = ["net", "nett"]
-        if word in contraction:
-            expansion = ["nicht", "nicht"]
-            word = expansion[contraction.index(word)]
 
-        # Convert numbers into digits, e.g. "two" -> "2"
+def is_number_de(word: str):
+        if is_numeric_de(word):
+            if word.isdigit():
+                return int(word)
+            else:
+                return float(word)
+        elif word in _STRING_NUM:
+            return _STRING_NUM.get(word)
+        elif word in _STRING_LONG_SCALE:
+            return _STRING_LONG_SCALE.get(word)
+        
+        return None
 
-        if word in _DE_NUMBERS:
-            word = str(_DE_NUMBERS[word])
+def is_numeric_de(input_str):
+    """
+    Takes in a string and tests to see if it is a number.
 
-        normalized += " " + word
+    Args:
+        text (str): string to test if a number
+    Returns:
+        (bool): True if a number, else False
+    """
+    # da float("1.") = 1.0
+    if input_str.endswith('.'):
+        return False
+    try:
+        float(input_str)
+        return True
+    except ValueError:
+        return False
 
-    return normalized[1:]  # strip the initial space
 
 
 def extract_numbers_de(text, short_scale=True, ordinals=False):
@@ -1017,9 +1177,56 @@ def extract_numbers_de(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    return extract_numbers_generic(text, pronounce_number_de, extract_number_de,
-                                   short_scale=short_scale, ordinals=ordinals)
+    results = _extract_numbers_with_text_de(tokenize(text),
+                                            short_scale, ordinals)
+    # note: ordinal values return in form of "1." (castable into float)
+    values = [float(result.value) for result in results]
+    for i, val in enumerate(values):
+        if val.is_integer():
+            values[i] = int(val)
+    
+    return values
+
+
+def extract_number_de(text, short_scale=True, ordinals=False):
+    """
+    This function extracts a number from a text string
+
+    Args:
+        text (str): the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers
+    Returns:
+        (int) or (float) or False: The extracted number or False if no number
+                                   was found
+
+    """
+    numbers = _extract_numbers_with_text_de(tokenize(text.lower()),
+                                            short_scale, ordinals)
+    # if query ordinals only consider ordinals
+    if ordinals:
+        numbers = list(filter(lambda x: isinstance(x.value, str) 
+                                        and x.value.endswith("."),
+                              numbers))
+
+    number = numbers[0].value if numbers else None
+
+    if number:
+        number = float(number)
+        if number.is_integer():
+            number = int(number)
+
+    return number
 
 
 class GermanNormalizer(Normalizer):
-    """ TODO implement language specific normalizer"""
+    with open(resolve_resource_file("text/de-de/normalize.json")) as f:
+        _default_config = json.load(f)
+
+    def remove_symbols(self, utterance):
+        utterance = re.sub(r"\b(\w*)-([A-Za-z]+)\b", r"\1 \2", utterance)
+        return super().remove_symbols(utterance)
+
+
+def normalize_de(text, remove_articles=True):
+    return GermanNormalizer().normalize(text, remove_articles)
