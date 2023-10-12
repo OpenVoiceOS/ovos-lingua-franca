@@ -31,7 +31,7 @@ jobs:
       - name: Commit to dev
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Declare alpha stable,
+          commit_message: Declare alpha stable
           branch: dev
       - name: Push dev -> master
         uses: ad-m/github-push-action@master
