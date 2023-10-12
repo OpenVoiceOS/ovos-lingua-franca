@@ -33,7 +33,6 @@ from lingua_franca.format import nice_time
 from lingua_franca.format import nice_year
 from lingua_franca.format import pronounce_number
 from lingua_franca.time import default_timezone
-from ovos_utils import LOG
 
 
 def setUpModule():
@@ -334,7 +333,7 @@ class TestNiceDateFormat(unittest.TestCase):
         for sub_dir in [x for x in p.iterdir() if x.is_dir()]:
             # print(sub_dir)
             if (sub_dir / "date_time_test.json").exists():
-                LOG.debug(f"Loading test for {sub_dir}/date_time_test.json")
+                # print(f"Loading test for {sub_dir}/date_time_test.json")
                 with (sub_dir / "date_time_test.json").open() as f:
                     cls.test_config[sub_dir.parts[-1]] = json.loads(f.read())
 
@@ -464,7 +463,7 @@ class TestNiceDateFormat(unittest.TestCase):
     def test_nice_date(self):
         lang = "uk-ua"
         i = 1
-        LOG.debug(self.test_config[lang]["test_nice_date"].get(str(i)))
+        # print(self.test_config[lang]["test_nice_date"].get(str(i)))
         while (self.test_config[lang].get("test_nice_date") and
                self.test_config[lang]["test_nice_date"].get(str(i))):
             p = self.test_config[lang]["test_nice_date"][str(i)]
@@ -476,8 +475,8 @@ class TestNiceDateFormat(unittest.TestCase):
             now = None if not np else datetime.datetime(
                 np[0], np[1], np[2], np[3], np[4], np[5],
                 tzinfo=default_timezone())
-            LOG.debug("Testing for " + lang + " that " + str(dt) +
-                  " is date " + p["assertEqual"])
+            # print("Testing for " + lang + " that " + str(dt) +
+            #       " is date " + p["assertEqual"])
             self.assertEqual(p["assertEqual"],
                              nice_date(dt, lang=lang, now=now))
             i = i + 1
@@ -503,8 +502,8 @@ class TestNiceDateFormat(unittest.TestCase):
                 tzinfo=default_timezone())
             now = None if not np else datetime.datetime(
                 np[0], np[1], np[2], np[3], np[4], np[5])
-            LOG.debug("Testing for " + lang + " that " + str(dt) +
-                  " is date time " + p["assertEqual"])
+            # print("Testing for " + lang + " that " + str(dt) +
+            #       " is date time " + p["assertEqual"])
             self.assertEqual(
                 p["assertEqual"],
                 nice_date_time(
@@ -524,8 +523,8 @@ class TestNiceDateFormat(unittest.TestCase):
             dt = datetime.datetime(
                 dp[0], dp[1], dp[2], dp[3], dp[4], dp[5],
                 tzinfo=default_timezone())
-            LOG.debug("Testing for " + lang + " that " + str(dt) +
-                      " is year " + p["assertEqual"])
+            # print("Testing for " + lang + " that " + str(dt) +
+            #           " is year " + p["assertEqual"])
             self.assertEqual(p["assertEqual"], nice_year(
                 dt, lang=lang, bc=ast.literal_eval(p["bc"])))
             i = i + 1
