@@ -37,7 +37,7 @@ class TestDateTimeExtraction(unittest.TestCase):
         set_default_lang("uk")
 
         self.assertEqual(extract_duration("чотириста дев'яносто сім днів "),
-                        (timedelta(days=497), ""))
+                         (timedelta(days=497), ""))
         self.assertEqual(extract_duration("триста 91.6 секунд"),
                          (timedelta(seconds=391.6), ""))
 
@@ -46,7 +46,7 @@ class TestDateTimeExtraction(unittest.TestCase):
                                           "чотириста дев'яносто сім днів "
                                           "і триста 91.6 секунд"),
                          (timedelta(weeks=3, days=497, seconds=391.6),
-                          "розбуди меня через ,  і"))
+                          "розбуди меня через  ,  і"))
 
         self.assertEqual(extract_duration("25 днів"),
                          (timedelta(days=25.0), ""))
