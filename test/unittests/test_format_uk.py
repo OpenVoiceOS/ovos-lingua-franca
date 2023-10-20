@@ -348,7 +348,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, use_24hour=False),
                          "перша година двадцять два")
         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-                         "перша година дня двадцять два ")
+                         "перша година дня двадцять два")
         self.assertEqual(nice_time(dt, speech=False, use_24hour=False),
                          "1:22")
         self.assertEqual(nice_time(dt, speech=False, use_24hour=False, use_ampm=True),
