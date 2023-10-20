@@ -448,12 +448,12 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, use_24hour=False),
                          "чверть після дванадцятої години")
         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-                         "чверть після дванадцятої години дня")
+                         "чверть після дванадцятої години")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 30, 00, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt, use_24hour=False, use_ampm=True),
-                         "половина після п'ятої години ранку")
+                         "половина після п'ятої години")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 45, 00, tzinfo=default_timezone())
