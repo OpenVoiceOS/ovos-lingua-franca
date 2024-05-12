@@ -79,6 +79,7 @@
     "#D891EF": "Bright lilac",
     "#FFAA1D": "Bright yellow",
     "#CD7F32": "Bronze",
+    "#A52A2A": "Brown",
     "#AF6E4D": "Brown sugar",
     "#7BB661": "Bud green",
     "#FFC680": "Buff",
@@ -255,5 +256,12 @@
     "#C154C1": "Fuchsia",
     "#E48400": "Fulvous",
     "#87421F": "Fuzzy Wuzzy",
-    "#FFFFFF": "White"
+    "#808080": "Gray",
+    "#00FF00": "Green",
+    "#FFA500": "Orange",
+    "#FFC0CB": "Pink",
+    "#800080": "Purple",
+    "#FF0000": "Red",
+    "#FFFFFF": "White",
+    "#FFFF00": "Yellow"
 }
