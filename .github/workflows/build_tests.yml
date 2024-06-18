@@ -43,10 +43,9 @@ jobs:
         run: |
           python setup.py bdist_wheel
       - name: Install package
-        # TODO: cyclonedx patching https://github.com/pypa/gh-action-pip-audit/issues/46
         run: |
-          pip install . cyclonedx-python-lib~=4.0
-      - uses: pypa/gh-action-pip-audit@v1.0.0
+          pip install .
+      - uses: pypa/gh-action-pip-audit@v1.0.8
         with:
           # Ignore irrelevant Mercurial vulnerability
           # Ignore `requests` and `urllib3` vulnerabilities as they are not used in this package
