@@ -410,7 +410,10 @@ def nice_time_uk(dt, speech=True, use_24hour=True, use_ampm=False):
                 if not use_ampm:
                     if dt.hour % 12 == 1:
                         return speak
-                    return speak + " " + plural_uk(dt.hour % 12, "година", "години", "годин", "годиною", "годинами", "годині")
+                    # TODO: the `one`/`few`/`many` structure doesn't cover
+                    #   all cases in Ukrainian
+                    return speak + " " + plural_uk(dt.hour % 12, one="година",
+                                                   few="години", many="годин")
             else:
                 if dt.minute < 10:
                     speak += " нуль"
