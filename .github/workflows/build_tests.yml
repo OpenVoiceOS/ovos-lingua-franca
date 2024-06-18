@@ -47,6 +47,7 @@ jobs:
           pip install .
       - uses: pypa/gh-action-pip-audit@v1.0.0
         with:
+          inputs: requirements/requirements.txt
           # Ignore irrelevant Mercurial vulnerability
           # Ignore `requests` and `urllib3` vulnerabilities as they are not used in this package
           ignore-vulns: |
