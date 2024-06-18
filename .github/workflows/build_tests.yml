@@ -44,7 +44,7 @@ jobs:
           python setup.py bdist_wheel
       - name: Install package
         run: |
-          pip install . cyclonedx-python-lib~=6.0
+          pip install . cyclonedx-python-lib~=4.0
       - uses: pypa/gh-action-pip-audit@v1.0.0
         with:
           internal-be-careful-debug: true
