@@ -27,9 +27,9 @@ from lingua_franca.lang.common_data_en import _ARTICLES_EN, _LONG_ORDINAL_EN, _L
     _generate_plurals_en, _SPOKEN_EXTRA_NUM_EN
 from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
     invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer,\
-    extract_roman_numeral_spans, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+    extract_roman_numeral_spans
 from lingua_franca.util.colors import Color, ColorOutOfSpace
-from lingua_franca.time import now_local
+from lingua_franca.time import now_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
 
 
 def get_color_en(text):
