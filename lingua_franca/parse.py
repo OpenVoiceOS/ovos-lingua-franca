@@ -15,7 +15,7 @@
 #
 import json
 from lingua_franca.util import match_one, fuzzy_match, MatchStrategy
-from lingua_franca.lang.parse_common import match_yes_or_no, extract_roman_numeral_spans, is_roman_numeral
+from lingua_franca.lang.parse_common import match_yes_or_no, extract_roman_numeral_spans, is_roman_numeral, roman_to_int
 
 from difflib import SequenceMatcher
 from warnings import warn
