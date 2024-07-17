@@ -331,6 +331,7 @@ def pronounce_digits(number, places=2, all_digits=False, lang=""):
         'one two seven'
     Args:
         number (int|float)
+        places (int): number of decimal places to express, default 2
         all_digits (bool): read every digit, rather than two digits at a time
     """
 
