@@ -53,7 +53,7 @@ class TestParseCommon(unittest.TestCase):
                          "the 21st century")
         self.assertEqual(normalize_roman_numerals("the XII century",
                                                   ordinals=True),
-                         "the 12nd century")
+                         "the 12th century")
         self.assertEqual(normalize_roman_numerals("the XXIII century",
                                                   ordinals=True),
                          "the 23rd century")
