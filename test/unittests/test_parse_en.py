@@ -300,6 +300,11 @@ class TestExtractNumber(unittest.TestCase):
                          [7.0, 8.0, 9.5])
         self.assertEqual(extract_numbers("this is a 7,0 8.0 9,6 test",
                                          decimal=','), [7.0, 8.0, 9.6])
+        # Include boundary cases as suggested in previous reviews
+        self.assertEqual(extract_number("1,000,000", decimal=','), 1000000)
+        self.assertEqual(extract_number("1,000.0", decimal=','), 1000.0)
+        self.assertEqual(extract_number("1000, is what I said", decimal=','), 1000)
+        self.assertEqual(extract_number("I said 1,000.", decimal=','), 1000)
 
     def test_extract_number_priority(self):
         # sanity check
