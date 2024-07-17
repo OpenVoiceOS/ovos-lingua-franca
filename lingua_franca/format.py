@@ -615,10 +615,7 @@ def nice_bytes(number, lang='', speech=True, binary=True, gnu=False):
 
     units = default_units
 
-    if binary:
-        n = 1024
-    else:
-        n = 1000
+    n = 1024 if binary else 1000
 
     for unit in units[:-1]:
         if abs(number) < n:
