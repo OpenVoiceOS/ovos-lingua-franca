@@ -598,10 +598,7 @@ def nice_relative_time(when, relative_to=None, lang=None):
     Returns:
         str: Relative description of the given time
     """
-    if relative_to:
-        now = relative_to
-    else:
-        now = now_local()
+    now = relative_to if relative_to else now_local()
     delta = to_local(when) - now
 
     if delta.total_seconds() < 1:
