@@ -13,14 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datetime import datetime
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 import unittest
 
 from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.parse import (normalize, extract_numbers, extract_number,
-                                 extract_datetime, yes_or_no)
+                                 extract_datetime, yes_or_no, extract_duration)
 from lingua_franca.lang.parse_es import extract_datetime_es, is_fractional_es
-from lingua_franca.time import default_timezone
+from lingua_franca.time import default_timezone, to_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.util.colors import Color, ColorOutOfSpace
+from lingua_franca.parse import get_color, extract_color_spans
 
 
 def setUpModule():
@@ -244,6 +247,50 @@ class TestDatetime_es(unittest.TestCase):
             lang='es')[0], datetime(1997, 12, 29, 21))
 
 
+class TestExtractDuration(unittest.TestCase):
+    def test_extract_duration(self):
+        self.assertEqual(extract_duration("10 segundos"),
+                         (timedelta(seconds=10.0), ""))
+        self.assertEqual(extract_duration("5 minutos"),
+                         (timedelta(minutes=5), ""))
+        self.assertEqual(extract_duration("2 horas"),
+                         (timedelta(hours=2), ""))
+        self.assertEqual(extract_duration("3 dias"),
+                         (timedelta(days=3), ""))
+        self.assertEqual(extract_duration("25 semanas"),
+                         (timedelta(weeks=25), ""))
+        self.assertEqual(extract_duration("7.5 segundos"),
+                         (timedelta(seconds=7.5), ""))
+        self.assertEqual(extract_duration("10-segundos"),
+                         (timedelta(seconds=10.0), ""))
+        self.assertEqual(extract_duration("5-minutos"),
+                         (timedelta(minutes=5), ""))
+
+    def test_non_std_units(self):
+        self.assertEqual(
+            extract_duration("1 mes"),
+            (timedelta(days=DAYS_IN_1_MONTH), ""))
+
+        self.assertEqual(extract_duration("3 meses"),
+                         (timedelta(days=DAYS_IN_1_MONTH * 3), ""))
+        self.assertEqual(extract_duration("1 año"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1), ""))
+        self.assertEqual(extract_duration("5 años"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 5), ""))
+        self.assertEqual(extract_duration("1 decada"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("5 decadas"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10 * 5), ""))
+        self.assertEqual(extract_duration("1 siglo"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("5 siglos"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100 * 5), ""))
+        self.assertEqual(extract_duration("1 milenio"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000), ""))
+        self.assertEqual(extract_duration("5 milenios"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000 * 5), ""))
+
+
 class TestYesNo(unittest.TestCase):
     def test_yesno(self):
 
@@ -257,6 +304,28 @@ class TestYesNo(unittest.TestCase):
         test_utt("jajajaja", None)
         test_utt("por favor", True)
         test_utt("por favor no", False)
+
+
+# NOTE: this test is using the fallback parser
+# if dedicated spanish methods are implemented
+# this test should be replicated in a unimplemented language
+class TestColors(unittest.TestCase):
+
+    def test_color_obj(self):
+        self.assertEqual(Color.from_description("blanco"),
+                         Color.from_rgb(255, 255, 255))
+
+    def test_get_color(self):
+        self.assertEqual(get_color("blanco"),
+                         Color.from_rgb(255, 255, 255))
+
+    def test_color_spans(self):
+        utt = "un gato blanco"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 1)
+        self.assertEqual(spans[0][1], (8, 14))
+        self.assertEqual(utt[8:14], "blanco")
+        self.assertEqual(spans[0][0], Color.from_hex("#FFFFFF"))
 
 
 if __name__ == "__main__":

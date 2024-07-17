@@ -16,12 +16,14 @@
 from collections import namedtuple
 import re
 import json
-from lingua_franca.internal import  resolve_resource_file, FunctionNotLocalizedError
 import unicodedata
 from quebra_frases import span_indexed_empty_space_tokenize
 
 
 ROMAN_NUMERALS = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
+
+from quebra_frases import word_tokenize
+from lingua_franca.internal import  resolve_resource_file, FunctionNotLocalizedError
 
 
 class Normalizer:
@@ -37,11 +39,7 @@ class Normalizer:
 
     @staticmethod
     def tokenize(utterance):
-        # Split things like 12%
-        utterance = re.sub(r"([0-9]+)([\%])", r"\1 \2", utterance)
-        # Split thins like #1
-        utterance = re.sub(r"(\#)([0-9]+\b)", r"\1 \2", utterance)
-        return utterance.split()
+        return word_tokenize(utterance)
 
     @property
     def should_lowercase(self):
@@ -57,7 +55,7 @@ class Normalizer:
 
     @property
     def should_remove_symbols(self):
-        return self.config.get("remove_symbols", False)
+        return self.config.get("remove_symbols", True)
 
     @property
     def should_remove_accents(self):
@@ -109,9 +107,9 @@ class Normalizer:
     @property
     def symbols(self):
         return self.config.get("symbols",
-                               [";", "_", "!", "?", "<", ">",
-                                "|", "(", ")", "=", "[", "]", "{",
-                                "}", "»", "«", "*", "~", "^", "`"])
+                               [".", ",", ";", "_", "!", "?", "<", ">",
+                                "|", "(", ")", "=", "[", "]", "{", "}",
+                                "»", "«", "*", "~", "^", "`", "\""])
 
     def expand_contractions(self, utterance):
         """ Expand common contractions, e.g. "isn't" -> "is not" """
@@ -152,9 +150,8 @@ class Normalizer:
         return utterance
 
     def remove_symbols(self, utterance):
-        for s in self.symbols:
-            utterance = utterance.replace(s, " ")
-        return utterance
+        words = self.tokenize(utterance)        
+        return " ".join([w for w in words if w not in self.symbols])
 
     def remove_accents(self, utterance):
         for s in self.accents:
@@ -175,9 +172,9 @@ class Normalizer:
             utterance = utterance.lower()
         if self.should_expand_contractions:
             utterance = self.expand_contractions(utterance)
+        utterance = self.replace_words(utterance)
         if self.should_numbers_to_digits:
             utterance = self.numbers_to_digits(utterance)
-        utterance = self.replace_words(utterance)
 
         # removals
         if self.should_remove_symbols:
@@ -204,10 +201,14 @@ def match_yes_or_no(text, lang):
     with open(resource_file) as f:
         words = json.load(f)
         words = {k: [_.lower() for _ in v] for k, v in words.items()}
-
-    text = unicodedata.normalize('NFD', text) \
-        .encode('ascii', 'ignore').decode("utf-8")
+    # after encoding information is lost
+    if lang == 'uk-ua':
+        text = unicodedata.normalize('NFD', text)
+    else:
+        text = unicodedata.normalize('NFD', text) \
+            .encode('ascii', 'ignore').decode("utf-8")
     text = text.lower()
+
 
     # if user says yes but later says no, he changed his mind mid-sentence
     # the highest index is the last yesno word

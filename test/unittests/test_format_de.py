@@ -18,12 +18,18 @@ import datetime
 
 from lingua_franca import get_default_lang, set_default_lang, load_language, \
     unload_language
-from lingua_franca.format import nice_number
-from lingua_franca.format import nice_time
-from lingua_franca.format import pronounce_number
+from lingua_franca.format import (
+    nice_number,
+    nice_time,
+    pronounce_number,
+    join_list,
+    nice_day,
+    nice_month,
+    nice_weekday,
+    get_date_strings
+)
 from lingua_franca.lang.format_de import nice_response_de
 from lingua_franca.lang.format_de import pronounce_ordinal_de
-from lingua_franca.format import join_list
 from lingua_franca.time import default_timezone
 
 
@@ -210,7 +216,7 @@ class TestPronounceNumber(unittest.TestCase):
 
 # def nice_time(dt, lang="de-de", speech=True, use_24hour=False,
 #              use_ampm=False):
-class TestNiceDateFormat_de(unittest.TestCase):
+class TestNiceTime_de(unittest.TestCase):
     def setUp(self):
         self.old_lang = get_default_lang()
         set_default_lang("de-de")
@@ -393,6 +399,72 @@ class TestNiceDateFormat_de(unittest.TestCase):
                                5, 30, 00, tzinfo=default_timezone())
         self.assertEqual(nice_time(dt, use_ampm=True),
                          "halb sechs morgens")
+
+
+class TestNiceDateUtils(unittest.TestCase):
+    def setUp(self):
+        self.old_lang = get_default_lang()
+        self.lang = "de-de"
+        set_default_lang(self.lang)
+
+    def tearDown(self):
+        set_default_lang(self.old_lang)
+
+    def test_nice_day(self):
+        # Test with include_month=True
+        dt = datetime.datetime(2022, 10, 31)
+        self.assertEqual(nice_day(dt, 'MDY', True, self.lang), "Oktober 31")
+        self.assertEqual(nice_day(dt, 'DMY', True, self.lang), "31 Oktober")
+
+        # Test with include_month=False
+        self.assertEqual(nice_day(dt, include_month=False, lang=self.lang), "31")
+
+    def test_nice_month(self):
+        dt = datetime.datetime(2022, 10, 31)
+        self.assertEqual(nice_month(dt, lang=self.lang), "Oktober")
+
+    def test_nice_weekday(self):
+        dt = datetime.datetime(2022, 10, 31)
+        self.assertEqual(nice_weekday(dt, lang=self.lang), "Montag")
+    
+    def test_get_date_strings(self):
+        # Test with default arguments
+        dt = datetime.datetime(2022, 10, 31, 13, 30, 0)
+        expected_output = {
+            "date_string": "10/31/2022",
+            "time_string": "13:30 uhr",
+            "month_string": "Oktober",
+            "day_string": "31",
+            "year_string": "2022",
+            "weekday_string": "Montag"
+        }
+        self.assertEqual(get_date_strings(dt, lang=self.lang), expected_output)
+
+        # Test with different date_format
+        expected_output = {
+            "date_string": "31/10/2022",
+            "time_string": "13:30 uhr",
+            "month_string": "Oktober",
+            "day_string": "31",
+            "year_string": "2022",
+            "weekday_string": "Montag"
+        }
+        self.assertEqual(get_date_strings(dt,
+                                          date_format='DMY',
+                                          lang=self.lang), expected_output)
+
+        # Test with different time_format
+        expected_output = {
+            "date_string": "10/31/2022",
+            "time_string": "01:30 uhr",
+            "month_string": "Oktober",
+            "day_string": "31",
+            "year_string": "2022",
+            "weekday_string": "Montag"
+        }
+        self.assertEqual(get_date_strings(dt,
+                                          time_format="half",
+                                          lang=self.lang), expected_output)        
 
 
 class TestJoinList_de(unittest.TestCase):

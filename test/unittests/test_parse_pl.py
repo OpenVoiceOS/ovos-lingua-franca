@@ -147,11 +147,11 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_duration("obudź mnie za 3 tygodnie, czterysta dziewięćdziesiąt siedem dni i"
                                           " trzysta 91.6 sekund"),
                          (timedelta(weeks=3, days=497, seconds=391.6),
-                          "obudź mnie za ,  i"))
+                          "obudź mnie za  ,  i"))
         self.assertEqual(extract_duration("ten film trwa jedną godzinę, pięćdziesiąt siedem i pół minuty",
                                           lang='pl-pl'),
                          (timedelta(hours=1, minutes=57.5),
-                             "ten film trwa ,"))
+                             "ten film trwa  ,"))
         self.assertEqual(extract_duration("10-sekund"),
                          (timedelta(seconds=10.0), ""))
         self.assertEqual(extract_duration("5-minut"),

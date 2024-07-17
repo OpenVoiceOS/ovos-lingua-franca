@@ -18,6 +18,7 @@ import json
 import os
 import re
 from collections import namedtuple
+from typing import List, Optional
 from warnings import warn
 from os.path import join
 
@@ -28,14 +29,19 @@ from lingua_franca.internal import localized_function, \
     get_full_lang_code, get_default_lang, get_default_loc, \
     is_supported_full_lang, _raise_unsupported_language, \
     UnsupportedLanguageError, NoneLangWarning, InvalidLangWarning, \
-    FunctionNotLocalizedError, resolve_resource_file, FunctionNotLocalizedError
+    FunctionNotLocalizedError, resolve_resource_file
+from lingua_franca.time import now_local
 
 
 _REGISTERED_FUNCTIONS = ("nice_number",
                          "nice_time",
+                         "nice_date",
+                         "nice_date_time",
+                         "nice_year",
                          "pronounce_number",
                          "pronounce_lang",
                          "nice_response",
+                         "describe_color",
                          "nice_duration")
 
 populate_localized_function_dict("format", langs=get_active_langs())
@@ -159,6 +165,9 @@ class DateTimeFormat:
 
     def _decade_format(self, number, number_tuple, lang):
         s = self._format_string(number % 100, 'decade_format', lang)
+        decade = s.format(x=number_tuple.x, xx=number_tuple.xx,
+                        x0=number_tuple.x0, x_in_x0=number_tuple.x_in_x0,
+                        number=str(number % 100))
         return s.format(x=number_tuple.x, xx=number_tuple.xx,
                         x0=number_tuple.x0, x_in_x0=number_tuple.x_in_x0,
                         number=str(number % 100))
@@ -166,6 +175,10 @@ class DateTimeFormat:
     def _number_format_hundreds(self, number, number_tuple, lang,
                                 formatted_decade):
         s = self._format_string(number % 1000, 'hundreds_format', lang)
+        hundreds = s.format(xxx=number_tuple.xxx, x00=number_tuple.x00,
+                          x_in_x00=number_tuple.x_in_x00,
+                          formatted_decade=formatted_decade,
+                          number=str(number % 1000))
         return s.format(xxx=number_tuple.xxx, x00=number_tuple.x00,
                         x_in_x00=number_tuple.x_in_x00,
                         formatted_decade=formatted_decade,
@@ -227,7 +240,6 @@ class DateTimeFormat:
             dt.year, number_tuple, lang, formatted_decade, formatted_hundreds)
 
         s = self._format_string(dt.year, 'year_format', lang)
-
         return re.sub(' +', ' ',
                       s.format(
                           year=str(dt.year),
@@ -245,16 +257,20 @@ date_time_format = DateTimeFormat(os.path.join(os.path.dirname(__file__),
 
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def pronounce_lang(lang_code, lang=""):
+    lang = get_full_lang_code(lang)
     resource_file = resolve_resource_file(f"text/{lang}/langs.json") or \
                     resolve_resource_file("text/en-us/langs.json")
     with open(resource_file) as f:
         LANGUAGES = json.load(f)
     lang_code = lang_code.lower()
     lang2 = lang_code.split("-")[0]
-    return LANGUAGES.get(lang_code) or LANGUAGES.get(lang2) or lang_code
+    spoken_lang = LANGUAGES.get(lang_code) or LANGUAGES.get(lang2) or lang_code
+    if isinstance(spoken_lang, list):
+        spoken_lang = spoken_lang[0]
+    return spoken_lang
 
 
-@localized_function(run_own_code_on=[UnsupportedLanguageError])
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_number(number, lang='', speech=True, denominators=None):
     """Format a float to human readable functions
 
@@ -317,6 +333,7 @@ def pronounce_number(number, lang='', places=2, short_scale=True,
     """
 
 
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_date(dt, lang='', now=None):
     """
     Format a datetime to a pronounceable date
@@ -341,6 +358,7 @@ def nice_date(dt, lang='', now=None):
     return date_time_format.date_format(dt, full_code, now)
 
 
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_date_time(dt, lang='', now=None, use_24hour=False,
                    use_ampm=False):
     """
@@ -370,6 +388,45 @@ def nice_date_time(dt, lang='', now=None, use_24hour=False,
                                              use_ampm)
 
 
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def nice_day(dt, date_format='MDY', include_month=True, lang=""):
+    if include_month:
+        month = nice_month(dt, date_format, lang)
+        if date_format == 'MDY':
+            return "{} {}".format(month, dt.strftime("%d"))
+        else:
+            return "{} {}".format(dt.strftime("%d"), month)
+    return dt.strftime("%d")
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def nice_weekday(dt, lang=""):
+    full_code = get_full_lang_code(lang)
+    date_time_format.cache(full_code)
+
+    if full_code in date_time_format.lang_config.keys():
+        localized_day_names = list(
+            date_time_format.lang_config[lang]['weekday'].values())
+        weekday = localized_day_names[dt.weekday()]
+    else:
+        weekday = dt.strftime("%A")
+    return weekday.capitalize()
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def nice_month(dt, date_format='MDY', lang=""):
+    full_code = get_full_lang_code(lang)
+    date_time_format.cache(full_code)
+
+    if full_code in date_time_format.lang_config.keys():
+        localized_month_names = date_time_format.lang_config[lang]['month']
+        month = localized_month_names[str(int(dt.strftime("%m")))]
+    else:
+        month = dt.strftime("%B")
+    return month.capitalize()
+
+
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def nice_year(dt, lang='', bc=False):
     """
         Format a datetime to a pronounceable year
@@ -390,6 +447,34 @@ def nice_year(dt, lang='', bc=False):
     date_time_format.cache(full_code)
 
     return date_time_format.year_format(dt, full_code, bc)
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def get_date_strings(dt=None, date_format='MDY', time_format="full", lang=""):
+    lang = get_full_lang_code(lang)
+    dt = dt or now_local()
+    timestr = nice_time(dt, lang, speech=False,
+                         use_24hour=time_format == "full")
+    monthstr = nice_month(dt, date_format, lang)
+    weekdaystr = nice_weekday(dt, lang)
+    yearstr = dt.strftime("%Y")
+    daystr = nice_day(dt, date_format, include_month=False, lang=lang)
+    if date_format == 'MDY':
+        dtstr = dt.strftime("%-m/%-d/%Y")
+    elif date_format == 'DMY':
+        dtstr = dt.strftime("%d/%-m/%-Y")
+    elif date_format == 'YMD':
+        dtstr = dt.strftime("%Y/%-m/%-d")
+    else:
+        raise ValueError("invalid date_format")
+    return {
+        "date_string": dtstr,
+        "time_string": timestr,
+        "month_string": monthstr,
+        "day_string": daystr,
+        'year_string': yearstr,
+        "weekday_string": weekdaystr
+    }
 
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
@@ -485,7 +570,8 @@ def nice_duration(duration, lang='', speech=True):
     return out
 
 
-def join_list(items, connector, sep=None, lang=''):
+def join_list(items: List[str], connector: str, sep: Optional[str] = None,
+              lang: str = '') -> str:
     """ Join a list into a phrase using the given connector word
 
     Examples:
@@ -578,3 +664,34 @@ def nice_response(text, lang=''):
         assertEqual(nice_response_de("10 ^ 2"),
                          "10 hoch 2")
     """
+
+
+@localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
+def describe_color(color, lang=""):
+    """
+    Args:
+        color: (Color): format for speech (True) or display (False)
+        lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+
+    Returns:
+        str: localized color description
+    """
+    lang = get_full_lang_code(lang)
+    resource_file = resolve_resource_file(f"text/{lang}/colors.json") or \
+                    resolve_resource_file("text/webcolors.json")
+    with open(resource_file) as f:
+        COLORS = json.load(f)
+
+    if color.hex in COLORS:
+        return COLORS.get(color.hex)
+
+    # fallback - just return main color
+    color = color.main_color
+    if color.hex in COLORS:
+        return COLORS.get(color.hex)
+
+    raise FunctionNotLocalizedError
+
+
+

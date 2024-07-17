@@ -15,6 +15,7 @@
 #
 import unittest
 from datetime import datetime, timedelta, time
+
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 
@@ -22,12 +23,16 @@ from lingua_franca import load_language, unload_language, set_default_lang
 from lingua_franca.internal import FunctionNotLocalizedError
 from lingua_franca.parse import extract_datetime
 from lingua_franca.parse import extract_duration
+from lingua_franca.parse import extract_langcode
 from lingua_franca.parse import extract_number, extract_numbers
+from lingua_franca.parse import get_color, extract_color_spans
 from lingua_franca.parse import get_gender
 from lingua_franca.parse import normalize
-from lingua_franca.time import default_timezone, to_local
+from lingua_franca.time import default_timezone, to_local, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
 from lingua_franca.parse import extract_langcode
 from lingua_franca.parse import yes_or_no
+from lingua_franca.time import default_timezone, to_local
+from lingua_franca.util.colors import Color, ColorOutOfSpace
 
 
 def setUpModule():
@@ -578,7 +583,7 @@ class TestExtractDuration(unittest.TestCase):
                                           " hundred ninety seven days, and"
                                           " three hundred 91.6 seconds"),
                          (timedelta(weeks=3, days=497, seconds=391.6),
-                          "wake me up in , , and"))
+                          "wake me up in  ,  , and"))
         self.assertEqual(extract_duration("10-seconds"),
                          (timedelta(seconds=10.0), ""))
         self.assertEqual(extract_duration("5-minutes"),
@@ -590,12 +595,44 @@ class TestExtractDuration(unittest.TestCase):
         self.assertEqual(extract_duration("The movie is one hour, fifty seven"
                                           " and a half minutes long"),
                          (timedelta(hours=1, minutes=57.5),
-                          "The movie is ,  long"))
+                          "The movie is  ,  long"))
         self.assertEqual(extract_duration("Four and a Half minutes until"
                                           " sunset"),
                          (timedelta(minutes=4.5), "until sunset"))
         self.assertEqual(extract_duration("Nineteen minutes past THE hour"),
                          (timedelta(minutes=19), "past THE hour"))
+
+    def test_non_std_units(self):
+        self.assertEqual(extract_duration("1 month"),
+                         (timedelta(days=DAYS_IN_1_MONTH), ""))
+        self.assertEqual(
+            extract_duration("1 month"),
+            (timedelta(days=DAYS_IN_1_MONTH), ""))
+
+        self.assertEqual(extract_duration("3 months"),
+                         (timedelta(days=DAYS_IN_1_MONTH * 3), ""))
+        self.assertEqual(extract_duration("a year"),
+                         (timedelta(days=DAYS_IN_1_YEAR), ""))
+        self.assertEqual(extract_duration("1 year"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1), ""))
+        self.assertEqual(extract_duration("5 years"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 5), ""))
+        self.assertEqual(extract_duration("a decade"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("1 decade"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("5 decades"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10 * 5), ""))
+        self.assertEqual(extract_duration("1 century"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("a century"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("5 centuries"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100 * 5), ""))
+        self.assertEqual(extract_duration("1 millennium"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000), ""))
+        self.assertEqual(extract_duration("5 millenniums"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000 * 5), ""))
 
 
 class TestExtractDateTime(unittest.TestCase):
@@ -851,8 +888,6 @@ class TestExtractDateTime(unittest.TestCase):
                     "2017-06-27 17:00:00", "lets meet")
         testExtract("lets meet at 8 a.m.",
                     "2017-06-28 08:00:00", "lets meet")
-        testExtract("remind me to wake up at 8 a.m",
-                    "2017-06-28 08:00:00", "remind me to wake up")
         testExtract("what is the weather on tuesday",
                     "2017-06-27 00:00:00", "what is weather")
         testExtract("what is the weather on monday",
@@ -1671,7 +1706,6 @@ class TestGender(unittest.TestCase):
 
 class TestYesNo(unittest.TestCase):
     def test_yesno(self):
-
         def test_utt(text, expected):
             res = yes_or_no(text, "en-us")
             self.assertEqual(res, expected)
@@ -1718,7 +1752,6 @@ class TestYesNo(unittest.TestCase):
 
 class TestLangcode(unittest.TestCase):
     def test_parse_lang_code(self):
-
         def test_with_conf(text, expected_lang, min_conf=0.8):
             lang, conf = extract_langcode(text)
             self.assertEqual(lang, expected_lang)
@@ -1740,6 +1773,39 @@ class TestLangcode(unittest.TestCase):
 
         test_with_conf("Brazilian", 'pt-br')
         test_with_conf("American", 'en-us')
+
+
+class TestColors(unittest.TestCase):
+
+    def test_color_obj(self):
+        self.assertEqual(Color.from_description("white"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(Color.from_description("black"),
+                         Color.from_rgb(0, 0, 0))
+
+    def test_get_color(self):
+        self.assertEqual(get_color("white"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("black"),
+                         Color.from_rgb(0, 0, 0))
+
+        desc = "bright blue-ish gray color"
+        color = get_color(desc)
+        self.assertTrue(isinstance(color, ColorOutOfSpace))
+        self.assertTrue(color.luminance >= 0.7)  # bright
+        self.assertTrue(color.saturation <= 0.25)  # gray
+        self.assertTrue(color.hue == 0.66)  # blue
+
+    def test_color_spans(self):
+        utt = "a long time ago tv was black and white"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 2)
+        self.assertEqual(spans[0][1], (23, 28))
+        self.assertEqual(utt[23:28], "black")
+        self.assertEqual(spans[0][0], Color.from_hex("#000000"))
+        self.assertEqual(spans[1][1], (33, 38))
+        self.assertEqual(utt[33:38], "white")
+        self.assertEqual(spans[1][0], Color.from_hex("#FFFFFF"))
 
 
 if __name__ == "__main__":

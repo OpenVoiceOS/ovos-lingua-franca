@@ -1,20 +1,9 @@
 import os
 from distutils.command.install import install
 
-import pip
 from setuptools import setup
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
-
-
-class CustomInstall(install):
-    """Custom handler for the 'install' command."""
-
-    def run(self):
-        # uninstall lingua_franca
-        # the whole purpose of this package is to replace it
-        pip.main(["uninstall", "lingua_franca", "-y"])
-        super().run()
 
 
 def package_files(directory):
@@ -67,9 +56,9 @@ with open("readme.md", "r") as fh:
 setup(
     name='ovos-lingua-franca',
     version=get_version(),
-    packages=['lingua_franca', 'lingua_franca.lang'],
-    cmdclass={'install': CustomInstall},
+    packages=['lingua_franca', 'lingua_franca.lang', 'lingua_franca.util'],
     url='https://github.com/OpenVoiceOS/ovos-lingua-franca',
+    obsoletes=['lingua_franca'],
     license='Apache2.0',
     package_data={'': extra_files},
     include_package_data=True,
@@ -90,4 +79,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
+    entry_points={
+        'neon.plugin.text': 'ovos-lf-utterance-normalizer=lingua_franca.opm:UtteranceNormalizer'
+    }
 )

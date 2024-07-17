@@ -210,7 +210,7 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(extract_duration("zet een timer voor 1 uur", LANG),
                          (timedelta(seconds=3600), "zet 1 timer voor"))
         self.assertEqual(extract_duration("een treinrit van 2 uur, 17 minuten en zestien seconden", LANG),
-                         (timedelta(seconds=8236), "1 treinrit van ,  en"))
+                         (timedelta(seconds=8236), "1 treinrit van  ,  en"))
         self.assertEqual(extract_duration("een uurtje", LANG),
                          (timedelta(seconds=3600), ""))
 

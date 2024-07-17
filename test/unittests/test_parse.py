@@ -19,7 +19,7 @@ from datetime import datetime
 from dateutil import tz
 
 from lingua_franca import load_language, unload_language, set_default_lang
-from lingua_franca.lang.parse_common import tokenize, Token
+from lingua_franca.lang.parse_common import tokenize, Token, Normalizer
 from lingua_franca.parse import extract_datetime, fuzzy_match, match_one, extract_langcode, yes_or_no
 from lingua_franca.time import default_timezone, now_local, set_default_tz
 from lingua_franca.internal import FunctionNotLocalizedError
@@ -101,7 +101,7 @@ class TestFuzzyMatch(unittest.TestCase):
         self.assertEqual(match_one('enry', choices)[0], 4)
 
 
-class TestParseCommon(unittest.TestCase):
+class TestTokenize(unittest.TestCase):
     def test_tokenize(self):
         self.assertEqual(tokenize('One small step for man'),
                          [Token('One', 0), Token('small', 1), Token('step', 2),
@@ -115,8 +115,38 @@ class TestParseCommon(unittest.TestCase):
                           Token('1', 3)])
 
         self.assertEqual(tokenize('hashtag #1world'),
-                         [Token('hashtag', 0), Token('#1world', 1)])
+                         [Token('hashtag', 0), Token('#', 1), Token('1world', 2)])
+        
+        self.assertEqual(tokenize(",;_!?<>|()=[]{}»«*~^`."),
+                         [Token(",", 0), Token(";", 1), Token("_",2), Token("!",3),
+                          Token("?", 4), Token("<", 5), Token(">", 6), Token("|", 7),
+                          Token("(", 8), Token(")", 9), Token("=", 10), Token("[", 11),
+                          Token("]", 12), Token("{", 13), Token("}", 14), Token("»", 15),
+                          Token("«", 16), Token("*", 17), Token("~", 18), Token("^", 19),
+                          Token("`", 20), Token(".", 21)])
 
+
+class TestRemoveSymbols(unittest.TestCase):
+    def test_remove_symbols_empty_string(self):
+        self.assertEqual(Normalizer().remove_symbols(""), "")
+
+    def test_remove_symbols_no_symbols(self):
+        self.assertEqual(Normalizer().remove_symbols("Hello world"), "Hello world")
+
+    def test_remove_symbols_one_symbol(self):
+        self.assertEqual(Normalizer().remove_symbols("Hello, world?!"), "Hello world")
+
+    def test_remove_symbols_only_symbols(self):
+        self.assertEqual(Normalizer().remove_symbols(",;_!?<>|()=[]{}»«*~^`"), "")
+
+    def test_remove_symbols_contraction(self):
+        self.assertEqual(Normalizer().remove_symbols("It's sunny and warm outside."),
+                         "It's sunny and warm outside")
+        
+    def test_remove_symbols_dates(self):
+        self.assertEqual(Normalizer().remove_symbols("(* 15/2/2018)"),
+                         "15/2/2018")
+        
 
 class TestLangcode(unittest.TestCase):
     def test_parse_lang_code(self):

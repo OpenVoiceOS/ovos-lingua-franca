@@ -289,7 +289,7 @@ _NUM_STRING_NL = {
     15: 'vijftien',
     16: 'zestien',
     17: 'zeventien',
-    18: 'actien',
+    18: 'achttien',
     19: 'negentien',
     20: 'twintig',
     30: 'dertig',

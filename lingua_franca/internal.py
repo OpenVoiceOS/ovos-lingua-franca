@@ -10,13 +10,14 @@ from lingua_franca.time import to_local
 
 
 _SUPPORTED_LANGUAGES = ("az", "ca", "cs", "da", "de", "en", "es", "fr", "hu",
-                        "it", "nl", "pl", "pt", "ru", "sl", "sv", "fa", "eu")
+                        "it", "nl", "pl", "pt", "ru", "sl", "sv", "fa", "eu",
+                        "uk")
 
 _SUPPORTED_FULL_LOCALIZATIONS = ("az-az", "ca-es", "cs-cz", "da-dk", "de-de",
                                  "en-au", "en-us", "es-es", "fr-fr",
                                  "hu-hu", "it-it", "nl-nl", "pl-pl",
                                  "fa-ir", "pt-pt", "ru-ru", "sl-si",
-                                 "sv-se", "tr-tr", "eu-eu")
+                                 "sv-se", "tr-tr", "eu-eu", "uk-ua")
 
 _DEFAULT_FULL_LANG_CODES = {'az': 'az-az',
                             'ca': 'ca-es',
@@ -36,7 +37,8 @@ _DEFAULT_FULL_LANG_CODES = {'az': 'az-az',
                             'ru': 'ru-ru',
                             'sl': 'sl-si',
                             'sv': 'sv-se',
-                            'tr': 'tr-tr'}
+                            'tr': 'tr-tr',
+                            'uk': 'uk-ua'}
 
 __default_lang = None
 __active_lang_code = None
@@ -561,6 +563,14 @@ def localized_function(run_own_code_on=[type(None)]):
             # If we didn't find a localized function to correspond with
             # the wrapped function, we cached NotImplementedError in its
             # place.
+
+            # first account for the function not being present in any
+            # module, meaning all modules are falling back to a catch all
+            # parser, this usually means the function will need localization
+            # only in future languages not currently supported
+            if func_name not in _localized_functions[_module_name][lang_code]:
+                raise FunctionNotLocalizedError(func_name, lang_code)
+
             loc_signature = _localized_functions[_module_name][lang_code][func_name]
             if isinstance(loc_signature, type(NotImplementedError())):
                 raise loc_signature

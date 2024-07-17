@@ -14,11 +14,14 @@
 # limitations under the License.
 #
 import unittest
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from lingua_franca import load_language, unload_language, set_default_lang
-from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no
-from lingua_franca.time import default_timezone
+from lingua_franca.parse import get_color, extract_color_spans
+from lingua_franca.parse import get_gender, extract_datetime, extract_number, normalize, yes_or_no, \
+    extract_duration
+from lingua_franca.time import default_timezone, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.util.colors import Color, ColorOutOfSpace
 
 
 def setUpModule():
@@ -255,6 +258,67 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(default, res[0].time())
 
 
+class TestExtractDuration(unittest.TestCase):
+    def test_extract_duration(self):
+        self.assertEqual(extract_duration("10 segundos"),
+                         (timedelta(seconds=10.0), ""))
+        self.assertEqual(extract_duration("5 minutos"),
+                         (timedelta(minutes=5), ""))
+        self.assertEqual(extract_duration("2 horas"),
+                         (timedelta(hours=2), ""))
+        self.assertEqual(extract_duration("3 dias"),
+                         (timedelta(days=3), ""))
+        self.assertEqual(extract_duration("25 semanas"),
+                         (timedelta(weeks=25), ""))
+        self.assertEqual(extract_duration("sete horas"),
+                         (timedelta(hours=7), ""))
+        self.assertEqual(extract_duration("7.5 segundos"),
+                         (timedelta(seconds=7.5), ""))
+        # TODO - imperfect remainder
+        self.assertEqual(extract_duration("oito dias e 39 segundos"),
+                         (timedelta(days=8, seconds=39), "e"))
+        # TODO - imperfect remainder
+        self.assertEqual(extract_duration("acorda-me daqui a três semanas, quatro dias e noventa segundos"),
+                         (timedelta(weeks=3, days=4, seconds=90),
+                          "acorda - me daqui a ,  e"))
+        self.assertEqual(extract_duration("10-segundos"),
+                         (timedelta(seconds=10.0), ""))
+        self.assertEqual(extract_duration("5-minutos"),
+                         (timedelta(minutes=5), ""))
+
+    def test_non_std_units(self):
+        self.assertEqual(extract_duration("1 mês"),
+                         (timedelta(days=DAYS_IN_1_MONTH), ""))
+        self.assertEqual(
+            extract_duration("1 mês"),
+            (timedelta(days=DAYS_IN_1_MONTH), ""))
+
+        self.assertEqual(extract_duration("3 meses"),
+                         (timedelta(days=DAYS_IN_1_MONTH * 3), ""))
+        self.assertEqual(extract_duration("um ano"),
+                         (timedelta(days=DAYS_IN_1_YEAR), ""))
+        self.assertEqual(extract_duration("1 ano"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1), ""))
+        self.assertEqual(extract_duration("5 anos"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 5), ""))
+        self.assertEqual(extract_duration("uma década"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("1 decada"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10), ""))
+        self.assertEqual(extract_duration("5 decadas"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 10 * 5), ""))
+        self.assertEqual(extract_duration("1 século"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("um seculo"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100), ""))
+        self.assertEqual(extract_duration("5 séculos"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 100 * 5), ""))
+        self.assertEqual(extract_duration("1 milénio"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000), ""))
+        self.assertEqual(extract_duration("5 milenios"),
+                         (timedelta(days=DAYS_IN_1_YEAR * 1000 * 5), ""))
+
+
 class TestExtractGender(unittest.TestCase):
     def test_gender_pt(self):
         # words with well defined grammatical gender rules
@@ -280,7 +344,6 @@ class TestExtractGender(unittest.TestCase):
 
 class TestYesNo(unittest.TestCase):
     def test_yesno(self):
-
         def test_utt(text, expected):
             res = yes_or_no(text, lang="pt-pt")
             self.assertEqual(res, expected)
@@ -308,6 +371,74 @@ class TestYesNo(unittest.TestCase):
         # double negatives
         # it's not a lie -> True
         test_utt("não é mentira", True)
+
+
+class TestColors(unittest.TestCase):
+
+    def test_color_obj(self):
+        self.assertEqual(Color.from_description("branco"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(Color.from_description("preto"),
+                         Color.from_rgb(0, 0, 0))
+
+    def test_get_color(self):
+        self.assertEqual(get_color("branco"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("preto"),
+                         Color.from_rgb(0, 0, 0))
+        self.assertEqual(get_color("branca"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("preta"),
+                         Color.from_rgb(0, 0, 0))
+        self.assertEqual(get_color("branco"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("pretos"),
+                         Color.from_rgb(0, 0, 0))
+        self.assertEqual(get_color("brancas"),
+                         Color.from_rgb(255, 255, 255))
+        self.assertEqual(get_color("pretas"),
+                         Color.from_rgb(0, 0, 0))
+
+        # "dark reddish gray"
+        desc = "cinzento escuro avermelhado"
+        color = get_color(desc)
+        self.assertTrue(isinstance(color, ColorOutOfSpace))
+        self.assertTrue(color.luminance <= 0.3)  # escuro
+        self.assertTrue(color.saturation <= 0.25)  # cinzento
+        self.assertTrue(color.hue == 0.0)  # vermelho
+
+    def test_color_spans(self):
+        utt = "antigamente a televisão era a preto e branco"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 2)
+        self.assertEqual(spans[0][1], (30, 35))
+        self.assertEqual(utt[30:35], "preto")
+        self.assertEqual(spans[0][0], Color.from_hex("#000000"))
+        self.assertEqual(spans[1][1], (38, 44))
+        self.assertEqual(utt[38:44], "branco")
+        self.assertEqual(spans[1][0], Color.from_hex("#FFFFFF"))
+
+        # female gender
+        utt = "a minha gata é preta e branca"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 2)
+        self.assertEqual(spans[0][1], (15, 20))
+        self.assertEqual(utt[15:20], "preta")
+        self.assertEqual(spans[0][0], Color.from_hex("#000000"))
+        self.assertEqual(spans[1][1], (23, 29))
+        self.assertEqual(utt[23:29], "branca")
+        self.assertEqual(spans[1][0], Color.from_hex("#FFFFFF"))
+
+        # plural
+        utt = "os gatos são pretos e as gatas são brancas"
+        spans = extract_color_spans(utt)
+        self.assertTrue(len(spans) == 2)
+        self.assertEqual(spans[0][1], (13, 19))
+        self.assertEqual(utt[13:19], "pretos")
+        self.assertEqual(spans[0][0], Color.from_hex("#000000"))
+        self.assertEqual(spans[1][1], (35, 42))
+        self.assertEqual(utt[35:42], "brancas")
+        self.assertEqual(spans[1][0], Color.from_hex("#FFFFFF"))
 
 
 if __name__ == "__main__":

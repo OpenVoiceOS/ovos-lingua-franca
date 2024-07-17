@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+import json
 from lingua_franca.lang.format_common import convert_to_mixed_fraction
 from lingua_franca.lang.common_data_en import _NUM_STRING_EN, \
     _FRACTION_STRING_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN, _SHORT_ORDINAL_EN, _LONG_ORDINAL_EN
+from lingua_franca.internal import resolve_resource_file
 
 
 def nice_number_en(number, speech=True, denominators=range(1, 21)):
@@ -384,3 +385,57 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
                 speak += " a.m."
 
         return speak
+
+
+def describe_color_en(color):
+
+    resource_file = resolve_resource_file(f"text/en-us/colors.json") or \
+                    resolve_resource_file("text/webcolors.json")
+    with open(resource_file) as f:
+        COLORS = json.load(f)
+
+    if color.hex in COLORS:
+        return COLORS.get(color.hex)
+
+    name = ""
+    # light vs dark
+    if color.luminance <= 0.3:
+        name += "dark "
+    elif color.luminance >= 0.6:
+        name += "bright "
+
+    # hue
+    # R >== B >= G Red
+    if color.red >= color.blue >= color.green:
+        name += "red-ish "
+    # R >== G >= = B 	Orange
+    elif color.red >= color.green >= color.blue:
+        name += "orange-ish "
+    # G >= R >== B Yellow
+    elif color.green >= color.red >= color.blue:
+        name += "yellow-ish "
+    # G >== B >= R  Green
+    elif color.green >= color.blue >= color.red:
+        name += "green-ish "
+    # B >= G >= R  Blue
+    elif color.blue >= color.green >= color.red:
+        name += "blue-ish "
+    # B >= R >== G  Violet
+    elif color.blue >= color.red >= color.green:
+        name += "purple-ish "
+
+    # luminance
+    if color.luminance <= 0.15:
+        name += "black-ish "
+    elif color.luminance >= 0.85:
+        name += "white-ish "
+
+    # saturation
+    if color.saturation >= 0.85:
+        name += "intense "
+    elif color.saturation <= 0.15:
+        name += "pale "
+
+    name += color.main_color.name + " color"
+
+    return name

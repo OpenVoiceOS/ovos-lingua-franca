@@ -1,68 +1,12 @@
-_DE_NUMBERS = {
-    'null': 0,
-    'ein': 1,
-    'eins': 1,
-    'eine': 1,
-    'einer': 1,
-    'einem': 1,
-    'einen': 1,
-    'eines': 1,
-    'zwei': 2,
-    'drei': 3,
-    'vier': 4,
-    'fünf': 5,
-    'sechs': 6,
-    'sieben': 7,
-    'acht': 8,
-    'neun': 9,
-    'zehn': 10,
-    'elf': 11,
-    'zwölf': 12,
-    'dreizehn': 13,
-    'vierzehn': 14,
-    'fünfzehn': 15,
-    'sechzehn': 16,
-    'siebzehn': 17,
-    'achtzehn': 18,
-    'neunzehn': 19,
-    'zwanzig': 20,
-    'einundzwanzig': 21,
-    'zweiundzwanzig': 22,
-    'dreiundzwanzig': 23,
-    'vierundzwanzig': 24,
-    'fünfundzwanzig': 25,
-    'sechsundzwanzig': 26,
-    'siebenundzwanzig': 27,
-    'achtundzwanzig': 28,
-    'neunundzwanzig': 29,
-    'dreißig': 30,
-    'einunddreißig': 31,
-    'vierzig': 40,
-    'fünfzig': 50,
-    'sechzig': 60,
-    'siebzig': 70,
-    'achtzig': 80,
-    'neunzig': 90,
-    'hundert': 100,
-    'zweihundert': 200,
-    'dreihundert': 300,
-    'vierhundert': 400,
-    'fünfhundert': 500,
-    'sechshundert': 600,
-    'siebenhundert': 700,
-    'achthundert': 800,
-    'neunhundert': 900,
-    'tausend': 1000,
-    'million': 1000000
-}
+from collections import OrderedDict
+from lingua_franca.lang.parse_common import invert_dict
 
-_MONTHS_DE = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
-              'juli', 'august', 'september', 'oktober', 'november',
-              'dezember']
+_ARTICLES = {'der', 'das', 'die', 'dem', 'den'}
 
-_NUM_STRING_DE = {
+#_SPOKEN_NUMBER
+_NUM_STRING = {
     0: 'null',
-    1: 'ein',  # ein Viertel etc., nicht eins Viertel
+    1: 'eins',
     2: 'zwei',
     3: 'drei',
     4: 'vier',
@@ -89,20 +33,44 @@ _NUM_STRING_DE = {
     70: 'siebzig',
     80: 'achtzig',
     90: 'neunzig',
-    100: 'hundert'
+    100: 'hundert',
+    200: 'zweihundert',
+    300: 'dreihundert',
+    400: 'vierhundert',
+    500: 'fünfhundert',
+    600: 'sechshundert',
+    700: 'siebenhundert',
+    800: 'achthundert',
+    900: 'neunhundert',
+    1000: 'tausend',
+    1000000: 'million'
 }
+
+_STRING_NUM = invert_dict(_NUM_STRING)
+_STRING_NUM.update({
+    'ein': 1,
+    'eine': 1,
+    'einer': 1,
+    'eines': 1,
+    'einem': 1,
+    'einen': 1
+})
+
+_MONTHS = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
+              'juli', 'august', 'september', 'oktober', 'november',
+              'dezember']
 
 # German uses "long scale" https://en.wikipedia.org/wiki/Long_and_short_scales
 # Currently, numbers are limited to 1000000000000000000000000,
 # but _NUM_POWERS_OF_TEN can be extended to include additional number words
 
 
-_NUM_POWERS_OF_TEN_DE = [
+_NUM_POWERS_OF_TEN = [
     '', 'tausend', 'Million', 'Milliarde', 'Billion', 'Billiarde', 'Trillion',
     'Trilliarde'
 ]
 
-_FRACTION_STRING_DE = {
+_FRACTION_STRING = {
     2: 'halb',
     3: 'drittel',
     4: 'viertel',
@@ -124,6 +92,16 @@ _FRACTION_STRING_DE = {
     20: 'zwanzigstel'
 }
 
+_STRING_FRACTION = invert_dict(_FRACTION_STRING)
+_STRING_FRACTION.update({
+    'halb': 2,
+    'halbe': 2,
+    'halben': 2,
+    'halbes': 2,
+    'halber': 2,
+    'halbem': 2
+})
+
 # Numbers below 1 million are written in one word in German, yielding very
 # long words
 # In some circumstances it may better to seperate individual words
@@ -132,4 +110,121 @@ _FRACTION_STRING_DE = {
 # Set _EXTRA_SPACE_DA="" for correct spelling, this is standard
 
 # _EXTRA_SPACE_DA = " "
-_EXTRA_SPACE_DE = ""
+_EXTRA_SPACE = ""
+
+_ORDINAL_BASE = {
+    "1.": "erst",
+    "2.": "zweit",
+    "3.": "dritt",
+    "4.": "viert",
+    "5.": "fünft",
+    "6.": "sechst",
+    "7.": "siebt",
+    "8.": "acht",
+    "9.": "neunt",
+    "10.": "zehnt",
+    "11.": "elft",
+    "12.": "zwölft",
+    "13.": "dreizehnt",
+    "14.": "vierzehnt",
+    "15.": "fünfzehnt",
+    "16.": "sechzehnt",
+    "17.": "siebzehnt",
+    "18.": "achtzehnt",
+    "19.": "neunzehnt",
+    "20.": "zwanzigst",
+    "21.": "einundzwanzigst",
+    "22.": "zweiundzwanzigst",
+    "23.": "dreiundzwanzigst",
+    "24.": "vierundzwanzigst",
+    "25.": "fünfundzwanzigst",
+    "26.": "sechsundzwanzigst",
+    "27.": "siebenundzwanzigst",
+    "28.": "achtundzwanzigst",
+    "29.": "neunundzwanzigst",
+    "30.": "dreißigst",
+    "31.": "einunddreißigst",
+    "32.": "zweiunddreißigst",
+    "33.": "dreiunddreißigst",
+    "34.": "vierunddreißigst",
+    "35.": "fünfunddreißigst",
+    "36.": "sechsunddreißigst",
+    "37.": "siebenunddreißigst",
+    "38.": "achtunddreißigst",
+    "39.": "neununddreißigst",
+    "40.": "vierzigst",
+    "41.": "einundvierzigst",
+    "42.": "zweiundvierzigst",
+    "43.": "dreiundvierzigst",
+    "44.": "vierundvierzigst",
+    "45.": "fünfundvierzigst",
+    "46.": "sechsundvierzigst",
+    "47.": "siebenundvierzigst",
+    "48.": "achtundvierzigst",
+    "49.": "neunundvierzigst",
+    "50.": "fünfzigst",
+    "51.": "einundfünfzigst",
+    "52.": "zweiundfünfzigst",
+    "53.": "dreiundfünfzigst",
+    "60.": "sechzigst",
+    "70.": "siebzigst",
+    "80.": "achtzigst",
+    "90.": "neunzigst",
+    "100.": "einhundertst",
+    "1000.": "eintausendst",
+    "1000000.": "millionst"
+    }
+
+_LONG_SCALE = OrderedDict([
+    (100, 'hundert'),
+    (1000, 'tausend'),
+    (1000000, 'million'),
+    (1e9, "milliarde"),
+    (1e12, 'billion'),
+    (1e15, "billiarde"),
+    (1e18, "trillion"),
+    (1e21, "trilliarde"),
+    (1e24, "quadrillion"),
+    (1e27, "quadrilliarde")
+])
+
+_MULTIPLIER = set(_LONG_SCALE.values())
+
+_STRING_LONG_SCALE = invert_dict(_LONG_SCALE)
+
+# ending manipulation
+for number, item in _LONG_SCALE.items():
+    if int(number) > 1000:
+        if item.endswith('e'):
+            name = item + 'n'
+            _MULTIPLIER.add(name)
+            _STRING_LONG_SCALE[name] = number
+        else:
+            name = item + 'en'
+            _MULTIPLIER.add(name)
+            _STRING_LONG_SCALE[name] = number
+
+_LONG_ORDINAL = {
+    1e6: "millionst",
+    1e9: "milliardst",
+    1e12: "billionst",
+    1e15: "billiardst",
+    1e18: "trillionst",
+    1e21: "trilliardst",
+    1e24: "quadrillionst",
+    1e27: "quadrilliardst"
+}
+
+_LONG_ORDINAL.update(_ORDINAL_BASE)
+
+# dict für erste, drittem, millionstes ...
+_STRING_LONG_ORDINAL = {ord+ending: num for ord, num in invert_dict(_LONG_ORDINAL).items()
+                        for ending in ("en", "em", "es", "er", "e")}
+
+_FRACTION_MARKER = set()
+
+_NEGATIVES = {"minus"}
+
+_NUMBER_CONNECTORS = {"und"}
+
+_COMMA = {"komma", "comma", "punkt"}

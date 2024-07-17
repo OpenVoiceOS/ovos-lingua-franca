@@ -16,7 +16,6 @@
 import json
 import re
 from datetime import datetime, timedelta, time
-
 from dateutil.relativedelta import relativedelta
 
 from lingua_franca.internal import resolve_resource_file
@@ -30,6 +29,72 @@ from lingua_franca.lang.parse_common import is_numeric, look_for_fractions, \
     invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer,\
     extract_roman_numeral_spans
 from lingua_franca.time import now_local
+    invert_dict, ReplaceableNumber, partition_list, tokenize, Token, Normalizer, DAYS_IN_1_YEAR, DAYS_IN_1_MONTH
+from lingua_franca.util.colors import Color, ColorOutOfSpace
+
+
+def get_color_en(text):
+    """
+        Given a color description, return a Color object
+
+        Args:
+            text (str): the string describing a color
+        Returns:
+            (list): list of tuples with detected color and span of the
+                    color in parent utterance [(Color, (start_idx, end_idx))]
+        """
+    resource_file = resolve_resource_file(f"text/en-us/colors.json") or \
+                    resolve_resource_file("text/webcolors.json")
+    with open(resource_file) as f:
+        COLORS = {v.lower(): k for k, v in json.load(f).items()}
+
+    text = text.lower()
+    if text in COLORS:
+        h = COLORS.get(text)
+        return Color.from_hex(h)
+
+    # try to parse color description
+    color = ColorOutOfSpace()
+
+    if "bright" in text:
+        color.set_luminance(0.7)
+    if "dark" in text:
+        color.set_luminance(0.3)
+
+    if "light" in text or "pale" in text:
+        color.set_saturation(0.4)
+    if "grey" in text or "gray" in text:
+        color.set_saturation(0.25)
+
+    if "black" in text:
+        color.set_luminance(0.1)
+    if "white" in text:
+        color.set_luminance(1)
+
+    red = 0.0
+    orange = 0.10
+    yellow = 0.16
+    green = 0.33
+    cyan = 0.5
+    blue = 0.66
+    violet = 0.83
+
+    if "orange" in text:
+        color.hue = orange
+    elif "yellow" in text:
+        color.hue = yellow
+    elif "green" in text:
+        color.hue = green
+    elif "cyan" in text:
+        color.hue = cyan
+    elif "blue" in text:
+        color.hue = blue
+    elif "violet" in text:
+        color.hue = violet
+    else:
+        color.hue = red
+
+    return color
 
 
 def _convert_words_to_numbers_en(text, short_scale=True, ordinals=False):
@@ -588,18 +653,42 @@ def extract_duration_en(text):
         'days': 0,
         'weeks': 0
     }
+    # NOTE: these are spelled wrong on purpose because of the loop below that strips the s
+    units = ['months', 'years', 'decades', 'centurys', 'millenniums'] + \
+            list(time_units.keys())
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)(?:\s+|\-){unit}s?"
     text = _convert_words_to_numbers_en(text)
+    text = text.replace("centuries", "century").replace("millenia", "millennium")
+    for word in ('day', 'month', 'year', 'decade', 'century', 'millennium'):
+        text = text.replace(f'a {word}', f'1 {word}')
 
-    for unit_en in time_units:
+    for unit_en in units:
         unit_pattern = pattern.format(unit=unit_en[:-1])  # remove 's' from unit
 
         def repl(match):
             time_units[unit_en] += float(match.group(1))
             return ''
 
-        text = re.sub(unit_pattern, repl, text)
+        def repl_non_std(match):
+            val = float(match.group(1))
+            if unit_en == "months":
+                val = DAYS_IN_1_MONTH * val
+            if unit_en == "years":
+                val = DAYS_IN_1_YEAR * val
+            if unit_en == "decades":
+                val = 10 * DAYS_IN_1_YEAR * val
+            if unit_en == "centurys":
+                val = 100 * DAYS_IN_1_YEAR * val
+            if unit_en == "millenniums":
+                val = 1000 * DAYS_IN_1_YEAR * val
+            time_units["days"] += val
+            return ''
+
+        if unit_en not in time_units:
+            text = re.sub(unit_pattern, repl_non_std, text)
+        else:
+            text = re.sub(unit_pattern, repl, text)
 
     text = text.strip()
     duration = timedelta(**time_units) if any(time_units.values()) else None

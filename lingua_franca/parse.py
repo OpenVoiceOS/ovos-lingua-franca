@@ -25,6 +25,11 @@ from lingua_franca.internal import populate_localized_function_dict, \
     get_default_lang, localized_function, _raise_unsupported_language, UnsupportedLanguageError,\
     resolve_resource_file, FunctionNotLocalizedError
 
+from quebra_frases import span_indexed_word_tokenize
+
+from lingua_franca.lang.parse_common import match_yes_or_no
+from lingua_franca.util import match_one, fuzzy_match, MatchStrategy
+from lingua_franca.util.colors import Color, ColorOutOfSpace
 
 _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "extract_number",
@@ -35,6 +40,8 @@ _REGISTERED_FUNCTIONS = ("extract_numbers",
                          "get_gender",
                          "yes_or_no",
                          "is_fractional",
+                         "extract_color_spans",
+                         "get_color",
                          "is_ordinal")
 
 populate_localized_function_dict("parse", langs=get_active_langs())
@@ -48,6 +55,83 @@ def normalize_roman_numerals(utterance, ordinals=False, lang=""):
         # if ordinals: # TODO - this is lang specific
         norm_utt = norm_utt[:start] + f"{num}" + norm_utt[end:]
     return norm_utt
+  
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def get_color(text, lang=''):
+    """
+        Given a color description, return a Color object
+
+        Args:
+            text (str): the string describing a color
+            lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+        Returns:
+            (list): list of tuples with detected color and span of the
+                    color in parent utterance [(Color, (start_idx, end_idx))]
+        """
+    lang = get_full_lang_code(lang)
+    resource_file = resolve_resource_file(f"text/{lang}/colors.json") or \
+                    resolve_resource_file("text/webcolors.json")
+    with open(resource_file) as f:
+        COLORS = {v.lower(): k for k, v in json.load(f).items()}
+
+    text = text.lower().strip()
+    if text in COLORS:
+        return Color.from_hex(COLORS[text])
+
+    spans = extract_color_spans(text, lang)
+    if spans:
+        return spans[0][0]
+    return ColorOutOfSpace()
+
+
+@localized_function(run_own_code_on=[FunctionNotLocalizedError])
+def extract_color_spans(text, lang=''):
+    """
+        This function tags colors in an utterance.
+        Args:
+            text (str): the string to extract colors from
+            lang (str, optional): an optional BCP-47 language code, if omitted
+                              the default language will be used.
+        Returns:
+            (list): list of tuples with detected color and span of the
+                    color in parent utterance [(Color, (start_idx, end_idx))]
+        """
+    lang = get_full_lang_code(lang)
+    resource_file = resolve_resource_file(f"text/{lang}/colors.json") or \
+                    resolve_resource_file("text/webcolors.json")
+    with open(resource_file) as f:
+        COLORS = {v.lower(): k for k, v in json.load(f).items()}
+
+    color_spans = []
+    text = text.lower()
+    spans = span_indexed_word_tokenize(text)
+
+    for idx, (start, end, word) in enumerate(spans):
+        next_span = spans[idx + 1] if idx + 1 < len(spans) else ()
+        next_next_span = spans[idx + 2] if idx + 2 < len(spans) else ()
+        word2 = word3 = ""
+        if next_next_span:
+            word3 = f"{word} {next_span[-1]} {next_next_span[-1]}"
+        if next_span:
+            word2 = f"{word} {next_span[-1]}"
+
+        if next_span and next_next_span and word3 in COLORS:
+            spans[idx + 1] = spans[idx + 2] = (-1, -1, "")
+            end = next_next_span[1]
+            color = Color.from_hex(COLORS[word3])
+            color_spans.append((color, (start, end)))
+        elif next_span and word2 in COLORS:
+            spans[idx + 1] = (-1, -1, "")
+            end = next_span[1]
+            color = Color.from_hex(COLORS[word2])
+            color_spans.append((color, (start, end)))
+        elif word in COLORS:
+            color = Color.from_hex(COLORS[word])
+            color_spans.append((color, (start, end)))
+
+    return color_spans
 
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
@@ -56,12 +140,21 @@ def yes_or_no(text, lang=""):
     return match_yes_or_no(text, lang)
 
 
+# TODO - variant kwarg - ISO 639-2 vs ISO 639-1
 @localized_function(run_own_code_on=[UnsupportedLanguageError, FunctionNotLocalizedError])
 def extract_langcode(text, lang=""):
+    lang = get_full_lang_code(lang)
     resource_file = resolve_resource_file(f"text/{lang}/langs.json") or \
                     resolve_resource_file("text/en-us/langs.json")
+    LANGUAGES = {}
     with open(resource_file) as f:
-        LANGUAGES = {v: k for k, v in json.load(f).items()}
+        for k, v in json.load(f).items():
+            if isinstance(v, str):
+                v = [v]
+            # list of spoken names for this language
+            # multiple valid spellings may exist
+            for l in v:
+                LANGUAGES[l] = k
     return match_one(text, LANGUAGES, strategy=MatchStrategy.TOKEN_SET_RATIO)
 
 
