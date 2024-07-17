@@ -611,7 +611,7 @@ def nice_relative_time(when, relative_to=None, lang=None):
         if delta.total_seconds() == 1:
             return "one second"
         else:
-            return "{} seconds".format(int(delta.total_seconds()))
+            return f"{int(delta.total_seconds())} seconds"
 
     minutes = int((delta.total_seconds() + 30) // 60)  # +30 to round minutes
     if minutes < 90:
