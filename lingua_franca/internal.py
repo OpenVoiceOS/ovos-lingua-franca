@@ -360,7 +360,7 @@ def get_full_lang_code(lang=''):
         except UnsupportedLanguageError:
             warn(InvalidLangWarning)
             lang = get_default_loc()
-    return lang
+    return lang.lower()
 
 
 def __get_full_lang_code_deprecation_warning(lang=''):
@@ -436,6 +436,8 @@ def localized_function(run_own_code_on=[type(None)]):
                    "received this value:\n" + str(run_own_code_on))
     # TODO deprecate these kwarg values 6-12 months after v0.3.0 releases
 
+    # TODO - deprecate the whole dynamic loading thing instead? this abandonware is hell to maintain....
+
     if run_own_code_on != [None]:
         def is_error_type(_type):
             if not callable(_type):
@@ -495,6 +497,7 @@ def localized_function(run_own_code_on=[type(None)]):
 
             # Turns out, we aren't passing a lang code at all
             lang_code = lang_code or get_default_lang()
+            lang_code = lang_code.lower()  # to allow standardized lang codes with upper case
             if not lang_code:
                 if load_langs_on_demand:
                     raise ModuleNotFoundError("No language module loaded "

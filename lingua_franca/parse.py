@@ -119,6 +119,7 @@ def extract_color_spans(text, lang=''):
 
 @localized_function(run_own_code_on=[FunctionNotLocalizedError])
 def yes_or_no(text, lang=""):
+    lang = get_full_lang_code(lang)
     text = normalize(text, lang=lang, remove_articles=True).lower()
     return match_yes_or_no(text, lang)
 
