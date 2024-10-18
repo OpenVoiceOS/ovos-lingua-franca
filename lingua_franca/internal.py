@@ -497,7 +497,6 @@ def localized_function(run_own_code_on=[type(None)]):
 
             # Turns out, we aren't passing a lang code at all
             lang_code = lang_code or get_default_lang()
-            lang_code = lang_code.lower()  # to allow standardized lang codes with upper case
             if not lang_code:
                 if load_langs_on_demand:
                     raise ModuleNotFoundError("No language module loaded "
