@@ -21,7 +21,7 @@ _ARTICLES_NL = {'de', 'het'}
 
 _NUM_STRING_NL = {
     0: 'nul',
-    1: 'een',
+    1: 'één',
     2: 'twee',
     3: 'drie',
     4: 'vier',
